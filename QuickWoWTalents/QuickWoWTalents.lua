@@ -182,10 +182,24 @@ local function GetRecommendation()
   return recommendation, nil
 end
 
+local function ShowImportTextFromStart()
+  if UI.importBox then
+    UI.importBox:HighlightText(0, 0)
+    UI.importBox:SetCursorPosition(0)
+    UI.importBox:ClearFocus()
+  end
+end
+
 local function SelectImportText()
   if UI.importBox then
+    local text = UI.importBox:GetText() or ""
     UI.importBox:SetFocus()
-    UI.importBox:HighlightText()
+    UI.importBox:SetCursorPosition(0)
+    UI.importBox:HighlightText(0, string.len(text))
+  end
+
+  if UI.hint then
+    UI.hint:SetText("Selected. Press Ctrl+C or Cmd+C, then paste in Talents → Loadouts → Import.")
   end
 end
 
@@ -227,6 +241,7 @@ local function UpdateRecommendation(selectText)
     UI.subtitle:SetText(errorMessage)
     UI.meta:SetText("Try another encounter, or regenerate the bundled addon data.")
     UI.importBox:SetText("")
+    ShowImportTextFromStart()
     UI.footer:SetText("Bundled strings: " .. tostring(CountRecommendations()) .. " · Offline addon data; no live calls from WoW.")
     return
   end
@@ -242,10 +257,13 @@ local function UpdateRecommendation(selectText)
   UI.subtitle:SetText(recommendation.label or ((recommendation.specName or "Current spec") .. " — " .. encounterName))
   UI.meta:SetText(contextText .. " · " .. encounterName .. " · Metric: " .. tostring(recommendation.metric or "default") .. " · Samples: " .. tostring(sampleCount))
   UI.importBox:SetText(recommendation.importString or "")
+  UI.hint:SetText("Press Copy to select the full string, then press Ctrl+C or Cmd+C.")
   UI.footer:SetText("Snapshot: " .. tostring(snapshot) .. " · Bundled: " .. tostring(generated) .. " · Offline addon data; no live calls from WoW.")
 
   if selectText then
     SelectImportText()
+  else
+    ShowImportTextFromStart()
   end
 end
 
@@ -255,14 +273,14 @@ local function SetMode(mode)
     UI.state.encounterIds[UI.state.mode] = GetFirstEncounterId(UI.state.mode)
   end
   SaveState()
-  UpdateRecommendation(true)
+  UpdateRecommendation(false)
 end
 
 local function SetEncounter(mode, encounterId)
   UI.state.mode = NormalizeMode(mode)
   UI.state.encounterIds[UI.state.mode] = tonumber(encounterId)
   SaveState()
-  UpdateRecommendation(true)
+  UpdateRecommendation(false)
 end
 
 local function InitializeModeDropdown(dropdown)
@@ -384,14 +402,14 @@ local function CreateMainFrame()
   importBox:SetAutoFocus(false)
   importBox:SetFontObject(ChatFontNormal)
   importBox:SetScript("OnEscapePressed", importBox.ClearFocus)
-  importBox:SetScript("OnEditFocusGained", function(self) self:HighlightText() end)
-  importBox:SetScript("OnMouseUp", function(self) self:SetFocus(); self:HighlightText() end)
+  importBox:SetScript("OnEditFocusGained", function(self) self:SetCursorPosition(0) end)
+  importBox:SetScript("OnMouseUp", function(self) self:SetFocus(); self:SetCursorPosition(0) end)
   UI.importBox = importBox
 
   local selectButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
   selectButton:SetSize(120, 26)
   selectButton:SetPoint("TOPLEFT", importBox, "BOTTOMLEFT", 0, -14)
-  selectButton:SetText("Select text")
+  selectButton:SetText("Copy")
   selectButton:SetScript("OnClick", SelectImportText)
   UI.selectButton = selectButton
 
@@ -399,7 +417,7 @@ local function CreateMainFrame()
   hint:SetPoint("LEFT", selectButton, "RIGHT", 14, 0)
   hint:SetPoint("RIGHT", frame, "RIGHT", -28, 0)
   hint:SetJustifyH("LEFT")
-  hint:SetText("Copy, then open Talents → Loadouts → Import and paste.")
+  hint:SetText("Press Copy to select the full string, then press Ctrl+C or Cmd+C.")
   UI.hint = hint
 
   local footer = frame:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
@@ -416,7 +434,7 @@ local function ShowRecommendation()
   EnsureState()
   local frame = CreateMainFrame()
   frame:Show()
-  UpdateRecommendation(true)
+  UpdateRecommendation(false)
 end
 
 local function ShowInfo()
