@@ -6,6 +6,10 @@ local function Print(message)
   DEFAULT_CHAT_FRAME:AddMessage(PREFIX .. ": " .. tostring(message))
 end
 
+local function IsInCombat()
+  return InCombatLockdown and InCombatLockdown()
+end
+
 local function CountRecommendationTable(encounters)
   local count = 0
   if type(encounters) == "table" then
@@ -431,6 +435,11 @@ local function CreateMainFrame()
 end
 
 local function ShowRecommendation()
+  if IsInCombat() then
+    Print("can't open during combat. Try /qwt again when combat ends.")
+    return
+  end
+
   EnsureState()
   local frame = CreateMainFrame()
   frame:Show()
@@ -451,10 +460,14 @@ end
 
 local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("ADDON_LOADED")
+eventFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
 eventFrame:SetScript("OnEvent", function(_, event, addonName)
   if event == "ADDON_LOADED" and addonName == ADDON_NAME then
     QuickWoWTalentsDB = QuickWoWTalentsDB or {}
     EnsureState()
+  elseif event == "PLAYER_REGEN_DISABLED" and UI.frame and UI.frame:IsShown() then
+    UI.frame:Hide()
+    Print("hidden for combat. Run /qwt again when combat ends.")
   end
 end)
 
