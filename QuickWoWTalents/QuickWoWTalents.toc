@@ -1,8 +1,8 @@
-## Interface: 110200
+## Interface: 120005, 120001, 120000, 110200
 ## Title: Quick WoW Talents
 ## Notes: Personal Quick WoW Talents import string helper.
 ## Author: Darragh
-## Version: 0.2.0
+## Version: 0.2.1
 ## X-Website: https://quickwowtalents.com
 ## SavedVariables: QuickWoWTalentsDB
 
