@@ -1,9 +1,21 @@
 local ADDON_NAME = ...
 local PREFIX = "|cff00c8ffQuick WoW Talents|r"
-local UI = {}
+local UI = { state = { mode = "mplus", encounterIds = {} } }
 
 local function Print(message)
   DEFAULT_CHAT_FRAME:AddMessage(PREFIX .. ": " .. tostring(message))
+end
+
+local function CountRecommendationTable(encounters)
+  local count = 0
+  if type(encounters) == "table" then
+    for _, recommendation in pairs(encounters) do
+      if type(recommendation) == "table" and recommendation.importString then
+        count = count + 1
+      end
+    end
+  end
+  return count
 end
 
 local function CountRecommendations()
@@ -12,8 +24,16 @@ local function CountRecommendations()
 
   if type(data.recommendations) == "table" then
     for _, entry in pairs(data.recommendations) do
-      if type(entry) == "table" and type(entry.mplusBestOverall) == "table" and entry.mplusBestOverall.importString then
-        count = count + 1
+      if type(entry) == "table" then
+        if type(entry.mplusBestOverall) == "table" and entry.mplusBestOverall.importString then
+          count = count + 1
+        end
+        if type(entry.mplus) == "table" then
+          count = count + CountRecommendationTable(entry.mplus.encounters)
+        end
+        if type(entry.raid) == "table" then
+          count = count + CountRecommendationTable(entry.raid.encounters)
+        end
       end
     end
   end
@@ -39,17 +59,124 @@ local function GetCurrentSpecInfo()
   return specID, specName, nil
 end
 
+local function GetModeConfig(mode)
+  local data = QuickWoWTalentsData or {}
+  if data.modes and data.modes[mode] then
+    return data.modes[mode]
+  end
+  return nil
+end
+
+local function GetModeLabel(mode)
+  if mode == "raid" then
+    local config = GetModeConfig("raid")
+    local difficulty = config and config.difficulty and config.difficulty.name or "Heroic"
+    return difficulty .. " Raid"
+  end
+  return "Mythic+"
+end
+
+local function GetEncounterList(mode)
+  local config = GetModeConfig(mode)
+  if not config then
+    return {}
+  end
+  if mode == "raid" then
+    return config.bosses or {}
+  end
+  return config.dungeons or {}
+end
+
+local function FindEncounter(mode, encounterId)
+  local id = tonumber(encounterId)
+  for _, encounter in ipairs(GetEncounterList(mode)) do
+    if tonumber(encounter.id) == id then
+      return encounter
+    end
+  end
+  return nil
+end
+
+local function GetFirstEncounterId(mode)
+  local encounters = GetEncounterList(mode)
+  if encounters[1] then
+    return tonumber(encounters[1].id)
+  end
+  return nil
+end
+
+local function NormalizeMode(mode)
+  if mode == "raid" and GetModeConfig("raid") then
+    return "raid"
+  end
+  return "mplus"
+end
+
+local function EnsureState()
+  QuickWoWTalentsDB = QuickWoWTalentsDB or {}
+  QuickWoWTalentsDB.encounterIds = QuickWoWTalentsDB.encounterIds or {}
+
+  UI.state.mode = NormalizeMode(QuickWoWTalentsDB.mode or UI.state.mode or "mplus")
+  UI.state.encounterIds = UI.state.encounterIds or {}
+
+  for _, mode in ipairs({ "mplus", "raid" }) do
+    local savedId = tonumber(QuickWoWTalentsDB.encounterIds[mode])
+    local currentId = tonumber(UI.state.encounterIds[mode]) or savedId
+    if currentId and FindEncounter(mode, currentId) then
+      UI.state.encounterIds[mode] = currentId
+    else
+      UI.state.encounterIds[mode] = GetFirstEncounterId(mode)
+    end
+  end
+end
+
+local function SaveState()
+  QuickWoWTalentsDB = QuickWoWTalentsDB or {}
+  QuickWoWTalentsDB.encounterIds = QuickWoWTalentsDB.encounterIds or {}
+  QuickWoWTalentsDB.mode = UI.state.mode
+  QuickWoWTalentsDB.encounterIds.mplus = UI.state.encounterIds.mplus
+  QuickWoWTalentsDB.encounterIds.raid = UI.state.encounterIds.raid
+end
+
+local function GetSelectedEncounterId()
+  EnsureState()
+  return UI.state.encounterIds[UI.state.mode]
+end
+
+local function GetSelectedEncounter()
+  return FindEncounter(UI.state.mode, GetSelectedEncounterId())
+end
+
 local function GetRecommendation()
+  EnsureState()
+
   local data = QuickWoWTalentsData or {}
   local specID, specName, errorMessage = GetCurrentSpecInfo()
   if errorMessage then
     return nil, errorMessage
   end
 
-  local entry = data.recommendations and data.recommendations[specID]
-  local recommendation = entry and entry.mplusBestOverall
+  local specEntry = data.recommendations and data.recommendations[specID]
+  if not specEntry then
+    return nil, "No bundled recommendations for " .. tostring(specName) .. " (spec ID " .. tostring(specID) .. "). Data has " .. CountRecommendations() .. " total strings."
+  end
+
+  local selectedEncounterId = GetSelectedEncounterId()
+  local recommendation = nil
+
+  if UI.state.mode == "raid" then
+    recommendation = specEntry.raid and specEntry.raid.encounters and specEntry.raid.encounters[selectedEncounterId]
+  else
+    recommendation = specEntry.mplus and specEntry.mplus.encounters and specEntry.mplus.encounters[selectedEncounterId]
+    if not recommendation and type(specEntry.mplusBestOverall) == "table" then
+      recommendation = specEntry.mplusBestOverall
+    end
+  end
+
   if not recommendation or not recommendation.importString then
-    return nil, "No bundled recommendation for " .. tostring(specName) .. " (spec ID " .. tostring(specID) .. "). Data has " .. CountRecommendations() .. " specs."
+    local encounter = GetSelectedEncounter()
+    local encounterName = encounter and encounter.name or tostring(selectedEncounterId or "unknown encounter")
+    return nil, "No bundled " .. GetModeLabel(UI.state.mode) .. " recommendation for " .. tostring(specName) .. " / " .. encounterName .. "."
   end
 
   return recommendation, nil
@@ -62,13 +189,130 @@ local function SelectImportText()
   end
 end
 
+local function SetDropdownText(dropdown, text)
+  if dropdown and UIDropDownMenu_SetText then
+    UIDropDownMenu_SetText(dropdown, text)
+  end
+end
+
+local function UpdateDropdownLabels()
+  EnsureState()
+  SetDropdownText(UI.modeDropdown, GetModeLabel(UI.state.mode))
+
+  local encounter = GetSelectedEncounter()
+  if UI.state.mode == "raid" then
+    SetDropdownText(UI.encounterDropdown, encounter and encounter.name or "Select boss")
+  else
+    SetDropdownText(UI.encounterDropdown, encounter and encounter.name or "Select dungeon")
+  end
+
+  if UI.encounterLabel then
+    UI.encounterLabel:SetText(UI.state.mode == "raid" and "Boss" or "Dungeon")
+  end
+end
+
+local function UpdateRecommendation(selectText)
+  local recommendation, errorMessage = GetRecommendation()
+  local data = QuickWoWTalentsData or {}
+  local specID, specName = GetCurrentSpecInfo()
+  local encounter = GetSelectedEncounter()
+
+  UpdateDropdownLabels()
+
+  if UI.specLine then
+    UI.specLine:SetText(specName and ("Current spec: " .. tostring(specName) .. " (" .. tostring(specID) .. ")") or "Current spec: unknown")
+  end
+
+  if errorMessage then
+    UI.subtitle:SetText(errorMessage)
+    UI.meta:SetText("Try another encounter, or regenerate the bundled addon data.")
+    UI.importBox:SetText("")
+    UI.footer:SetText("Bundled strings: " .. tostring(CountRecommendations()) .. " · Offline addon data; no live calls from WoW.")
+    return
+  end
+
+  local snapshot = recommendation.snapshotDate or "unknown snapshot"
+  local generated = data.generatedAt or recommendation.generatedAt or "unknown generation time"
+  local sampleCount = recommendation.sampleCount or 0
+  local encounterName = encounter and encounter.name or recommendation.dungeonName or recommendation.bossName or "selected encounter"
+  local contextText = UI.state.mode == "raid"
+    and (tostring(recommendation.difficultyName or "Heroic") .. " raid")
+    or "Mythic+ Best Overall"
+
+  UI.subtitle:SetText(recommendation.label or ((recommendation.specName or "Current spec") .. " — " .. encounterName))
+  UI.meta:SetText(contextText .. " · " .. encounterName .. " · Metric: " .. tostring(recommendation.metric or "default") .. " · Samples: " .. tostring(sampleCount))
+  UI.importBox:SetText(recommendation.importString or "")
+  UI.footer:SetText("Snapshot: " .. tostring(snapshot) .. " · Bundled: " .. tostring(generated) .. " · Offline addon data; no live calls from WoW.")
+
+  if selectText then
+    SelectImportText()
+  end
+end
+
+local function SetMode(mode)
+  UI.state.mode = NormalizeMode(mode)
+  if not UI.state.encounterIds[UI.state.mode] then
+    UI.state.encounterIds[UI.state.mode] = GetFirstEncounterId(UI.state.mode)
+  end
+  SaveState()
+  UpdateRecommendation(true)
+end
+
+local function SetEncounter(mode, encounterId)
+  UI.state.mode = NormalizeMode(mode)
+  UI.state.encounterIds[UI.state.mode] = tonumber(encounterId)
+  SaveState()
+  UpdateRecommendation(true)
+end
+
+local function InitializeModeDropdown(dropdown)
+  UIDropDownMenu_Initialize(dropdown, function(_, level)
+    if level ~= 1 then return end
+
+    for _, option in ipairs({
+      { id = "mplus", text = "Mythic+" },
+      { id = "raid", text = GetModeLabel("raid") }
+    }) do
+      if GetModeConfig(option.id) then
+        local mode = option.id
+        local info = UIDropDownMenu_CreateInfo()
+        info.text = option.text
+        info.checked = UI.state.mode == mode
+        info.func = function()
+          SetMode(mode)
+        end
+        UIDropDownMenu_AddButton(info, level)
+      end
+    end
+  end)
+end
+
+local function InitializeEncounterDropdown(dropdown)
+  UIDropDownMenu_Initialize(dropdown, function(_, level)
+    if level ~= 1 then return end
+
+    local mode = UI.state.mode
+    local selectedEncounterId = GetSelectedEncounterId()
+    for _, encounter in ipairs(GetEncounterList(mode)) do
+      local encounterId = tonumber(encounter.id)
+      local info = UIDropDownMenu_CreateInfo()
+      info.text = encounter.name
+      info.checked = selectedEncounterId == encounterId
+      info.func = function()
+        SetEncounter(mode, encounterId)
+      end
+      UIDropDownMenu_AddButton(info, level)
+    end
+  end)
+end
+
 local function CreateMainFrame()
   if UI.frame then
     return UI.frame
   end
 
   local frame = CreateFrame("Frame", "QuickWoWTalentsFrame", UIParent, "BackdropTemplate")
-  frame:SetSize(680, 260)
+  frame:SetSize(700, 340)
   frame:SetPoint("CENTER")
   frame:SetFrameStrata("DIALOG")
   frame:SetMovable(true)
@@ -94,8 +338,36 @@ local function CreateMainFrame()
   title:SetText("Quick WoW Talents")
   UI.title = title
 
+  local specLine = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  specLine:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
+  specLine:SetPoint("RIGHT", frame, "RIGHT", -28, 0)
+  specLine:SetJustifyH("LEFT")
+  UI.specLine = specLine
+
+  local modeLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+  modeLabel:SetPoint("TOPLEFT", specLine, "BOTTOMLEFT", 0, -20)
+  modeLabel:SetText("Mode")
+  UI.modeLabel = modeLabel
+
+  local modeDropdown = CreateFrame("Frame", "QuickWoWTalentsModeDropdown", frame, "UIDropDownMenuTemplate")
+  modeDropdown:SetPoint("LEFT", modeLabel, "RIGHT", -10, -2)
+  UIDropDownMenu_SetWidth(modeDropdown, 150)
+  InitializeModeDropdown(modeDropdown)
+  UI.modeDropdown = modeDropdown
+
+  local encounterLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+  encounterLabel:SetPoint("LEFT", modeDropdown, "RIGHT", 12, 2)
+  encounterLabel:SetText("Dungeon")
+  UI.encounterLabel = encounterLabel
+
+  local encounterDropdown = CreateFrame("Frame", "QuickWoWTalentsEncounterDropdown", frame, "UIDropDownMenuTemplate")
+  encounterDropdown:SetPoint("LEFT", encounterLabel, "RIGHT", -10, -2)
+  UIDropDownMenu_SetWidth(encounterDropdown, 245)
+  InitializeEncounterDropdown(encounterDropdown)
+  UI.encounterDropdown = encounterDropdown
+
   local subtitle = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-  subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -10)
+  subtitle:SetPoint("TOPLEFT", modeLabel, "BOTTOMLEFT", 0, -32)
   subtitle:SetPoint("RIGHT", frame, "RIGHT", -28, 0)
   subtitle:SetJustifyH("LEFT")
   UI.subtitle = subtitle
@@ -108,7 +380,7 @@ local function CreateMainFrame()
 
   local importBox = CreateFrame("EditBox", nil, frame, "InputBoxTemplate")
   importBox:SetPoint("TOPLEFT", meta, "BOTTOMLEFT", 0, -18)
-  importBox:SetSize(620, 32)
+  importBox:SetSize(640, 32)
   importBox:SetAutoFocus(false)
   importBox:SetFontObject(ChatFontNormal)
   importBox:SetScript("OnEscapePressed", importBox.ClearFocus)
@@ -141,34 +413,22 @@ local function CreateMainFrame()
 end
 
 local function ShowRecommendation()
-  local recommendation, errorMessage = GetRecommendation()
-  if errorMessage then
-    Print(errorMessage)
-    return
-  end
-
-  local data = QuickWoWTalentsData or {}
+  EnsureState()
   local frame = CreateMainFrame()
-  local snapshot = recommendation.snapshotDate or "unknown snapshot"
-  local generated = data.generatedAt or recommendation.generatedAt or "unknown generation time"
-  local sampleCount = recommendation.sampleCount or 0
-  local dungeonName = recommendation.dungeonName or (data.dungeon and data.dungeon.name) or "default dungeon"
-
-  UI.subtitle:SetText(recommendation.label or ((recommendation.specName or "Current spec") .. " — Mythic+ Best Overall"))
-  UI.meta:SetText("Dungeon: " .. dungeonName .. " · Metric: " .. tostring(recommendation.metric or "default") .. " · Samples: " .. tostring(sampleCount))
-  UI.importBox:SetText(recommendation.importString or "")
-  UI.footer:SetText("Snapshot: " .. tostring(snapshot) .. " · Bundled: " .. tostring(generated) .. " · Offline addon data; no live calls from WoW.")
-
   frame:Show()
-  SelectImportText()
+  UpdateRecommendation(true)
 end
 
 local function ShowInfo()
   local data = QuickWoWTalentsData or {}
-  local dungeonName = data.dungeon and data.dungeon.name or "default dungeon"
-  Print("loaded. Bundled recommendations: " .. CountRecommendations() .. ".")
-  Print("Data source: " .. tostring(data.source or "unknown") .. "; dungeon: " .. tostring(dungeonName) .. ".")
-  Print("Run /qwt to show the current spec import string.")
+  local counts = data.counts or {}
+  local mplusCount = data.modes and data.modes.mplus and data.modes.mplus.dungeons and #data.modes.mplus.dungeons or 0
+  local raidCount = data.modes and data.modes.raid and data.modes.raid.bosses and #data.modes.raid.bosses or 0
+  local raidDifficulty = data.modes and data.modes.raid and data.modes.raid.difficulty and data.modes.raid.difficulty.name or "Heroic"
+
+  Print("loaded. Bundled import strings: " .. CountRecommendations() .. ".")
+  Print("M+: " .. tostring(mplusCount) .. " dungeons, Best Overall only. Raid: " .. tostring(raidCount) .. " bosses, " .. tostring(raidDifficulty) .. " only.")
+  Print("Data source: " .. tostring(data.source or "unknown") .. "; skipped: " .. tostring(counts.skipped or 0) .. ".")
 end
 
 local eventFrame = CreateFrame("Frame")
@@ -176,6 +436,7 @@ eventFrame:RegisterEvent("ADDON_LOADED")
 eventFrame:SetScript("OnEvent", function(_, event, addonName)
   if event == "ADDON_LOADED" and addonName == ADDON_NAME then
     QuickWoWTalentsDB = QuickWoWTalentsDB or {}
+    EnsureState()
   end
 end)
 

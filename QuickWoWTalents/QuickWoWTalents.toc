@@ -2,7 +2,7 @@
 ## Title: Quick WoW Talents
 ## Notes: Personal Quick WoW Talents import string helper.
 ## Author: Darragh
-## Version: 0.1.0
+## Version: 0.2.0
 ## X-Website: https://quickwowtalents.com
 ## SavedVariables: QuickWoWTalentsDB
 

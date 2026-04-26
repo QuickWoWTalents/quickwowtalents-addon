@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
 const DEFAULT_BASE_URL = 'https://quickwowtalents.com';
 const DEFAULT_OUTPUT = path.join(REPO_ROOT, 'QuickWoWTalents', 'QuickWoWTalentsData.lua');
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
+const HEROIC_RAID_DIFFICULTY_ID = 4;
 
 const FALLBACK_SPEC_IDS = new Map([
   ['Death Knight:Blood', 250],
@@ -118,12 +119,26 @@ function normalizeBaseUrl(value) {
   return String(value || DEFAULT_BASE_URL).replace(/\/+$/, '');
 }
 
+async function createLocalBuildPayloadLoader(localRepoPath) {
+  if (!localRepoPath) return null;
+
+  const resolvedRepoPath = path.resolve(localRepoPath);
+  process.chdir(resolvedRepoPath);
+
+  const buildServiceUrl = pathToFileURL(path.resolve(resolvedRepoPath, 'src/build-service.mjs')).href;
+  const { getBuildPayload } = await import(buildServiceUrl);
+
+  return async function loadLocalBuildPayload(request) {
+    return getBuildPayload(Object.fromEntries(request.params.entries()));
+  };
+}
+
 async function fetchJson(url, { retries = 2 } = {}) {
   for (let attempt = 0; attempt <= retries; attempt += 1) {
     const response = await fetch(url, {
       headers: {
         accept: 'application/json',
-        'user-agent': 'quickwowtalents-addon-data-builder/0.1'
+        'user-agent': 'quickwowtalents-addon-data-builder/0.2'
       }
     });
 
@@ -147,11 +162,13 @@ async function fetchJson(url, { retries = 2 } = {}) {
   throw new Error(`Failed to fetch ${url}`);
 }
 
-function getDungeon(mythicPlus) {
-  const defaultDungeonId = Number(mythicPlus?.defaultDungeonId);
-  return (mythicPlus?.dungeons ?? []).find((entry) => Number(entry.id) === defaultDungeonId)
-    ?? mythicPlus?.dungeons?.[0]
-    ?? { id: defaultDungeonId || 0, name: 'Default dungeon' };
+function getHeroicDifficulty(raid) {
+  return (raid?.difficulties ?? []).find((entry) => Number(entry.id) === HEROIC_RAID_DIFFICULTY_ID)
+    ?? { id: HEROIC_RAID_DIFFICULTY_ID, name: 'Heroic' };
+}
+
+function normalizeEncounters(entries = []) {
+  return entries.map((entry) => ({ id: Number(entry.id), name: entry.name })).filter((entry) => Number.isFinite(entry.id) && entry.name);
 }
 
 function getSpecJobs(options, onlySpec = null, limit = null) {
@@ -172,7 +189,7 @@ function getSpecJobs(options, onlySpec = null, limit = null) {
   return Number.isFinite(limit) && limit > 0 ? jobs.slice(0, limit) : jobs;
 }
 
-function extractRecommendation({ job, buildPayload, dungeon, generatedAt }) {
+function createRecommendation({ job, buildPayload, generatedAt, mode, encounter, difficulty = null }) {
   const mostCommon = buildPayload.summary?.mostCommon;
   const importString = mostCommon?.blizzardExportString;
   const specId = Number(mostCommon?.mzTalentTree?.specId ?? FALLBACK_SPEC_IDS.get(job.key));
@@ -181,96 +198,206 @@ function extractRecommendation({ job, buildPayload, dungeon, generatedAt }) {
     return null;
   }
 
+  const base = {
+    mode,
+    className: job.className,
+    specName: job.specName,
+    role: job.role,
+    metric: job.metric,
+    importString,
+    sampleCount: Number(mostCommon.count ?? 0),
+    adoptionRate: Number(mostCommon.adoptionRate ?? 0),
+    averageAmount: Number(mostCommon.averageAmount ?? 0),
+    bestAmount: Number(mostCommon.bestAmount ?? 0),
+    apexTalent: mostCommon.apexTalent ?? undefined,
+    totalLogs: Number(buildPayload.summary?.totalLogs ?? 0),
+    distinctBuilds: Number(buildPayload.summary?.distinctBuilds ?? 0),
+    selectionBasis: buildPayload.summary?.selectionBasis ?? 'unknown',
+    snapshotDate: buildPayload.cache?.servedDayKey ?? buildPayload.cache?.dayKey ?? null,
+    cacheCapturedAt: buildPayload.cache?.capturedAt ?? null,
+    generatedAt
+  };
+
+  if (mode === 'mplus') {
+    return {
+      specId,
+      mode,
+      encounterId: Number(encounter.id),
+      entry: {
+        ...base,
+        label: `${job.specName} ${job.className} — ${encounter.name} Best Overall`,
+        dungeonId: Number(encounter.id),
+        dungeonName: encounter.name,
+        keystoneLevel: 'overall'
+      }
+    };
+  }
+
   return {
     specId,
+    mode,
+    encounterId: Number(encounter.id),
     entry: {
-      mplusBestOverall: {
-        mode: 'mplus',
-        className: job.className,
-        specName: job.specName,
-        role: job.role,
-        metric: job.metric,
-        label: `${job.specName} ${job.className} — ${dungeon.name} Best Overall`,
-        dungeonId: Number(dungeon.id),
-        dungeonName: dungeon.name,
-        keystoneLevel: 'overall',
-        importString,
-        sampleCount: Number(mostCommon.count ?? 0),
-        adoptionRate: Number(mostCommon.adoptionRate ?? 0),
-        averageAmount: Number(mostCommon.averageAmount ?? 0),
-        bestAmount: Number(mostCommon.bestAmount ?? 0),
-        apexTalent: mostCommon.apexTalent ?? undefined,
-        totalLogs: Number(buildPayload.summary?.totalLogs ?? 0),
-        distinctBuilds: Number(buildPayload.summary?.distinctBuilds ?? 0),
-        selectionBasis: buildPayload.summary?.selectionBasis ?? 'unknown',
-        snapshotDate: buildPayload.cache?.servedDayKey ?? buildPayload.cache?.dayKey ?? null,
-        cacheCapturedAt: buildPayload.cache?.capturedAt ?? null,
-        generatedAt
-      }
+      ...base,
+      label: `${job.specName} ${job.className} — ${difficulty.name} ${encounter.name}`,
+      bossId: Number(encounter.id),
+      bossName: encounter.name,
+      difficultyId: Number(difficulty.id),
+      difficultyName: difficulty.name
     }
   };
+}
+
+function ensureSpecEntry(recommendations, specId, job) {
+  if (!recommendations[specId]) {
+    recommendations[specId] = {
+      className: job.className,
+      specName: job.specName,
+      role: job.role,
+      mplus: { encounters: {} },
+      raid: { encounters: {} }
+    };
+  }
+  return recommendations[specId];
+}
+
+function createRequests({ options, jobs, mplusDungeons, raidBosses, heroicDifficulty }) {
+  const requests = [];
+  const region = options.defaultRegion ?? 'all';
+
+  for (const job of jobs) {
+    for (const dungeon of mplusDungeons) {
+      requests.push({
+        mode: 'mplus',
+        job,
+        encounter: dungeon,
+        params: new URLSearchParams({
+          mode: 'mplus',
+          region,
+          dungeonId: String(dungeon.id),
+          keystoneLevel: 'overall',
+          className: job.className,
+          specName: job.specName,
+          metric: job.metric
+        })
+      });
+    }
+
+    for (const boss of raidBosses) {
+      requests.push({
+        mode: 'raid',
+        job,
+        encounter: boss,
+        difficulty: heroicDifficulty,
+        params: new URLSearchParams({
+          mode: 'raid',
+          region,
+          bossId: String(boss.id),
+          difficulty: String(heroicDifficulty.id),
+          className: job.className,
+          specName: job.specName,
+          metric: job.metric
+        })
+      });
+    }
+  }
+
+  return requests;
 }
 
 export async function buildAddonData({
   baseUrl = DEFAULT_BASE_URL,
   generatedAt = new Date().toISOString(),
   delayMs = 1200,
+  concurrency = 6,
   onlySpec = null,
   limit = null,
-  onProgress = () => {}
+  onProgress = () => {},
+  loadBuildPayload = null
 } = {}) {
   const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
   const options = await fetchJson(`${normalizedBaseUrl}/api/options`);
-  const dungeon = getDungeon(options.mythicPlus);
+  const mplusDungeons = normalizeEncounters(options.mythicPlus?.dungeons ?? []);
+  const raidBosses = normalizeEncounters(options.raid?.bosses ?? []);
+  const heroicDifficulty = getHeroicDifficulty(options.raid);
   const jobs = getSpecJobs(options, onlySpec, limit);
+  const requests = createRequests({ options, jobs, mplusDungeons, raidBosses, heroicDifficulty });
   const recommendations = {};
   const skipped = [];
+  let recommendationCount = 0;
 
-  for (let index = 0; index < jobs.length; index += 1) {
-    const job = jobs[index];
-    const params = new URLSearchParams({
-      mode: 'mplus',
-      region: options.defaultRegion ?? 'all',
-      dungeonId: String(dungeon.id),
-      keystoneLevel: 'overall',
-      className: job.className,
-      specName: job.specName,
-      metric: job.metric
-    });
-    const url = `${normalizedBaseUrl}/api/build?${params}`;
-
-    onProgress({ index: index + 1, total: jobs.length, job });
+  async function processRequest(index, request) {
+    const url = `${normalizedBaseUrl}/api/build?${request.params}`;
+    onProgress({ index: index + 1, total: requests.length, request });
 
     try {
-      const buildPayload = await fetchJson(url);
-      const recommendation = extractRecommendation({ job, buildPayload, dungeon, generatedAt });
+      const buildPayload = loadBuildPayload
+        ? await loadBuildPayload(request)
+        : await fetchJson(url);
+      const recommendation = createRecommendation({
+        job: request.job,
+        buildPayload,
+        generatedAt,
+        mode: request.mode,
+        encounter: request.encounter,
+        difficulty: request.difficulty
+      });
+
       if (recommendation) {
-        recommendations[recommendation.specId] = recommendation.entry;
+        const specEntry = ensureSpecEntry(recommendations, recommendation.specId, request.job);
+        specEntry[recommendation.mode].encounters[recommendation.encounterId] = recommendation.entry;
+        recommendationCount += 1;
       } else {
-        skipped.push({ key: job.key, reason: 'missing import string or spec id' });
+        skipped.push({ key: request.job.key, mode: request.mode, encounterId: request.encounter.id, encounterName: request.encounter.name, reason: 'missing import string or spec id' });
       }
     } catch (error) {
-      skipped.push({ key: job.key, reason: error?.message ?? String(error) });
+      skipped.push({ key: request.job.key, mode: request.mode, encounterId: request.encounter.id, encounterName: request.encounter.name, reason: error?.message ?? String(error) });
+    }
+  }
+
+  const maxConcurrency = Math.max(1, Number(concurrency) || 1);
+  const inFlight = new Set();
+  for (let index = 0; index < requests.length; index += 1) {
+    while (inFlight.size >= maxConcurrency) {
+      await Promise.race(inFlight);
     }
 
-    if (delayMs > 0 && index < jobs.length - 1) {
+    const request = requests[index];
+    const promise = processRequest(index, request).finally(() => {
+      inFlight.delete(promise);
+    });
+    inFlight.add(promise);
+
+    if (delayMs > 0 && index < requests.length - 1) {
       await sleep(delayMs);
     }
   }
+
+  await Promise.all(inFlight);
 
   return {
     schemaVersion: SCHEMA_VERSION,
     source: normalizedBaseUrl,
     generatedAt,
-    mode: 'mplus',
-    recommendationKind: 'default-dungeon-best-overall',
-    dungeon: {
-      id: Number(dungeon.id),
-      name: dungeon.name
+    modes: {
+      mplus: {
+        label: 'Mythic+',
+        recommendationKind: 'best-overall',
+        keystoneLevel: 'overall',
+        dungeons: mplusDungeons
+      },
+      raid: {
+        label: 'Raid',
+        recommendationKind: 'heroic-boss',
+        difficulty: { id: Number(heroicDifficulty.id), name: heroicDifficulty.name },
+        bosses: raidBosses
+      }
     },
     counts: {
-      attempted: jobs.length,
-      recommendations: Object.keys(recommendations).length,
+      specs: jobs.length,
+      attempted: requests.length,
+      recommendations: recommendationCount,
+      specsWithAnyRecommendation: Object.keys(recommendations).length,
       skipped: skipped.length
     },
     recommendations,
@@ -300,16 +427,20 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const delayMs = Number(readArg('--delay-ms', process.env.QWT_ADDON_DELAY_MS || 1200));
   const limitValue = readArg('--limit', null);
   const spec = readArg('--spec', null);
+  const localRepo = readArg('--local-repo', process.env.QWT_PRODUCT_REPO || null);
+  const concurrencyValue = Number(readArg('--concurrency', process.env.QWT_ADDON_CONCURRENCY || (localRepo ? 12 : 6)));
   const strict = hasFlag('--strict');
   const limit = limitValue == null ? null : Number(limitValue);
 
   const result = await writeAddonData(outputPath, {
     baseUrl,
     delayMs: Number.isFinite(delayMs) ? delayMs : 1200,
+    concurrency: Number.isFinite(concurrencyValue) ? concurrencyValue : (localRepo ? 12 : 6),
+    loadBuildPayload: await createLocalBuildPayloadLoader(localRepo),
     onlySpec: spec,
     limit: Number.isFinite(limit) ? limit : null,
-    onProgress({ index, total, job }) {
-      console.error(`[${index}/${total}] ${job.className} ${job.specName} (${job.metric})`);
+    onProgress({ index, total, request }) {
+      console.error(`[${index}/${total}] ${request.mode} ${request.encounter.name} — ${request.job.className} ${request.job.specName} (${request.job.metric})`);
     }
   });
 
@@ -317,8 +448,12 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     ok: !strict || result.payload.skipped.length === 0,
     outputPath: result.outputPath,
     generatedAt: result.payload.generatedAt,
-    dungeon: result.payload.dungeon,
     counts: result.payload.counts,
+    modes: {
+      mplusDungeons: result.payload.modes.mplus.dungeons.length,
+      raidBosses: result.payload.modes.raid.bosses.length,
+      raidDifficulty: result.payload.modes.raid.difficulty
+    },
     skipped: result.payload.skipped
   }, null, 2));
 

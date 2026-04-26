@@ -19,9 +19,15 @@ Run:
 /qwt
 ```
 
-The addon detects your current specialization, looks up the bundled Quick WoW Talents recommendation for that spec, and shows a copyable Blizzard talent import string.
+The addon detects your current specialization and opens a small selector with:
 
-Current MVP data is **Mythic+ Best Overall for the default QWT dungeon**. The frame labels the dungeon explicitly so we do not pretend this is all-dungeon coverage yet.
+- mode dropdown: **Mythic+** or **Heroic Raid**
+- encounter dropdown:
+  - Mythic+: dungeon selector, **Best Overall** only
+  - Raid: boss selector, **Heroic** only
+- copyable Blizzard talent import string
+
+The addon only chooses between bundled strings. It does not call any external API from inside WoW.
 
 Extra commands:
 
@@ -62,10 +68,16 @@ This fetches cached public QWT build payloads and writes:
 QuickWoWTalents/QuickWoWTalentsData.lua
 ```
 
-Use a slower delay if needed:
+By default it exports every current spec for every current Mythic+ dungeon plus every current raid boss on Heroic. Use a slower delay if needed to stay comfortably under public rate limits:
 
 ```bash
 node scripts/build-data.mjs --delay-ms 1500
+```
+
+Quick small test export for one spec:
+
+```bash
+node scripts/build-data.mjs --spec "Warlock:Demonology" --delay-ms 1200
 ```
 
 ## Package zip
@@ -77,5 +89,5 @@ npm run package
 Creates:
 
 ```text
-dist/QuickWoWTalents-0.1.0.zip
+dist/QuickWoWTalents-0.2.0.zip
 ```
