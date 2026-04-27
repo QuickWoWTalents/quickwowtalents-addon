@@ -9,6 +9,11 @@ const DEFAULT_BASE_URL = 'https://quickwowtalents.com';
 const DEFAULT_OUTPUT = path.join(REPO_ROOT, 'QuickWoWTalents', 'QuickWoWTalentsData.lua');
 const SCHEMA_VERSION = 2;
 const HEROIC_RAID_DIFFICULTY_ID = 4;
+const MPLUS_BEST_OVERALL_MIN_KEYSTONE_LEVEL = 15;
+
+function getMplusBestOverallLabel() {
+  return `Best Overall (${MPLUS_BEST_OVERALL_MIN_KEYSTONE_LEVEL}+)`;
+}
 
 const FALLBACK_SPEC_IDS = new Map([
   ['Death Knight:Blood', 250],
@@ -225,10 +230,11 @@ function createRecommendation({ job, buildPayload, generatedAt, mode, encounter,
       encounterId: Number(encounter.id),
       entry: {
         ...base,
-        label: `${job.specName} ${job.className} — ${encounter.name} Best Overall`,
+        label: `${job.specName} ${job.className} — ${encounter.name} ${getMplusBestOverallLabel()}`,
         dungeonId: Number(encounter.id),
         dungeonName: encounter.name,
-        keystoneLevel: 'overall'
+        keystoneLevel: 'overall',
+        minimumKeystoneLevel: MPLUS_BEST_OVERALL_MIN_KEYSTONE_LEVEL
       }
     };
   }
@@ -276,6 +282,7 @@ function createRequests({ options, jobs, mplusDungeons, raidBosses, heroicDiffic
           region,
           dungeonId: String(dungeon.id),
           keystoneLevel: 'overall',
+          minKeystoneLevel: String(MPLUS_BEST_OVERALL_MIN_KEYSTONE_LEVEL),
           className: job.className,
           specName: job.specName,
           metric: job.metric
@@ -384,6 +391,8 @@ export async function buildAddonData({
         label: 'Mythic+',
         recommendationKind: 'best-overall',
         keystoneLevel: 'overall',
+        minimumKeystoneLevel: MPLUS_BEST_OVERALL_MIN_KEYSTONE_LEVEL,
+        recommendationLabel: getMplusBestOverallLabel(),
         dungeons: mplusDungeons
       },
       raid: {

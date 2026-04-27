@@ -80,6 +80,17 @@ local function GetModeLabel(mode)
   return "Mythic+"
 end
 
+local function GetMplusRecommendationLabel()
+  local config = GetModeConfig("mplus")
+  if config and config.recommendationLabel then
+    return tostring(config.recommendationLabel)
+  end
+  if config and config.minimumKeystoneLevel then
+    return "Best Overall (" .. tostring(config.minimumKeystoneLevel) .. "+)"
+  end
+  return "Best Overall"
+end
+
 local function GetEncounterList(mode)
   local config = GetModeConfig(mode)
   if not config then
@@ -256,7 +267,7 @@ local function UpdateRecommendation(selectText)
   local encounterName = encounter and encounter.name or recommendation.dungeonName or recommendation.bossName or "selected encounter"
   local contextText = UI.state.mode == "raid"
     and (tostring(recommendation.difficultyName or "Heroic") .. " raid")
-    or "Mythic+ Best Overall"
+    or ("Mythic+ " .. GetMplusRecommendationLabel())
 
   UI.subtitle:SetText(recommendation.label or ((recommendation.specName or "Current spec") .. " — " .. encounterName))
   UI.meta:SetText(contextText .. " · " .. encounterName .. " · Metric: " .. tostring(recommendation.metric or "default") .. " · Samples: " .. tostring(sampleCount))
