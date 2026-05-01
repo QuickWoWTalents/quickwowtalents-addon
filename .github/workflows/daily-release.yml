@@ -52,8 +52,10 @@ jobs:
 
       - name: Generate strict bundled addon data
         env:
-          QWT_ADDON_DELAY_MS: '1200'
-          QWT_ADDON_CONCURRENCY: '6'
+          # Public reads are cache-first; keep a light spread between requests without
+          # making the daily release spend 10+ minutes idling.
+          QWT_ADDON_DELAY_MS: '100'
+          QWT_ADDON_CONCURRENCY: '8'
         run: npm run build:data:strict
 
       - name: Verify scripts and tests
