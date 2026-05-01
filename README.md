@@ -96,6 +96,8 @@ dist/QuickWoWTalents-<package-version>.zip
 
 GitHub Actions runs `.github/workflows/daily-release.yml` every day at `15:30 UTC` and can also be started manually with **Run workflow**.
 
+Manual runs default to a fast dry-run that generates one spec, runs checks, and packages locally without committing, tagging, or publishing. Set `dry_run=false` only when you intentionally want a manual full release.
+
 The pipeline:
 
 1. bumps the addon patch version in `package.json` and `QuickWoWTalents.toc`

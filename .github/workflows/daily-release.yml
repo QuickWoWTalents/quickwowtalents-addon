@@ -6,8 +6,18 @@ on:
     - cron: '30 15 * * *'
   workflow_dispatch:
     inputs:
+      dry_run:
+        description: 'Run a fast validation without committing, tagging, or publishing a release.'
+        required: true
+        default: true
+        type: boolean
+      dry_run_limit:
+        description: 'Number of specs to generate in dry-run mode.'
+        required: false
+        default: '1'
+        type: string
       version:
-        description: 'Optional explicit semver version, e.g. 0.2.9. Defaults to next patch.'
+        description: 'Optional explicit semver version for non-dry-run releases, e.g. 0.2.9. Defaults to next patch.'
         required: false
         type: string
 
@@ -41,6 +51,7 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
 
       - name: Prepare next addon version
+        if: ${{ github.event_name == 'schedule' || github.event.inputs.dry_run != 'true' }}
         env:
           RELEASE_VERSION: ${{ github.event.inputs.version }}
         run: |
@@ -57,7 +68,16 @@ jobs:
           QWT_ADDON_DELAY_MS: '100'
           QWT_ADDON_CONCURRENCY: '8'
           QWT_FETCH_TIMEOUT_MS: '30000'
-        run: npm run build:data:strict
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true' }}
+          DRY_RUN_LIMIT: ${{ github.event.inputs.dry_run_limit }}
+        run: |
+          if [ "$DRY_RUN" = "true" ]; then
+            LIMIT="${DRY_RUN_LIMIT:-1}"
+            echo "Running dry-run data generation for $LIMIT spec(s); no release will be published."
+            npm run build:data:strict -- --limit "$LIMIT" --output /tmp/QuickWoWTalentsData.lua
+          else
+            npm run build:data:strict
+          fi
 
       - name: Verify scripts and tests
         run: |
@@ -78,6 +98,7 @@ jobs:
           echo "zip=dist/QuickWoWTalents-$VERSION.zip" >> "$GITHUB_OUTPUT"
 
       - name: Fail if tag already exists
+        if: ${{ github.event_name == 'schedule' || github.event.inputs.dry_run != 'true' }}
         run: |
           if git rev-parse "${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
             echo "Tag ${{ steps.version.outputs.tag }} already exists; refusing to overwrite a release." >&2
@@ -85,15 +106,18 @@ jobs:
           fi
 
       - name: Commit generated release files
+        if: ${{ github.event_name == 'schedule' || github.event.inputs.dry_run != 'true' }}
         run: |
           git add package.json QuickWoWTalents/QuickWoWTalents.toc QuickWoWTalents/QuickWoWTalentsData.lua
           git commit -m "Daily addon data release ${{ steps.version.outputs.tag }}"
           git tag "${{ steps.version.outputs.tag }}"
 
       - name: Push release commit and tag
+        if: ${{ github.event_name == 'schedule' || github.event.inputs.dry_run != 'true' }}
         run: git push origin HEAD:main --follow-tags
 
       - name: Create GitHub release
+        if: ${{ github.event_name == 'schedule' || github.event.inputs.dry_run != 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
