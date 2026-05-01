@@ -1,0 +1,99 @@
+name: Daily addon release
+
+on:
+  schedule:
+    # GitHub cron is UTC. This runs after the public QWT daily cache should be warm.
+    - cron: '30 15 * * *'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Optional explicit semver version, e.g. 0.2.9. Defaults to next patch.'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-addon-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Generate addon data and publish release
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Configure git author
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+      - name: Prepare next addon version
+        env:
+          RELEASE_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          if [ -n "$RELEASE_VERSION" ]; then
+            npm run release:prepare -- --version "$RELEASE_VERSION"
+          else
+            npm run release:prepare
+          fi
+
+      - name: Generate strict bundled addon data
+        env:
+          QWT_ADDON_DELAY_MS: '1200'
+          QWT_ADDON_CONCURRENCY: '6'
+        run: npm run build:data:strict
+
+      - name: Verify scripts and tests
+        run: |
+          node --check scripts/build-data.mjs
+          node --check scripts/package-addon.mjs
+          node --check scripts/prepare-release.mjs
+          npm test
+
+      - name: Package addon zip
+        run: npm run package
+
+      - name: Resolve release version
+        id: version
+        run: |
+          VERSION="$(node -p "JSON.parse(require('fs').readFileSync('package.json', 'utf8')).version")"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          echo "zip=dist/QuickWoWTalents-$VERSION.zip" >> "$GITHUB_OUTPUT"
+
+      - name: Fail if tag already exists
+        run: |
+          if git rev-parse "${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
+            echo "Tag ${{ steps.version.outputs.tag }} already exists; refusing to overwrite a release." >&2
+            exit 1
+          fi
+
+      - name: Commit generated release files
+        run: |
+          git add package.json QuickWoWTalents/QuickWoWTalents.toc QuickWoWTalents/QuickWoWTalentsData.lua
+          git commit -m "Daily addon data release ${{ steps.version.outputs.tag }}"
+          git tag "${{ steps.version.outputs.tag }}"
+
+      - name: Push release commit and tag
+        run: git push origin HEAD:main --follow-tags
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.version.outputs.tag }}" "${{ steps.version.outputs.zip }}" \
+            --title "QuickWoWTalents ${{ steps.version.outputs.tag }}" \
+            --notes "Automated daily Quick WoW Talents addon data refresh.\n\nBundled data is generated from the public quickwowtalents.com cache/API with strict zero-skipped validation, then packaged as a static offline addon zip."

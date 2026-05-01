@@ -89,5 +89,21 @@ npm run package
 Creates:
 
 ```text
-dist/QuickWoWTalents-0.2.0.zip
+dist/QuickWoWTalents-<package-version>.zip
 ```
+
+## Daily release pipeline
+
+GitHub Actions runs `.github/workflows/daily-release.yml` every day at `15:30 UTC` and can also be started manually with **Run workflow**.
+
+The pipeline:
+
+1. bumps the addon patch version in `package.json` and `QuickWoWTalents.toc`
+2. regenerates `QuickWoWTalentsData.lua` from the public `quickwowtalents.com` cache/API
+3. requires strict zero-skipped data generation
+4. runs script syntax checks and tests
+5. packages the addon zip
+6. commits the generated data/version bump to `main`
+7. creates a matching Git tag and GitHub release with the zip asset
+
+No GitHub secrets are required beyond the built-in `GITHUB_TOKEN`; the addon remains fully offline/static in-game.
