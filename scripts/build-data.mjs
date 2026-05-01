@@ -138,14 +138,30 @@ async function createLocalBuildPayloadLoader(localRepoPath) {
   };
 }
 
-async function fetchJson(url, { retries = 2 } = {}) {
+async function fetchJson(url, { retries = 2, timeoutMs = Number(process.env.QWT_FETCH_TIMEOUT_MS || 30000) } = {}) {
   for (let attempt = 0; attempt <= retries; attempt += 1) {
-    const response = await fetch(url, {
-      headers: {
-        accept: 'application/json',
-        'user-agent': 'quickwowtalents-addon-data-builder/0.2'
+    let response;
+    try {
+      response = await fetch(url, {
+        signal: Number.isFinite(timeoutMs) && timeoutMs > 0 ? AbortSignal.timeout(timeoutMs) : undefined,
+        headers: {
+          accept: 'application/json',
+          'user-agent': 'quickwowtalents-addon-data-builder/0.2'
+        }
+      });
+    } catch (error) {
+      const timedOut = error?.name === 'AbortError' || error?.name === 'TimeoutError';
+      const message = timedOut
+        ? `request timed out after ${timeoutMs}ms`
+        : (error?.message ?? String(error));
+
+      if (attempt < retries) {
+        await sleep(2500 * (attempt + 1));
+        continue;
       }
-    });
+
+      throw new Error(`${url}: ${message}`);
+    }
 
     if (response.ok) {
       return response.json();

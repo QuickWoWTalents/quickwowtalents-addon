@@ -56,6 +56,7 @@ jobs:
           # making the daily release spend 10+ minutes idling.
           QWT_ADDON_DELAY_MS: '100'
           QWT_ADDON_CONCURRENCY: '8'
+          QWT_FETCH_TIMEOUT_MS: '30000'
         run: npm run build:data:strict
 
       - name: Verify scripts and tests
