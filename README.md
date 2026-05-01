@@ -101,8 +101,8 @@ Manual runs default to a fast dry-run that generates one spec, runs checks, and 
 The pipeline:
 
 1. bumps the addon patch version in `package.json` and `QuickWoWTalents.toc`
-2. regenerates `QuickWoWTalentsData.lua` from the public `quickwowtalents.com` cache/API
-3. requires strict zero-skipped data generation
+2. downloads `QuickWoWTalentsData.lua` from the product-side addon data artifact at `quickwowtalents.com`
+3. verifies the downloaded Lua payload shape
 4. runs script syntax checks and tests
 5. packages the addon zip
 6. commits the generated data/version bump to `main`

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build:data": "node scripts/build-data.mjs",
+    "build:data:download": "node scripts/download-addon-data.mjs",
     "build:data:strict": "node scripts/build-data.mjs --strict",
     "package": "node scripts/package-addon.mjs",
     "release:prepare": "node scripts/prepare-release.mjs",

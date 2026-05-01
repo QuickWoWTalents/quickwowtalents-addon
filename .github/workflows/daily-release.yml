@@ -61,10 +61,9 @@ jobs:
             npm run release:prepare
           fi
 
-      - name: Generate strict bundled addon data
+      - name: Generate bundled addon data
         env:
-          # Public reads are cache-first; keep a light spread between requests without
-          # making the daily release spend 10+ minutes idling.
+          QWT_ADDON_DATA_TIMEOUT_MS: '45000'
           QWT_ADDON_DELAY_MS: '100'
           QWT_ADDON_CONCURRENCY: '8'
           QWT_FETCH_TIMEOUT_MS: '30000'
@@ -76,12 +75,13 @@ jobs:
             echo "Running dry-run data generation for $LIMIT spec(s); no release will be published."
             npm run build:data:strict -- --limit "$LIMIT" --output /tmp/QuickWoWTalentsData.lua
           else
-            npm run build:data:strict
+            npm run build:data:download
           fi
 
       - name: Verify scripts and tests
         run: |
           node --check scripts/build-data.mjs
+          node --check scripts/download-addon-data.mjs
           node --check scripts/package-addon.mjs
           node --check scripts/prepare-release.mjs
           npm test
