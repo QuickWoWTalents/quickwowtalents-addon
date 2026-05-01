@@ -114,7 +114,7 @@ jobs:
 
       - name: Push release commit and tag
         if: ${{ github.event_name == 'schedule' || github.event.inputs.dry_run != 'true' }}
-        run: git push origin HEAD:main --follow-tags
+        run: git push origin HEAD:main "${{ steps.version.outputs.tag }}"
 
       - name: Create GitHub release
         if: ${{ github.event_name == 'schedule' || github.event.inputs.dry_run != 'true' }}
@@ -123,4 +123,4 @@ jobs:
         run: |
           gh release create "${{ steps.version.outputs.tag }}" "${{ steps.version.outputs.zip }}" \
             --title "QuickWoWTalents ${{ steps.version.outputs.tag }}" \
-            --notes "Automated daily Quick WoW Talents addon data refresh.\n\nBundled data is generated from the public quickwowtalents.com cache/API with strict zero-skipped validation, then packaged as a static offline addon zip."
+            --notes "Automated daily Quick WoW Talents addon data refresh.\n\nBundled data is downloaded from the product-side quickwowtalents.com addon data artifact, then packaged as a static offline addon zip."
