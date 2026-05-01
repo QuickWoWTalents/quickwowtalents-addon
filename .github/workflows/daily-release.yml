@@ -17,7 +17,7 @@ on:
         default: '1'
         type: string
       version:
-        description: 'Optional explicit semver version for non-dry-run releases, e.g. 0.2.9. Defaults to next patch.'
+        description: 'Optional explicit semver version for non-dry-run releases, e.g. 1.1.0. Defaults to next patch.'
         required: false
         type: string
 
@@ -50,17 +50,6 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
 
-      - name: Prepare next addon version
-        if: ${{ github.event_name == 'schedule' || github.event.inputs.dry_run != 'true' }}
-        env:
-          RELEASE_VERSION: ${{ github.event.inputs.version }}
-        run: |
-          if [ -n "$RELEASE_VERSION" ]; then
-            npm run release:prepare -- --version "$RELEASE_VERSION"
-          else
-            npm run release:prepare
-          fi
-
       - name: Generate bundled addon data
         env:
           QWT_ADDON_DATA_TIMEOUT_MS: '45000'
@@ -78,6 +67,47 @@ jobs:
             npm run build:data:download
           fi
 
+      - name: Decide whether to continue release
+        id: release_gate
+        env:
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true' }}
+          MANUAL_FULL_RELEASE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run != 'true' }}
+        run: |
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "continue=true" >> "$GITHUB_OUTPUT"
+            echo "reason=dry-run" >> "$GITHUB_OUTPUT"
+            echo "Dry-run validation always continues through checks and packaging."
+            exit 0
+          fi
+
+          if [ "$MANUAL_FULL_RELEASE" = "true" ]; then
+            echo "continue=true" >> "$GITHUB_OUTPUT"
+            echo "reason=manual-full-release" >> "$GITHUB_OUTPUT"
+            echo "Manual full release requested; continuing even if bundled data is unchanged."
+            exit 0
+          fi
+
+          if git diff --quiet -- QuickWoWTalents/QuickWoWTalentsData.lua; then
+            echo "continue=false" >> "$GITHUB_OUTPUT"
+            echo "reason=data-unchanged" >> "$GITHUB_OUTPUT"
+            echo "Bundled addon data is unchanged; skipping version bump and release."
+          else
+            echo "continue=true" >> "$GITHUB_OUTPUT"
+            echo "reason=data-changed" >> "$GITHUB_OUTPUT"
+            echo "Bundled addon data changed; continuing release."
+          fi
+
+      - name: Prepare next addon version
+        if: ${{ steps.release_gate.outputs.continue == 'true' && (github.event_name == 'schedule' || github.event.inputs.dry_run != 'true') }}
+        env:
+          RELEASE_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          if [ -n "$RELEASE_VERSION" ]; then
+            npm run release:prepare -- --version "$RELEASE_VERSION"
+          else
+            npm run release:prepare
+          fi
+
       - name: Verify scripts and tests
         run: |
           node --check scripts/build-data.mjs
@@ -87,9 +117,11 @@ jobs:
           npm test
 
       - name: Package addon zip
+        if: ${{ steps.release_gate.outputs.continue == 'true' }}
         run: npm run package
 
       - name: Resolve release version
+        if: ${{ steps.release_gate.outputs.continue == 'true' }}
         id: version
         run: |
           VERSION="$(node -p "JSON.parse(require('fs').readFileSync('package.json', 'utf8')).version")"
@@ -98,7 +130,7 @@ jobs:
           echo "zip=dist/QuickWoWTalents-$VERSION.zip" >> "$GITHUB_OUTPUT"
 
       - name: Fail if tag already exists
-        if: ${{ github.event_name == 'schedule' || github.event.inputs.dry_run != 'true' }}
+        if: ${{ steps.release_gate.outputs.continue == 'true' && (github.event_name == 'schedule' || github.event.inputs.dry_run != 'true') }}
         run: |
           if git rev-parse "${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
             echo "Tag ${{ steps.version.outputs.tag }} already exists; refusing to overwrite a release." >&2
@@ -106,18 +138,18 @@ jobs:
           fi
 
       - name: Commit generated release files
-        if: ${{ github.event_name == 'schedule' || github.event.inputs.dry_run != 'true' }}
+        if: ${{ steps.release_gate.outputs.continue == 'true' && (github.event_name == 'schedule' || github.event.inputs.dry_run != 'true') }}
         run: |
           git add package.json QuickWoWTalents/QuickWoWTalents.toc QuickWoWTalents/QuickWoWTalentsData.lua
           git commit -m "Daily addon data release ${{ steps.version.outputs.tag }}"
           git tag "${{ steps.version.outputs.tag }}"
 
       - name: Push release commit and tag
-        if: ${{ github.event_name == 'schedule' || github.event.inputs.dry_run != 'true' }}
+        if: ${{ steps.release_gate.outputs.continue == 'true' && (github.event_name == 'schedule' || github.event.inputs.dry_run != 'true') }}
         run: git push origin HEAD:main "${{ steps.version.outputs.tag }}"
 
       - name: Create GitHub release
-        if: ${{ github.event_name == 'schedule' || github.event.inputs.dry_run != 'true' }}
+        if: ${{ steps.release_gate.outputs.continue == 'true' && (github.event_name == 'schedule' || github.event.inputs.dry_run != 'true') }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

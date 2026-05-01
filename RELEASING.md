@@ -4,21 +4,23 @@ The addon release process is automated through GitHub Actions.
 
 ## Schedule
 
-`.github/workflows/daily-release.yml` runs daily at **15:30 UTC**.
+`.github/workflows/daily-release.yml` checks for release-worthy data daily at **15:30 UTC**.
 
-That timing is intentional: the addon release downloads the product-side `QuickWoWTalentsData.lua` artifact from `quickwowtalents.com`, so releases should happen after the public cache has warmed.
+That timing is intentional: the addon release downloads the product-side `QuickWoWTalentsData.lua` artifact from `quickwowtalents.com`, so release checks should happen after the public cache has warmed. A scheduled run publishes a new release only when the bundled recommendation data actually changes.
 
 ## Normal automated release
 
 On a scheduled run, the workflow:
 
-1. bumps the patch version in `package.json` and `QuickWoWTalents/QuickWoWTalents.toc`
-2. downloads the product-side addon data artifact
-3. validates scripts and tests
-4. packages `dist/QuickWoWTalents-<version>.zip`
-5. commits the generated data/version bump to `main`
-6. tags `v<version>`
-7. creates a GitHub release with the zip asset
+1. downloads the product-side addon data artifact
+2. compares recommendation data against the committed `QuickWoWTalentsData.lua`
+3. exits without bumping or releasing if the data is unchanged
+4. bumps the patch version in `package.json` and `QuickWoWTalents/QuickWoWTalents.toc` if a release is needed
+5. validates scripts and tests
+6. packages `dist/QuickWoWTalents-<version>.zip`
+7. commits the generated data/version bump to `main`
+8. tags `v<version>`
+9. creates a GitHub release with the zip asset
 
 The workflow uses the built-in `GITHUB_TOKEN`; no repository secrets are required.
 

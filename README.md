@@ -62,7 +62,7 @@ Extra commands:
 
 Install the newest zip from [Releases](https://github.com/QuickWoWTalents/quickwowtalents-addon/releases) over the existing `QuickWoWTalents` folder.
 
-Automated releases are scheduled daily at **15:30 UTC**, after the public Quick WoW Talents cache should be warm.
+Automated release checks are scheduled daily at **15:30 UTC**, after the public Quick WoW Talents cache should be warm. A new release is published only when the bundled recommendation data actually changes.
 
 ## Data source and privacy
 
@@ -135,10 +135,10 @@ Manual runs default to a fast dry-run that generates one spec, runs checks, and 
 
 The pipeline:
 
-1. bumps the addon patch version in `package.json` and `QuickWoWTalents.toc`
-2. downloads `QuickWoWTalentsData.lua` from the product-side addon data artifact at `quickwowtalents.com`
-3. verifies the downloaded Lua payload shape
-4. runs script syntax checks and tests
+1. downloads `QuickWoWTalentsData.lua` from the product-side addon data artifact at `quickwowtalents.com`
+2. skips publishing if the bundled recommendation data is unchanged
+3. bumps the addon patch version in `package.json` and `QuickWoWTalents.toc` when a release is needed
+4. verifies scripts and tests
 5. packages the addon zip
 6. commits the generated data/version bump to `main`
 7. creates a matching Git tag and GitHub release with the zip asset
