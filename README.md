@@ -1,17 +1,10 @@
 # Quick WoW Talents Addon
 
-Personal/manual World of Warcraft addon for Quick WoW Talents.
+Offline World of Warcraft addon for [Quick WoW Talents](https://quickwowtalents.com) import strings.
 
-## Goal
+The addon bundles current recommended talent import strings from Quick WoW Talents and shows the best match for your current specialization in-game. It does **not** call Warcraft Logs, Quick WoW Talents, or any external service from inside WoW.
 
-Keep this intentionally basic:
-
-- no Warcraft Logs calls from inside WoW
-- no live Quick WoW Talents calls from inside WoW
-- bundled data only
-- manual install/share while the idea is validated
-
-## What the MVP does
+## What it does
 
 Run:
 
@@ -23,11 +16,11 @@ The addon detects your current specialization and opens a small selector with:
 
 - mode dropdown: **Mythic+** or **Heroic Raid**
 - encounter dropdown:
-  - Mythic+: dungeon selector, **Best Overall** only
-  - Raid: boss selector, **Heroic** only
+  - Mythic+: dungeon selector plus **Best Overall**
+  - Raid: current Heroic raid boss selector
 - copyable Blizzard talent import string
 
-The addon only chooses between bundled strings. It does not call any external API from inside WoW.
+The addon only chooses between bundled strings. You still copy the string and import it through Blizzard's normal Talent Loadout UI.
 
 Extra commands:
 
@@ -36,42 +29,84 @@ Extra commands:
 /qwt hide
 ```
 
-## Local install
+## Install
 
-Copy the `QuickWoWTalents/` folder into:
+1. Download the latest `QuickWoWTalents-<version>.zip` from the [GitHub releases page](https://github.com/QuickWoWTalents/quickwowtalents-addon/releases).
+2. Extract the zip into your retail AddOns directory:
 
-```text
-World of Warcraft/_retail_/Interface/AddOns/QuickWoWTalents
+   ```text
+   World of Warcraft/_retail_/Interface/AddOns/
+   ```
+
+3. Confirm the folder structure looks like this:
+
+   ```text
+   World of Warcraft/_retail_/Interface/AddOns/QuickWoWTalents/QuickWoWTalents.toc
+   World of Warcraft/_retail_/Interface/AddOns/QuickWoWTalents/QuickWoWTalents.lua
+   World of Warcraft/_retail_/Interface/AddOns/QuickWoWTalents/QuickWoWTalentsData.lua
+   ```
+
+4. Restart WoW or run:
+
+   ```text
+   /reload
+   ```
+
+5. Run:
+
+   ```text
+   /qwt
+   ```
+
+## Updating
+
+Install the newest zip from [Releases](https://github.com/QuickWoWTalents/quickwowtalents-addon/releases) over the existing `QuickWoWTalents` folder.
+
+Automated releases are scheduled daily at **15:30 UTC**, after the public Quick WoW Talents cache should be warm.
+
+## Data source and privacy
+
+- Source data comes from cached Quick WoW Talents recommendations.
+- The generated addon data is bundled into `QuickWoWTalentsData.lua`.
+- The addon is fully static/offline in-game.
+- No in-game network calls are made.
+- No player data is uploaded by the addon.
+
+## Known limitations
+
+- Import strings can become stale after Blizzard talent-tree or interface changes. Update to the latest release first if an import fails.
+- The addon displays/copies import strings; it does not directly create or modify talent loadouts.
+- Current bundled recommendations focus on Quick WoW Talents' supported public recommendation set.
+
+## Local development
+
+Requirements:
+
+- Node.js 20+
+- `zip` or macOS `ditto` for packaging
+
+Install dependencies:
+
+```bash
+npm install
 ```
 
-Then reload WoW:
+Run tests:
 
-```text
-/reload
+```bash
+npm test
 ```
 
-Run:
+Download the product-side generated addon data artifact:
 
-```text
-/qwt
+```bash
+npm run build:data:download
 ```
 
-## Build bundled data
+Generate data from individual cached public build payloads instead:
 
 ```bash
 npm run build:data
-```
-
-This fetches cached public QWT build payloads and writes:
-
-```text
-QuickWoWTalents/QuickWoWTalentsData.lua
-```
-
-By default it exports every current spec for every current Mythic+ dungeon plus every current raid boss on Heroic. Use a slower delay if needed to stay comfortably under public rate limits:
-
-```bash
-node scripts/build-data.mjs --delay-ms 1500
 ```
 
 Quick small test export for one spec:
@@ -80,7 +115,7 @@ Quick small test export for one spec:
 node scripts/build-data.mjs --spec "Warlock:Demonology" --delay-ms 1200
 ```
 
-## Package zip
+Package a release zip:
 
 ```bash
 npm run package
@@ -96,7 +131,7 @@ dist/QuickWoWTalents-<package-version>.zip
 
 GitHub Actions runs `.github/workflows/daily-release.yml` every day at `15:30 UTC` and can also be started manually with **Run workflow**.
 
-Manual runs default to a fast dry-run that generates one spec, runs checks, and packages locally without committing, tagging, or publishing. Set `dry_run=false` only when you intentionally want a manual full release.
+Manual runs default to a fast dry-run that generates one spec, runs checks, and packages locally without committing, tagging, or publishing. Set `dry_run=false` only when intentionally publishing a manual full release.
 
 The pipeline:
 
@@ -108,4 +143,18 @@ The pipeline:
 6. commits the generated data/version bump to `main`
 7. creates a matching Git tag and GitHub release with the zip asset
 
-No GitHub secrets are required beyond the built-in `GITHUB_TOKEN`; the addon remains fully offline/static in-game.
+No GitHub secrets are required beyond the built-in `GITHUB_TOKEN`.
+
+## Support
+
+Please open an issue with:
+
+- addon version
+- WoW client version
+- class/spec
+- what `/qwt info` shows
+- the import error or behavior you saw
+
+## License
+
+Copyright (c) 2026 Darragh. All rights reserved.

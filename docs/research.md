@@ -4,7 +4,7 @@ Date: 2026-04-26
 
 ## Decision
 
-Build this as a personal/manual addon first:
+Initial v0 decision: build this as a personal/manual addon first:
 
 - no network calls from the addon
 - Quick WoW Talents website/cache remains the source of truth
@@ -12,7 +12,7 @@ Build this as a personal/manual addon first:
 - `/qwt` shows the best matching import string and makes it easy to copy/import manually
 - distribution/update automation can wait
 
-This fits the product guardrail: keep QWT focused on “find build, copy string,” not a noisy in-game dashboard.
+Current status: distribution/update automation now exists through GitHub Actions and daily GitHub releases. The core product decision remains unchanged: keep the addon static/offline in-game and focused on “find build, copy string,” not a noisy in-game dashboard.
 
 ## Sources checked
 

@@ -1,0 +1,49 @@
+name: Bug report
+description: Report a problem with the Quick WoW Talents addon
+title: "Bug: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting this. Please include enough detail for us to reproduce the issue.
+  - type: input
+    id: addon-version
+    attributes:
+      label: Addon version
+      description: Example: 0.2.10
+    validations:
+      required: true
+  - type: input
+    id: wow-version
+    attributes:
+      label: WoW client version/interface
+      description: Example: Retail 12.0.5
+    validations:
+      required: true
+  - type: input
+    id: spec
+    attributes:
+      label: Class and specialization
+      description: Example: Demonology Warlock
+    validations:
+      required: true
+  - type: textarea
+    id: qwt-info
+    attributes:
+      label: /qwt info output
+      description: Paste what the addon prints for /qwt info, if available.
+      render: text
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Include errors, screenshots, or exact behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true

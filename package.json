@@ -2,6 +2,16 @@
   "name": "quickwowtalents-addon",
   "version": "0.2.10",
   "private": true,
+  "description": "Offline World of Warcraft addon for Quick WoW Talents import strings.",
+  "homepage": "https://quickwowtalents.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/QuickWoWTalents/quickwowtalents-addon.git"
+  },
+  "bugs": {
+    "url": "https://github.com/QuickWoWTalents/quickwowtalents-addon/issues"
+  },
+  "license": "UNLICENSED",
   "type": "module",
   "scripts": {
     "build:data": "node scripts/build-data.mjs",

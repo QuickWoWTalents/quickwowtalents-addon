@@ -1,0 +1,52 @@
+name: Data or import-string problem
+description: Report a stale, missing, or invalid talent import string
+title: "Data: "
+labels: [data]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for missing recommendations, stale data, or import strings that fail in Blizzard's talent UI.
+  - type: input
+    id: addon-version
+    attributes:
+      label: Addon version
+      description: Example: 0.2.10
+    validations:
+      required: true
+  - type: input
+    id: spec
+    attributes:
+      label: Class and specialization
+      description: Example: Restoration Druid
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Mode
+      options:
+        - Mythic+
+        - Heroic Raid
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: encounter
+    attributes:
+      label: Dungeon, boss, or Best Overall selection
+      description: Example: Mythic+ Best Overall, Ara-Kara, Dimensius
+    validations:
+      required: true
+  - type: textarea
+    id: import-error
+    attributes:
+      label: Import error or data issue
+      description: Paste the exact Blizzard error or describe what looks wrong.
+    validations:
+      required: true
+  - type: textarea
+    id: qwt-info
+    attributes:
+      label: /qwt info output
+      render: text
