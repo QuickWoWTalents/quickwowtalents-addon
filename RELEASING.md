@@ -15,7 +15,7 @@ On a scheduled run, the workflow:
 1. downloads the product-side addon data artifact
 2. compares recommendation data against the committed `QuickWoWTalentsData.lua`
 3. exits without bumping or releasing if the data is unchanged
-4. bumps the patch version in `package.json` and `QuickWoWTalents/QuickWoWTalents.toc` if a release is needed
+4. bumps the patch version in `package.json` and root-level `QuickWoWTalents.toc` if a release is needed
 5. validates scripts and tests
 6. packages `dist/QuickWoWTalents-<version>.zip`
 7. commits the generated data/version bump to `main`
@@ -64,4 +64,4 @@ npm run package
 unzip -l dist/QuickWoWTalents-*.zip | head -50
 ```
 
-The zip should contain a top-level `QuickWoWTalents/` folder with the `.toc`, addon Lua, and bundled data Lua files.
+The source addon files intentionally live at the repository root for CurseForge automatic packaging compatibility. The generated zip should still contain a top-level `QuickWoWTalents/` folder with the `.toc`, addon Lua, and bundled data Lua files.

@@ -7,7 +7,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
 const DEFAULT_URL = 'https://quickwowtalents.com/api/addon-data';
-const DEFAULT_OUTPUT = path.join(REPO_ROOT, 'QuickWoWTalents', 'QuickWoWTalentsData.lua');
+const DEFAULT_OUTPUT = path.join(REPO_ROOT, 'QuickWoWTalentsData.lua');
 
 function readArg(flag, fallback = null) {
   const index = process.argv.indexOf(flag);

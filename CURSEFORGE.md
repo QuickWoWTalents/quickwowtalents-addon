@@ -8,7 +8,7 @@ https://legacy.curseforge.com/wow/addons/quickwowtalents
 
 ## Automatic packaging
 
-CurseForge automatic packaging is driven by a GitHub repository webhook. The repository includes `.pkgmeta` so CurseForge packages only the addon folder as `QuickWoWTalents` and ignores development files.
+CurseForge automatic packaging is driven by a GitHub repository webhook. The repository intentionally keeps the addon `.toc`, addon Lua, and bundled data Lua at the repository root, matching established addon repos like RaiderIO and SimulationCraft. The `.pkgmeta` `package-as: QuickWoWTalents` setting tells CurseForge to package those root addon files into a final `QuickWoWTalents/` addon folder while ignoring development files.
 
 ## Webhook setup
 

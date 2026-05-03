@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
 const DEFAULT_BASE_URL = 'https://quickwowtalents.com';
-const DEFAULT_OUTPUT = path.join(REPO_ROOT, 'QuickWoWTalents', 'QuickWoWTalentsData.lua');
+const DEFAULT_OUTPUT = path.join(REPO_ROOT, 'QuickWoWTalentsData.lua');
 const SCHEMA_VERSION = 2;
 const HEROIC_RAID_DIFFICULTY_ID = 4;
 const MPLUS_BEST_OVERALL_MIN_KEYSTONE_LEVEL = 15;

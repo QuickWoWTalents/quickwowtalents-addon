@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
 const PACKAGE_JSON = path.join(REPO_ROOT, 'package.json');
-const TOC_FILE = path.join(REPO_ROOT, 'QuickWoWTalents', 'QuickWoWTalents.toc');
+const TOC_FILE = path.join(REPO_ROOT, 'QuickWoWTalents.toc');
 const SEMVER_RE = /^(\d+)\.(\d+)\.(\d+)$/;
 
 function readArg(flag, fallback = null) {

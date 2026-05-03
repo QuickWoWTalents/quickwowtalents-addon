@@ -65,16 +65,15 @@ For v0, safest path is: **display/select the import string in an EditBox and let
 
 ### Addon files
 
-Keep the addon simple:
+Keep the addon simple. Source files live at the repository root so CurseForge automatic packaging can package them into the final `QuickWoWTalents/` addon folder:
 
 ```text
-QuickWoWTalents/
-  QuickWoWTalents.toc
-  QuickWoWTalents.lua
-  QuickWoWTalentsData.lua
+QuickWoWTalents.toc
+QuickWoWTalents.lua
+QuickWoWTalentsData.lua
 ```
 
-Optional soon:
+Optional support files:
 
 ```text
 scripts/
