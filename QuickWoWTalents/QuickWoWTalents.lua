@@ -197,7 +197,14 @@ local function GetRecommendation()
   return recommendation, nil
 end
 
+local function DisarmCloseAfterCopy()
+  UI.closeOnNextCopy = false
+  UI.copyModifierDown = false
+  UI.copyCloseToken = (UI.copyCloseToken or 0) + 1
+end
+
 local function ShowImportTextFromStart()
+  DisarmCloseAfterCopy()
   if UI.importBox then
     UI.importBox:HighlightText(0, 0)
     UI.importBox:SetCursorPosition(0)
@@ -205,7 +212,24 @@ local function ShowImportTextFromStart()
   end
 end
 
-local function SelectImportText()
+local function IsCopyModifierKey(key)
+  return key == "LCTRL" or key == "RCTRL" or key == "LMETA" or key == "RMETA"
+end
+
+local function CloseAfterNativeCopy()
+  local token = (UI.copyCloseToken or 0) + 1
+  UI.copyCloseToken = token
+
+  -- Defer the hide very briefly so the native WoW/OS copy shortcut can complete first.
+  C_Timer.After(0.1, function()
+    if UI.closeOnNextCopy and UI.copyCloseToken == token and UI.frame and UI.frame:IsShown() then
+      UI.frame:Hide()
+    end
+    DisarmCloseAfterCopy()
+  end)
+end
+
+local function SelectImportText(closeOnNextCopy)
   if UI.importBox then
     local text = UI.importBox:GetText() or ""
     UI.importBox:SetFocus()
@@ -213,7 +237,13 @@ local function SelectImportText()
     UI.importBox:HighlightText(0, string.len(text))
   end
 
-  if UI.hint then
+  if closeOnNextCopy then
+    UI.closeOnNextCopy = true
+    UI.copyModifierDown = false
+    if UI.hint then
+      UI.hint:SetText("Selected. Press Ctrl+C or Cmd+C to copy; this window will close after copy.")
+    end
+  elseif UI.hint then
     UI.hint:SetText("Selected. Press Ctrl+C or Cmd+C, then paste in Talents → Loadouts → Import.")
   end
 end
@@ -253,6 +283,7 @@ local function UpdateRecommendation(selectText)
   end
 
   if errorMessage then
+    DisarmCloseAfterCopy()
     UI.subtitle:SetText(errorMessage)
     UI.meta:SetText("Try another encounter, or regenerate the bundled addon data.")
     UI.importBox:SetText("")
@@ -269,6 +300,7 @@ local function UpdateRecommendation(selectText)
     and (tostring(recommendation.difficultyName or "Heroic") .. " raid")
     or ("Mythic+ " .. GetMplusRecommendationLabel())
 
+  DisarmCloseAfterCopy()
   UI.subtitle:SetText(recommendation.label or ((recommendation.specName or "Current spec") .. " — " .. encounterName))
   UI.meta:SetText(contextText .. " · " .. encounterName .. " · Metric: " .. tostring(recommendation.metric or "default") .. " · Samples: " .. tostring(sampleCount))
   UI.importBox:SetText(recommendation.importString or "")
@@ -419,13 +451,30 @@ local function CreateMainFrame()
   importBox:SetScript("OnEscapePressed", importBox.ClearFocus)
   importBox:SetScript("OnEditFocusGained", function(self) self:SetCursorPosition(0) end)
   importBox:SetScript("OnMouseUp", function(self) self:SetFocus(); self:SetCursorPosition(0) end)
+  importBox:SetScript("OnKeyDown", function(_, key)
+    if UI.closeOnNextCopy and IsCopyModifierKey(key) then
+      UI.copyModifierDown = true
+    end
+  end)
+  importBox:SetScript("OnKeyUp", function(_, key)
+    if IsCopyModifierKey(key) then
+      -- Match SimulationCraft's proven copy UX: keep a brief modifier grace period
+      -- because some Ctrl/Cmd+C key sequences release the modifier before C.
+      C_Timer.After(0.2, function() UI.copyModifierDown = false end)
+      return
+    end
+
+    if UI.closeOnNextCopy and UI.copyModifierDown and key == "C" then
+      CloseAfterNativeCopy()
+    end
+  end)
   UI.importBox = importBox
 
   local selectButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
   selectButton:SetSize(120, 26)
   selectButton:SetPoint("TOPLEFT", importBox, "BOTTOMLEFT", 0, -14)
   selectButton:SetText("Copy")
-  selectButton:SetScript("OnClick", SelectImportText)
+  selectButton:SetScript("OnClick", function() SelectImportText(true) end)
   UI.selectButton = selectButton
 
   local hint = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
