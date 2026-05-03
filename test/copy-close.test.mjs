@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-const addonLuaPath = new URL('../QuickWoWTalents/QuickWoWTalents.lua', import.meta.url);
+const addonLuaPath = new URL('../QuickWoWTalents.lua', import.meta.url);
 
 async function readAddonLua() {
   return readFile(addonLuaPath, 'utf8');

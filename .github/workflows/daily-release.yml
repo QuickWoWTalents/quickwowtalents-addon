@@ -87,7 +87,7 @@ jobs:
             exit 0
           fi
 
-          if git diff --quiet -- QuickWoWTalents/QuickWoWTalentsData.lua; then
+          if git diff --quiet -- QuickWoWTalentsData.lua; then
             echo "continue=false" >> "$GITHUB_OUTPUT"
             echo "reason=data-unchanged" >> "$GITHUB_OUTPUT"
             echo "Bundled addon data is unchanged; skipping version bump and release."
@@ -140,7 +140,7 @@ jobs:
       - name: Commit generated release files
         if: ${{ steps.release_gate.outputs.continue == 'true' && (github.event_name == 'schedule' || github.event.inputs.dry_run != 'true') }}
         run: |
-          git add package.json QuickWoWTalents/QuickWoWTalents.toc QuickWoWTalents/QuickWoWTalentsData.lua
+          git add package.json QuickWoWTalents.toc QuickWoWTalentsData.lua
           git commit -m "Daily addon data release ${{ steps.version.outputs.tag }}"
           git tag "${{ steps.version.outputs.tag }}"
 

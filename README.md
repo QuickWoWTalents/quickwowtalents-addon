@@ -78,6 +78,18 @@ Automated release checks are scheduled daily at **15:30 UTC**, after the public 
 - The addon displays/copies import strings; it does not directly create or modify talent loadouts.
 - Current bundled recommendations focus on Quick WoW Talents' supported public recommendation set.
 
+## Repository layout
+
+The addon source files live at the repository root on purpose:
+
+```text
+QuickWoWTalents.toc
+QuickWoWTalents.lua
+QuickWoWTalentsData.lua
+```
+
+This matches established CurseForge-packaged addon repositories and lets CurseForge automatic packaging put those files into the final `QuickWoWTalents/` addon folder via `.pkgmeta`.
+
 ## Local development
 
 Requirements:
