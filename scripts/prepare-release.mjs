@@ -8,6 +8,7 @@ const REPO_ROOT = path.resolve(__dirname, '..');
 const PACKAGE_JSON = path.join(REPO_ROOT, 'package.json');
 const TOC_FILE = path.join(REPO_ROOT, 'QuickWoWTalents.toc');
 const SEMVER_RE = /^(\d+)\.(\d+)\.(\d+)$/;
+const SEMVER_WITH_PRERELEASE_RE = /^(\d+)\.(\d+)\.(\d+)(?:-[0-9A-Za-z.-]+)?$/;
 
 function readArg(flag, fallback = null) {
   const index = process.argv.indexOf(flag);
@@ -24,9 +25,20 @@ export function assertReleaseVersion(version) {
   return normalized;
 }
 
+export function normalizePackageVersion(version) {
+  const normalized = String(version ?? '').trim().replace(/^v/i, '');
+  if (!SEMVER_WITH_PRERELEASE_RE.test(normalized)) {
+    throw new Error(`Package version must be semver like 0.2.9 or 0.2.9-beta.1; received ${JSON.stringify(version)}`);
+  }
+  return normalized;
+}
+
 export function nextPatchVersion(version) {
-  const normalized = assertReleaseVersion(version);
-  const [, major, minor, patch] = normalized.match(SEMVER_RE);
+  const normalized = normalizePackageVersion(version);
+  const [, major, minor, patch] = normalized.match(SEMVER_WITH_PRERELEASE_RE);
+  if (normalized.includes('-')) {
+    return `${Number(major)}.${Number(minor)}.${Number(patch)}`;
+  }
   return `${Number(major)}.${Number(minor)}.${Number(patch) + 1}`;
 }
 
@@ -34,7 +46,7 @@ export async function preparePackageJson(packagePath, nextVersion) {
   const normalized = assertReleaseVersion(nextVersion);
   const raw = await fs.readFile(packagePath, 'utf8');
   const pkg = JSON.parse(raw);
-  const previousVersion = assertReleaseVersion(pkg.version);
+  const previousVersion = normalizePackageVersion(pkg.version);
   pkg.version = normalized;
   await fs.writeFile(packagePath, `${JSON.stringify(pkg, null, 2)}\n`, 'utf8');
   return { previousVersion, nextVersion: normalized };
