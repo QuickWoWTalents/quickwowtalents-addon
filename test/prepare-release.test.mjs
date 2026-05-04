@@ -11,6 +11,10 @@ test('nextPatchVersion increments the patch version', () => {
   assert.equal(nextPatchVersion('v1.4.99'), '1.4.100');
 });
 
+test('nextPatchVersion promotes a prerelease to its stable version', () => {
+  assert.equal(nextPatchVersion('1.0.5-beta.2'), '1.0.5');
+});
+
 test('prepareRelease updates package.json and TOC version together', async () => {
   const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'qwt-addon-release-'));
   const packagePath = path.join(tmp, 'package.json');
@@ -26,4 +30,21 @@ test('prepareRelease updates package.json and TOC version together', async () =>
   assert.deepEqual(result, { previousVersion: '0.2.8', nextVersion: '0.3.0' });
   assert.equal(updatedPackage.version, '0.3.0');
   assert.match(updatedToc, /^## Version: 0\.3\.0$/m);
+});
+
+test('prepareRelease accepts a prerelease package version when cutting stable', async () => {
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'qwt-addon-release-'));
+  const packagePath = path.join(tmp, 'package.json');
+  const tocPath = path.join(tmp, 'QuickWoWTalents.toc');
+
+  await fs.writeFile(packagePath, `${JSON.stringify({ name: 'quickwowtalents-addon', version: '1.0.5-beta.2' }, null, 2)}\n`, 'utf8');
+  await fs.writeFile(tocPath, '## Title: Quick WoW Talents\n## Version: 1.0.5-beta.2\nQuickWoWTalents.lua\n', 'utf8');
+
+  const result = await prepareRelease({ packagePath, tocPath });
+  const updatedPackage = JSON.parse(await fs.readFile(packagePath, 'utf8'));
+  const updatedToc = await fs.readFile(tocPath, 'utf8');
+
+  assert.deepEqual(result, { previousVersion: '1.0.5-beta.2', nextVersion: '1.0.5' });
+  assert.equal(updatedPackage.version, '1.0.5');
+  assert.match(updatedToc, /^## Version: 1\.0\.5$/m);
 });
