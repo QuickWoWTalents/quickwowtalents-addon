@@ -1,5 +1,11 @@
 # QuickWoWTalents Changelog
 
+## Unreleased
+
+- Added Mythic+ auto-open support when entering a supported dungeon with a bundled build for the current specialization.
+- Added `/qwt auto status`, `/qwt auto on`, and `/qwt auto off` controls.
+- Auto-open is throttled to once per instance/spec/dungeon context, waits briefly after zoning for client APIs to settle, and defers while in combat.
+
 ## 1.0.0
 
 First public QuickWoWTalents addon release.

@@ -39,6 +39,8 @@ Use this only when intentionally publishing outside the normal schedule:
 3. Optional: set an explicit semver `version`, such as `0.2.11`.
 4. Start the workflow.
 
+Use a manual full release after merging addon code changes when bundled recommendation data has not changed. Scheduled runs publish only when `QuickWoWTalentsData.lua` changes, so code-only improvements such as UI behavior, slash commands, or documentation-visible addon features should be shipped with an intentional manual full release and an explicit minor/patch version.
+
 ## Failure handling
 
 ### Product artifact unavailable

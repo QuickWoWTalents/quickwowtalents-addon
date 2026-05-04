@@ -1,6 +1,31 @@
 local ADDON_NAME = ...
 local PREFIX = "|cff00c8ffQuick WoW Talents|r"
 local UI = { state = { mode = "mplus", encounterIds = {} } }
+local AUTO_OPEN_DELAY_SECONDS = 1.5
+
+-- Current Mythic+ client IDs, cross-checked against Raider.IO's public dungeon DB.
+-- WoW exposes challenge map / instance map IDs in-game; QWT recommendation data uses
+-- Warcraft Logs encounter IDs, so auto-open needs an explicit translation layer.
+local MPLUS_DUNGEON_CONTEXTS = {
+  { qwtDungeonId = 10658, challengeMapId = 556, instanceMapIds = { 658 }, name = "Pit of Saron" },
+  { qwtDungeonId = 61209, challengeMapId = 161, instanceMapIds = { 1209 }, name = "Skyreach" },
+  { qwtDungeonId = 361753, challengeMapId = 239, instanceMapIds = { 1753 }, name = "Seat of the Triumvirate" },
+  { qwtDungeonId = 112526, challengeMapId = 402, instanceMapIds = { 2526 }, name = "Algeth'ar Academy" },
+  { qwtDungeonId = 12805, challengeMapId = 557, instanceMapIds = { 2805 }, name = "Windrunner Spire" },
+  { qwtDungeonId = 12811, challengeMapId = 558, instanceMapIds = { 2811 }, name = "Magisters' Terrace" },
+  { qwtDungeonId = 12874, challengeMapId = 560, instanceMapIds = { 2874 }, name = "Maisara Caverns" },
+  { qwtDungeonId = 12915, challengeMapId = 559, instanceMapIds = { 2915 }, name = "Nexus-Point Xenas" }
+}
+
+local MPLUS_DUNGEON_BY_CHALLENGE_MAP_ID = {}
+local MPLUS_DUNGEON_BY_INSTANCE_MAP_ID = {}
+
+for _, context in ipairs(MPLUS_DUNGEON_CONTEXTS) do
+  MPLUS_DUNGEON_BY_CHALLENGE_MAP_ID[context.challengeMapId] = context
+  for _, instanceMapId in ipairs(context.instanceMapIds) do
+    MPLUS_DUNGEON_BY_INSTANCE_MAP_ID[instanceMapId] = context
+  end
+end
 
 local function Print(message)
   DEFAULT_CHAT_FRAME:AddMessage(PREFIX .. ": " .. tostring(message))
@@ -130,6 +155,9 @@ end
 local function EnsureState()
   QuickWoWTalentsDB = QuickWoWTalentsDB or {}
   QuickWoWTalentsDB.encounterIds = QuickWoWTalentsDB.encounterIds or {}
+  if QuickWoWTalentsDB.autoOpenEnabled == nil then
+    QuickWoWTalentsDB.autoOpenEnabled = true
+  end
 
   UI.state.mode = NormalizeMode(QuickWoWTalentsDB.mode or UI.state.mode or "mplus")
   UI.state.encounterIds = UI.state.encounterIds or {}
@@ -394,6 +422,13 @@ local function CreateMainFrame()
     insets = { left = 10, right = 10, top = 10, bottom = 10 }
   })
   frame:Hide()
+  frame:SetScript("OnHide", function()
+    if UI.autoOpenedContextKey then
+      UI.dismissedAutoOpenKey = UI.autoOpenedContextKey
+      UI.autoOpenedContextKey = nil
+    end
+    DisarmCloseAfterCopy()
+  end)
 
   local closeButton = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
   closeButton:SetPoint("TOPRIGHT", -6, -6)
@@ -494,6 +529,128 @@ local function CreateMainFrame()
   return frame
 end
 
+local function GetMplusContextFromClient()
+  local challengeMapId = nil
+  if C_ChallengeMode and C_ChallengeMode.GetActiveChallengeMapID then
+    challengeMapId = C_ChallengeMode.GetActiveChallengeMapID()
+    if challengeMapId and MPLUS_DUNGEON_BY_CHALLENGE_MAP_ID[challengeMapId] then
+      return MPLUS_DUNGEON_BY_CHALLENGE_MAP_ID[challengeMapId], challengeMapId, "challenge-map"
+    end
+  end
+
+  local inInstance, instanceType = IsInInstance()
+  if not inInstance or instanceType ~= "party" then
+    return nil, nil, "not-party-instance"
+  end
+
+  local _, _, _, _, _, _, _, instanceMapId = GetInstanceInfo()
+  if instanceMapId and MPLUS_DUNGEON_BY_INSTANCE_MAP_ID[instanceMapId] then
+    return MPLUS_DUNGEON_BY_INSTANCE_MAP_ID[instanceMapId], instanceMapId, "instance-map"
+  end
+
+  return nil, instanceMapId or challengeMapId, "unmapped-instance"
+end
+
+local function HasMplusRecommendationForSpec(specID, dungeonId)
+  local data = QuickWoWTalentsData or {}
+  local specEntry = data.recommendations and data.recommendations[specID]
+  local recommendation = specEntry
+    and specEntry.mplus
+    and specEntry.mplus.encounters
+    and specEntry.mplus.encounters[dungeonId]
+
+  return type(recommendation) == "table" and recommendation.importString ~= nil
+end
+
+local function BuildAutoOpenContext(reason)
+  EnsureState()
+
+  if QuickWoWTalentsDB.autoOpenEnabled == false then
+    return nil, "disabled"
+  end
+
+  local context, clientMapId, source = GetMplusContextFromClient()
+  if not context then
+    return nil, source
+  end
+
+  local specID, specName, errorMessage = GetCurrentSpecInfo()
+  if errorMessage then
+    return nil, errorMessage
+  end
+
+  if not HasMplusRecommendationForSpec(specID, context.qwtDungeonId) then
+    return nil, "no bundled Mythic+ recommendation for " .. tostring(specName) .. " / " .. tostring(context.name)
+  end
+
+  local zoneToken = UI.autoOpenZoneToken or 0
+  return {
+    key = tostring(zoneToken) .. ":mplus:" .. tostring(specID) .. ":" .. tostring(context.qwtDungeonId),
+    reason = reason or "event",
+    specID = specID,
+    specName = specName,
+    dungeonId = context.qwtDungeonId,
+    dungeonName = context.name,
+    clientMapId = clientMapId,
+    source = source
+  }, nil
+end
+
+local function OpenAutoRecommendation(context)
+  if not context or not context.dungeonId then
+    return false
+  end
+
+  if UI.frame and UI.frame:IsShown() then
+    return false
+  end
+
+  if UI.dismissedAutoOpenKey == context.key or UI.lastAutoOpenKey == context.key then
+    return false
+  end
+
+  if IsInCombat() then
+    UI.pendingAutoOpenContext = context
+    return false
+  end
+
+  EnsureState()
+  UI.state.mode = "mplus"
+  UI.state.encounterIds.mplus = context.dungeonId
+  SaveState()
+
+  local frame = CreateMainFrame()
+  UI.autoOpenedContextKey = context.key
+  UI.lastAutoOpenKey = context.key
+  UI.pendingAutoOpenContext = nil
+  frame:Show()
+  UpdateRecommendation(false)
+  Print("opened " .. tostring(context.dungeonName) .. " build for " .. tostring(context.specName) .. ". Use /qwt auto off to disable automatic opening.")
+  return true
+end
+
+local function TryAutoOpen(reason)
+  local context = BuildAutoOpenContext(reason)
+  if context then
+    OpenAutoRecommendation(context)
+  end
+end
+
+local function ScheduleAutoOpenCheck(reason)
+  EnsureState()
+  if QuickWoWTalentsDB.autoOpenEnabled == false then
+    return
+  end
+
+  UI.autoOpenCheckToken = (UI.autoOpenCheckToken or 0) + 1
+  local token = UI.autoOpenCheckToken
+  C_Timer.After(AUTO_OPEN_DELAY_SECONDS, function()
+    if UI.autoOpenCheckToken == token then
+      TryAutoOpen(reason)
+    end
+  end)
+end
+
 local function ShowRecommendation()
   if IsInCombat() then
     Print("can't open during combat. Try /qwt again when combat ends.")
@@ -506,6 +663,26 @@ local function ShowRecommendation()
   UpdateRecommendation(false)
 end
 
+local function SetAutoOpenEnabled(enabled)
+  EnsureState()
+  QuickWoWTalentsDB.autoOpenEnabled = enabled
+  UI.pendingAutoOpenContext = nil
+  UI.dismissedAutoOpenKey = nil
+
+  if enabled then
+    Print("auto-open enabled. The addon will open once when you enter a supported Mythic+ dungeon with a bundled build.")
+    ScheduleAutoOpenCheck("slash")
+  else
+    Print("auto-open disabled. Use /qwt to open manually or /qwt auto on to enable it again.")
+  end
+end
+
+local function ShowAutoOpenStatus()
+  EnsureState()
+  local status = QuickWoWTalentsDB.autoOpenEnabled == false and "disabled" or "enabled"
+  Print("auto-open is " .. status .. ". Commands: /qwt auto on, /qwt auto off, /qwt auto status.")
+end
+
 local function ShowInfo()
   local data = QuickWoWTalentsData or {}
   local counts = data.counts or {}
@@ -516,18 +693,37 @@ local function ShowInfo()
   Print("loaded. Bundled import strings: " .. CountRecommendations() .. ".")
   Print("M+: " .. tostring(mplusCount) .. " dungeons, Best Overall only. Raid: " .. tostring(raidCount) .. " bosses, " .. tostring(raidDifficulty) .. " only.")
   Print("Data source: " .. tostring(data.source or "unknown") .. "; skipped: " .. tostring(counts.skipped or 0) .. ".")
+  ShowAutoOpenStatus()
 end
 
 local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("ADDON_LOADED")
 eventFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
+eventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+eventFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+eventFrame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
+eventFrame:RegisterEvent("CHALLENGE_MODE_START")
+eventFrame:RegisterEvent("CHALLENGE_MODE_RESET")
 eventFrame:SetScript("OnEvent", function(_, event, addonName)
   if event == "ADDON_LOADED" and addonName == ADDON_NAME then
     QuickWoWTalentsDB = QuickWoWTalentsDB or {}
     EnsureState()
+  elseif event == "PLAYER_ENTERING_WORLD" then
+    UI.autoOpenZoneToken = (UI.autoOpenZoneToken or 0) + 1
+    ScheduleAutoOpenCheck(event)
+  elseif event == "PLAYER_SPECIALIZATION_CHANGED" then
+    local unit = addonName
+    if not unit or unit == "player" then
+      ScheduleAutoOpenCheck(event)
+    end
+  elseif event == "ZONE_CHANGED_NEW_AREA" or event == "CHALLENGE_MODE_START" or event == "CHALLENGE_MODE_RESET" then
+    ScheduleAutoOpenCheck(event)
   elseif event == "PLAYER_REGEN_DISABLED" and UI.frame and UI.frame:IsShown() then
     UI.frame:Hide()
     Print("hidden for combat. Run /qwt again when combat ends.")
+  elseif event == "PLAYER_REGEN_ENABLED" and UI.pendingAutoOpenContext then
+    OpenAutoRecommendation(UI.pendingAutoOpenContext)
   end
 end)
 
@@ -537,6 +733,12 @@ SlashCmdList.QUICKWOWTALENTS = function(message)
   local command = string.lower(strtrim(message or ""))
   if command == "info" or command == "version" then
     ShowInfo()
+  elseif command == "auto" or command == "auto status" then
+    ShowAutoOpenStatus()
+  elseif command == "auto on" or command == "auto enable" then
+    SetAutoOpenEnabled(true)
+  elseif command == "auto off" or command == "auto disable" then
+    SetAutoOpenEnabled(false)
   elseif command == "hide" then
     if UI.frame then UI.frame:Hide() end
   else
