@@ -16,11 +16,12 @@ On a scheduled run, the workflow:
 2. compares recommendation data against the committed `QuickWoWTalentsData.lua`
 3. exits without bumping or releasing if the data is unchanged
 4. bumps the patch version in `package.json` and root-level `QuickWoWTalents.toc` if a release is needed
-5. validates scripts and tests
-6. packages `dist/QuickWoWTalents-<version>.zip`
-7. commits the generated data/version bump to `main`
-8. tags `v<version>`
-9. creates a GitHub release with the zip asset
+5. moves `CHANGELOG.md` Unreleased notes into a versioned release section and adds commit subjects since the previous release tag
+6. validates scripts and tests
+7. packages `dist/QuickWoWTalents-<version>.zip`
+8. commits the generated data/version/changelog bump to `main`
+9. tags `v<version>`
+10. creates a GitHub release with the zip asset and the same versioned changelog section CurseForge packages
 
 The workflow uses the built-in `GITHUB_TOKEN`; no repository secrets are required.
 
@@ -38,6 +39,8 @@ Use this only when intentionally publishing outside the normal schedule:
 2. Set `dry_run=false`.
 3. Optional: set an explicit semver `version`, such as `0.2.11`.
 4. Start the workflow.
+
+Use a manual full release after merging addon code changes when bundled recommendation data has not changed. Scheduled runs publish only when `QuickWoWTalentsData.lua` changes, so code-only improvements such as UI behavior, slash commands, or documentation-visible addon features should be shipped with an intentional manual full release and an explicit minor/patch version.
 
 ## Failure handling
 

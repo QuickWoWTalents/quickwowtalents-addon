@@ -48,6 +48,34 @@ Useful APIs:
 
 For v0, do not overfit to exact dungeon detection. Start with **Best Overall Mythic+** for current spec. Add dungeon-aware matching later once the data mapping is proven.
 
+### Mythic+ auto-open prior art
+
+The public auto-open implementation should follow established addon patterns rather than relying on one event or fragile name matching:
+
+- BigWigs registers `PLAYER_ENTERING_WORLD` and uses `GetInstanceInfo()` / instance IDs to load zone-specific modules. It also has `PLAYER_MAP_CHANGED` handling and notes that `GetInstanceInfo()` may lag briefly after map changes.
+  - https://github.com/BigWigsMods/BigWigs/blob/38bb1a374c257d33dc74addb5546c2482bdcb507/Loader.lua#L1166-L1176
+  - https://github.com/BigWigsMods/BigWigs/blob/38bb1a374c257d33dc74addb5546c2482bdcb507/Loader.lua#L1934-L1980
+  - https://github.com/BigWigsMods/BigWigs/blob/38bb1a374c257d33dc74addb5546c2482bdcb507/Loader.lua#L2004-L2013
+- DBM registers load, zone, specialization, map, and challenge-mode events, then performs delayed secondary checks because instance data can be stale right after transitions.
+  - https://github.com/DeadlyBossMods/DeadlyBossMods/blob/eb8b7d59a734709c1ce0e74ba66755cd86104695/DBM-Core/DBM-Core.lua#L2088-L2147
+  - https://github.com/DeadlyBossMods/DeadlyBossMods/blob/eb8b7d59a734709c1ce0e74ba66755cd86104695/DBM-Core/DBM-Core.lua#L4255-L4270
+  - https://github.com/DeadlyBossMods/DeadlyBossMods/blob/eb8b7d59a734709c1ce0e74ba66755cd86104695/DBM-Core/DBM-Core.lua#L4370-L4379
+- Raider.IO is the closest Mythic+ mapping reference: it checks `C_ChallengeMode.GetActiveChallengeMapID()`, falls back through `GetInstanceInfo()`, and translates client dungeon IDs through its bundled dungeon metadata.
+  - https://github.com/RaiderIO/raiderio-addon/blob/f58d2177c3af79641b9dcbc416092b9b54c623fd/core.lua#L11135-L11171
+  - https://github.com/RaiderIO/raiderio-addon/blob/f58d2177c3af79641b9dcbc416092b9b54c623fd/core.lua#L11276-L11294
+  - https://github.com/RaiderIO/raiderio-addon/blob/f58d2177c3af79641b9dcbc416092b9b54c623fd/core.lua#L13721-L13724
+- Mythic Dungeon Tools delays `PLAYER_ENTERING_WORLD` startup work with `C_Timer.After(1, ...)`, supporting the same post-zone-load settling delay.
+  - https://github.com/Nnoggie/MythicDungeonTools/blob/22604b2473e79beba210dc7b4ac2ffb040c8c458/MythicDungeonTools.lua#L247-L323
+
+QWT implementation constraints from those references:
+
+- listen to zoning, specialization, and challenge-mode events
+- wait briefly after zoning before resolving context
+- map client challenge/instance IDs explicitly to bundled QWT dungeon IDs
+- auto-open once per instance/spec/dungeon context
+- never open while in combat; defer until combat ends
+- provide `/qwt auto` controls so public users can disable the behavior
+
 ### Talent import strings
 
 Blizzard's class talent import/export implementation confirms the current talent string format is Blizzard's own import/export string. Important details from the source:

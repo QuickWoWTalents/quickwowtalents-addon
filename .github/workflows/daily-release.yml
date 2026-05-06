@@ -140,7 +140,7 @@ jobs:
       - name: Commit generated release files
         if: ${{ steps.release_gate.outputs.continue == 'true' && (github.event_name == 'schedule' || github.event.inputs.dry_run != 'true') }}
         run: |
-          git add package.json QuickWoWTalents.toc QuickWoWTalentsData.lua
+          git add package.json QuickWoWTalents.toc QuickWoWTalentsData.lua CHANGELOG.md
           git commit -m "Daily addon data release ${{ steps.version.outputs.tag }}"
           git tag "${{ steps.version.outputs.tag }}"
 
@@ -153,10 +153,20 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          printf '%s\n\n%s\n' \
-            'Automated daily Quick WoW Talents addon data refresh.' \
-            'Bundled data is downloaded from the product-side quickwowtalents.com addon data artifact, then packaged as a static offline addon zip.' \
-            > /tmp/release-notes.md
+          awk '
+            /^## / {
+              if (seen) exit
+              if (index($0, "## ${{ steps.version.outputs.version }} - ") == 1) seen=1
+            }
+            seen { print }
+          ' CHANGELOG.md > /tmp/release-notes.md
+
+          if [ ! -s /tmp/release-notes.md ]; then
+            printf '%s\n\n%s\n' \
+              'Automated daily Quick WoW Talents addon data refresh.' \
+              'Bundled data is downloaded from the product-side quickwowtalents.com addon data artifact, then packaged as a static offline addon zip.' \
+              > /tmp/release-notes.md
+          fi
 
           gh release create "${{ steps.version.outputs.tag }}" "${{ steps.version.outputs.zip }}" \
             --title "QuickWoWTalents ${{ steps.version.outputs.tag }}" \
