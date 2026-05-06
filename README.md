@@ -160,10 +160,11 @@ The pipeline:
 1. downloads `QuickWoWTalentsData.lua` from the product-side addon data artifact at `quickwowtalents.com`
 2. skips publishing if the bundled recommendation data is unchanged
 3. bumps the addon patch version in `package.json` and `QuickWoWTalents.toc` when a release is needed
-4. verifies scripts and tests
-5. packages the addon zip
-6. commits the generated data/version bump to `main`
-7. creates a matching Git tag and GitHub release with the zip asset
+4. moves `CHANGELOG.md` Unreleased notes into the new version and adds commit subjects since the previous release tag
+5. verifies scripts and tests
+6. packages the addon zip
+7. commits the generated data/version/changelog bump to `main`
+8. creates a matching Git tag and GitHub release with the zip asset and versioned changelog notes
 
 No GitHub secrets are required beyond the built-in `GITHUB_TOKEN`.
 

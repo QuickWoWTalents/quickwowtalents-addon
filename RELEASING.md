@@ -16,11 +16,12 @@ On a scheduled run, the workflow:
 2. compares recommendation data against the committed `QuickWoWTalentsData.lua`
 3. exits without bumping or releasing if the data is unchanged
 4. bumps the patch version in `package.json` and root-level `QuickWoWTalents.toc` if a release is needed
-5. validates scripts and tests
-6. packages `dist/QuickWoWTalents-<version>.zip`
-7. commits the generated data/version bump to `main`
-8. tags `v<version>`
-9. creates a GitHub release with the zip asset
+5. moves `CHANGELOG.md` Unreleased notes into a versioned release section and adds commit subjects since the previous release tag
+6. validates scripts and tests
+7. packages `dist/QuickWoWTalents-<version>.zip`
+8. commits the generated data/version/changelog bump to `main`
+9. tags `v<version>`
+10. creates a GitHub release with the zip asset and the same versioned changelog section CurseForge packages
 
 The workflow uses the built-in `GITHUB_TOKEN`; no repository secrets are required.
 
