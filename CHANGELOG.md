@@ -2,9 +2,17 @@
 
 ## Unreleased
 
+## 1.0.8 - 2026-05-07
+
+- Updated bundled recommendation data from quickwowtalents.com.
+
 - Added Mythic+ auto-open support when entering a supported dungeon with a bundled build for the current specialization.
 - Added `/qwt auto status`, `/qwt auto on`, and `/qwt auto off` controls.
 - Auto-open is throttled to once per instance/spec/dungeon context, waits briefly after zoning for client APIs to settle, and defers while in combat.
+
+### Changes since v1.0.7
+- Improve addon release changelog notes
+- Add Mythic+ auto-open support
 
 ## 1.0.0
 
