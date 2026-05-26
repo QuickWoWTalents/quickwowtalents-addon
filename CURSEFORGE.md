@@ -40,7 +40,8 @@ CurseForge automatic packaging is driven by a GitHub repository webhook. The rep
 - Tags containing `alpha` are packaged as alpha files.
 - Tags containing `beta` are packaged as beta files.
 - The daily GitHub workflow only pushes a new tag when bundled recommendation data actually changes.
-- The workflow updates `CHANGELOG.md` before tagging so CurseForge's manual changelog shows the exact version, the data refresh note, Unreleased notes, and commit subjects since the previous release.
+- The workflow keeps `CHANGELOG.md` as the historical project changelog, then writes `CURSEFORGE_CHANGELOG.md` with only the version being packaged.
+- `.pkgmeta` points CurseForge at `CURSEFORGE_CHANGELOG.md` with Markdown rendering, so file pages show scoped release notes instead of the full changelog history.
 
 ## Required GitHub Actions org setting
 

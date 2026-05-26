@@ -161,10 +161,11 @@ The pipeline:
 2. skips publishing if the bundled recommendation data is unchanged
 3. bumps the addon patch version in `package.json` and `QuickWoWTalents.toc` when a release is needed
 4. moves `CHANGELOG.md` Unreleased notes into the new version and adds commit subjects since the previous release tag
-5. verifies scripts and tests
-6. packages the addon zip
-7. commits the generated data/version/changelog bump to `main`
-8. creates a matching Git tag and GitHub release with the zip asset and versioned changelog notes
+5. writes `CURSEFORGE_CHANGELOG.md` with only the new version's notes for CurseForge automatic packaging
+6. verifies scripts and tests
+7. packages the addon zip
+8. commits the generated data/version/changelog bump to `main`
+9. creates a matching Git tag and GitHub release with the zip asset and versioned changelog notes
 
 No GitHub secrets are required beyond the built-in `GITHUB_TOKEN`.
 

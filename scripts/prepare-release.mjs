@@ -10,6 +10,7 @@ const REPO_ROOT = path.resolve(__dirname, '..');
 const PACKAGE_JSON = path.join(REPO_ROOT, 'package.json');
 const TOC_FILE = path.join(REPO_ROOT, 'QuickWoWTalents.toc');
 const CHANGELOG_FILE = path.join(REPO_ROOT, 'CHANGELOG.md');
+const CURSEFORGE_CHANGELOG_BASENAME = 'CURSEFORGE_CHANGELOG.md';
 const SEMVER_RE = /^(\d+)\.(\d+)\.(\d+)$/;
 const SEMVER_WITH_PRERELEASE_RE = /^(\d+)\.(\d+)\.(\d+)(?:-[0-9A-Za-z.-]+)?$/;
 const execFileAsync = promisify(execFile);
@@ -110,8 +111,20 @@ export function unreleasedChangelogSection(changelog) {
   return bounds ? raw.slice(bounds.bodyStart, bounds.bodyEnd).trim() : '';
 }
 
-export function versionedChangelogEntry({ version, date, previousTag = null, unreleased = '', commitSubjects = [] }) {
-  const lines = [`## ${assertReleaseVersion(version)} - ${date}`, ''];
+export function versionedChangelogEntry({
+  version,
+  date,
+  previousTag = null,
+  unreleased = '',
+  commitSubjects = [],
+  headingLevel = 2,
+} = {}) {
+  const heading = '#'.repeat(Number(headingLevel));
+  if (!/^#{2,6}$/.test(heading)) {
+    throw new Error(`Changelog headingLevel must be an integer from 2 to 6; received ${JSON.stringify(headingLevel)}`);
+  }
+
+  const lines = [`${heading} ${assertReleaseVersion(version)} - ${date}`, ''];
   lines.push('- Updated bundled recommendation data from quickwowtalents.com.');
 
   if (unreleased.trim()) {
@@ -119,7 +132,7 @@ export function versionedChangelogEntry({ version, date, previousTag = null, unr
   }
 
   if (commitSubjects.length > 0) {
-    lines.push('', `### Changes since ${previousTag ?? 'the previous release'}`);
+    lines.push('', `${heading}# Changes since ${previousTag ?? 'the previous release'}`);
     for (const subject of commitSubjects) {
       lines.push(`- ${subject}`);
     }
@@ -130,6 +143,7 @@ export function versionedChangelogEntry({ version, date, previousTag = null, unr
 
 export async function prepareChangelog({
   changelogPath = CHANGELOG_FILE,
+  curseforgeChangelogPath = path.join(path.dirname(changelogPath), CURSEFORGE_CHANGELOG_BASENAME),
   repoRoot = REPO_ROOT,
   nextVersion,
   date = new Date().toISOString().slice(0, 10),
@@ -140,6 +154,14 @@ export async function prepareChangelog({
   const commitSubjects = await commitSubjectsSinceTag(repoRoot, previousTag);
   const unreleased = unreleasedChangelogSection(raw);
   const entry = versionedChangelogEntry({ version: normalized, date, previousTag, unreleased, commitSubjects });
+  const curseforgeEntry = versionedChangelogEntry({
+    version: normalized,
+    date,
+    previousTag,
+    unreleased,
+    commitSubjects,
+    headingLevel: 3,
+  });
   const bounds = unreleasedChangelogBounds(raw);
 
   if (!bounds) {
@@ -149,6 +171,9 @@ export async function prepareChangelog({
   const next = `${raw.slice(0, bounds.bodyStart)}\n${entry}\n${raw.slice(bounds.bodyEnd).replace(/^\r?\n?/, '')}`;
 
   await fs.writeFile(changelogPath, next, 'utf8');
+  if (curseforgeChangelogPath) {
+    await fs.writeFile(curseforgeChangelogPath, curseforgeEntry, 'utf8');
+  }
   return { previousTag, commitSubjects, nextVersion: normalized };
 }
 
@@ -156,6 +181,7 @@ export async function prepareRelease({
   packagePath = PACKAGE_JSON,
   tocPath = TOC_FILE,
   changelogPath = CHANGELOG_FILE,
+  curseforgeChangelogPath = path.join(path.dirname(changelogPath), CURSEFORGE_CHANGELOG_BASENAME),
   repoRoot = REPO_ROOT,
   version = null,
 } = {}) {
@@ -163,7 +189,7 @@ export async function prepareRelease({
   const nextVersion = assertReleaseVersion(version ?? nextPatchVersion(rawPkg.version));
   const packageResult = await preparePackageJson(packagePath, nextVersion);
   await prepareTocVersion(tocPath, nextVersion);
-  const changelogResult = await prepareChangelog({ changelogPath, repoRoot, nextVersion });
+  const changelogResult = await prepareChangelog({ changelogPath, curseforgeChangelogPath, repoRoot, nextVersion });
   return { ...packageResult, previousTag: changelogResult.previousTag };
 }
 

@@ -19,6 +19,7 @@
     "build:data:strict": "node scripts/build-data.mjs --strict",
     "package": "node scripts/package-addon.mjs",
     "release:prepare": "node scripts/prepare-release.mjs",
+    "release:verify": "node scripts/verify-release-readiness.mjs",
     "test": "node --test test/*.test.mjs"
   },
   "engines": {
