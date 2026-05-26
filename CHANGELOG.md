@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 1.0.23 - 2026-05-26
+
+- Updated bundled recommendation data from quickwowtalents.com.
+
+### Changes since v1.0.22
+- Add addon data completeness gate
+
 ## 1.0.22 - 2026-05-25
 
 - Updated bundled recommendation data from quickwowtalents.com.
