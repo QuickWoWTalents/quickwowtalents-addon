@@ -25,6 +25,115 @@ export function assertLooksLikeAddonLua(text) {
   if (!/schemaVersion = 2/.test(text)) {
     throw new Error('Downloaded addon data does not use schemaVersion 2.');
   }
+  assertAddonDataCompleteness(text);
+}
+
+function extractBraceBlock(text, startIndex) {
+  const firstBrace = text.indexOf('{', startIndex);
+  if (firstBrace === -1) return null;
+
+  let depth = 0;
+  let inString = false;
+  let escaping = false;
+
+  for (let index = firstBrace; index < text.length; index += 1) {
+    const char = text[index];
+
+    if (inString) {
+      if (escaping) {
+        escaping = false;
+      } else if (char === '\\') {
+        escaping = true;
+      } else if (char === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (char === '{') {
+      depth += 1;
+    } else if (char === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        return text.slice(firstBrace, index + 1);
+      }
+    }
+  }
+
+  return null;
+}
+
+function extractNamedBlock(text, name) {
+  const match = new RegExp(`\\b${name}\\s*=`).exec(text);
+  if (!match) return null;
+  return extractBraceBlock(text, match.index + match[0].length);
+}
+
+function extractNumberField(text, name) {
+  const match = new RegExp(`\\b${name}\\s*=\\s*(\\d+)`).exec(text);
+  return match ? Number(match[1]) : null;
+}
+
+function countIdEntries(block) {
+  return Array.from(String(block ?? '').matchAll(/\bid\s*=\s*\d+/g)).length;
+}
+
+function countValidImportStrings(text) {
+  let count = 0;
+  for (const match of String(text).matchAll(/\bimportString\s*=\s*"((?:\\.|[^"\\])*)"/g)) {
+    if (match[1].trim()) count += 1;
+  }
+  return count;
+}
+
+export function assertAddonDataCompleteness(text) {
+  const countsBlock = extractNamedBlock(text, 'counts');
+  if (!countsBlock) {
+    throw new Error('Downloaded addon data does not include counts.');
+  }
+
+  const specs = extractNumberField(countsBlock, 'specs');
+  const attempted = extractNumberField(countsBlock, 'attempted');
+  const recommendations = extractNumberField(countsBlock, 'recommendations');
+  const specsWithAnyRecommendation = extractNumberField(countsBlock, 'specsWithAnyRecommendation');
+  const skipped = extractNumberField(countsBlock, 'skipped');
+
+  for (const [name, value] of Object.entries({ specs, attempted, recommendations, specsWithAnyRecommendation, skipped })) {
+    if (!Number.isInteger(value)) {
+      throw new Error(`Downloaded addon data counts are missing ${name}.`);
+    }
+  }
+
+  if (skipped !== 0 || recommendations !== attempted || specsWithAnyRecommendation !== specs) {
+    throw new Error(`Addon data is incomplete: attempted=${attempted}, recommendations=${recommendations}, specs=${specs}, specsWithAnyRecommendation=${specsWithAnyRecommendation}, skipped=${skipped}.`);
+  }
+
+  const mplusBlock = extractNamedBlock(text, 'mplus');
+  const raidBlock = extractNamedBlock(text, 'raid');
+  const dungeonsBlock = extractNamedBlock(mplusBlock ?? '', 'dungeons');
+  const bossesBlock = extractNamedBlock(raidBlock ?? '', 'bosses');
+  const dungeons = countIdEntries(dungeonsBlock);
+  const bosses = countIdEntries(bossesBlock);
+  const expectedRecommendations = specs * (dungeons + bosses);
+
+  if (expectedRecommendations !== recommendations) {
+    throw new Error(`Addon data recommendation count does not match the expected matrix: expected=${expectedRecommendations}, recommendations=${recommendations}, specs=${specs}, dungeons=${dungeons}, bosses=${bosses}.`);
+  }
+
+  const minKeystoneLevel = extractNumberField(mplusBlock ?? '', 'minimumKeystoneLevel');
+  if (minKeystoneLevel !== 15) {
+    throw new Error(`Addon data Mythic+ Best Overall minimumKeystoneLevel must be 15, got ${minKeystoneLevel ?? 'missing'}.`);
+  }
+
+  const validImportStrings = countValidImportStrings(text);
+  if (validImportStrings !== recommendations) {
+    throw new Error(`Addon data is missing valid import strings: expected=${recommendations}, valid=${validImportStrings}.`);
+  }
 }
 
 export function normalizeAddonDataForComparison(text) {
