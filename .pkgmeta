@@ -2,12 +2,15 @@ package-as: QuickWoWTalents
 
 enable-nolib-creation: no
 
-manual-changelog: CHANGELOG.md
+manual-changelog:
+  filename: CURSEFORGE_CHANGELOG.md
+  markup-type: plain
 
 license-output: LICENSE.txt
 
 ignore:
   - .github
+  - CHANGELOG.md
   - docs
   - scripts
   - test

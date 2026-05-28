@@ -114,11 +114,16 @@ jobs:
           node --check scripts/download-addon-data.mjs
           node --check scripts/package-addon.mjs
           node --check scripts/prepare-release.mjs
+          node --check scripts/verify-release-readiness.mjs
           npm test
 
       - name: Package addon zip
         if: ${{ steps.release_gate.outputs.continue == 'true' }}
         run: npm run package
+
+      - name: Verify release readiness
+        if: ${{ steps.release_gate.outputs.continue == 'true' }}
+        run: npm run release:verify
 
       - name: Resolve release version
         if: ${{ steps.release_gate.outputs.continue == 'true' }}
@@ -140,7 +145,7 @@ jobs:
       - name: Commit generated release files
         if: ${{ steps.release_gate.outputs.continue == 'true' && (github.event_name == 'schedule' || github.event.inputs.dry_run != 'true') }}
         run: |
-          git add package.json QuickWoWTalents.toc QuickWoWTalentsData.lua CHANGELOG.md
+          git add package.json QuickWoWTalents.toc QuickWoWTalentsData.lua CHANGELOG.md CURSEFORGE_CHANGELOG.md
           git commit -m "Daily addon data release ${{ steps.version.outputs.tag }}"
           git tag "${{ steps.version.outputs.tag }}"
 
@@ -153,13 +158,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          awk '
-            /^## / {
-              if (seen) exit
-              if (index($0, "## ${{ steps.version.outputs.version }} - ") == 1) seen=1
-            }
-            seen { print }
-          ' CHANGELOG.md > /tmp/release-notes.md
+          if [ -s CURSEFORGE_CHANGELOG.md ]; then
+            cp CURSEFORGE_CHANGELOG.md /tmp/release-notes.md
+          else
+            awk '
+              /^## / {
+                if (seen) exit
+                if (index($0, "## ${{ steps.version.outputs.version }} - ") == 1) seen=1
+              }
+              seen { print }
+            ' CHANGELOG.md > /tmp/release-notes.md
+          fi
 
           if [ ! -s /tmp/release-notes.md ]; then
             printf '%s\n\n%s\n' \

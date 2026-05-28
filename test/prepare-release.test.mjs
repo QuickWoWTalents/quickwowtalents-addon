@@ -25,15 +25,17 @@ test('prepareRelease updates package.json and TOC version together', async () =>
   const packagePath = path.join(tmp, 'package.json');
   const tocPath = path.join(tmp, 'QuickWoWTalents.toc');
   const changelogPath = path.join(tmp, 'CHANGELOG.md');
+  const curseforgeChangelogPath = path.join(tmp, 'CURSEFORGE_CHANGELOG.md');
 
   await fs.writeFile(packagePath, `${JSON.stringify({ name: 'quickwowtalents-addon', version: '0.2.8' }, null, 2)}\n`, 'utf8');
   await fs.writeFile(tocPath, '## Title: Quick WoW Talents\n## Version: 0.2.8\nQuickWoWTalents.lua\n', 'utf8');
   await fs.writeFile(changelogPath, '# Changelog\n\n## Unreleased\n\n- Added a test feature.\n\n## 0.2.8\n\nPrevious release.\n', 'utf8');
 
-  const result = await prepareRelease({ packagePath, tocPath, changelogPath, repoRoot: tmp, version: '0.3.0' });
+  const result = await prepareRelease({ packagePath, tocPath, changelogPath, curseforgeChangelogPath, repoRoot: tmp, version: '0.3.0' });
   const updatedPackage = JSON.parse(await fs.readFile(packagePath, 'utf8'));
   const updatedToc = await fs.readFile(tocPath, 'utf8');
   const updatedChangelog = await fs.readFile(changelogPath, 'utf8');
+  const curseforgeChangelog = await fs.readFile(curseforgeChangelogPath, 'utf8');
 
   assert.deepEqual(result, { previousVersion: '0.2.8', nextVersion: '0.3.0', previousTag: null });
   assert.equal(updatedPackage.version, '0.3.0');
@@ -41,6 +43,14 @@ test('prepareRelease updates package.json and TOC version together', async () =>
   assert.match(updatedChangelog, /^## 0\.3\.0 - \d{4}-\d{2}-\d{2}$/m);
   assert.match(updatedChangelog, /- Updated bundled recommendation data from quickwowtalents\.com\./);
   assert.match(updatedChangelog, /- Added a test feature\./);
+  assert.match(updatedChangelog, /^## 0\.2\.8$/m);
+  assert.match(curseforgeChangelog, /^QuickWoWTalents 0\.3\.0 - \d{4}-\d{2}-\d{2}$/m);
+  assert.match(curseforgeChangelog, /- Updated bundled recommendation data from quickwowtalents\.com\./);
+  assert.match(curseforgeChangelog, /- Added a test feature\./);
+  assert.doesNotMatch(curseforgeChangelog, /^#/m);
+  assert.doesNotMatch(curseforgeChangelog, /^## Unreleased$/m);
+  assert.doesNotMatch(curseforgeChangelog, /^## 0\.2\.8$/m);
+  assert.doesNotMatch(curseforgeChangelog, /^## 0\.3\.0 - /m);
 });
 
 test('prepareRelease accepts a prerelease package version when cutting stable', async () => {
@@ -84,4 +94,28 @@ test('versionedChangelogEntry includes version, data refresh, unreleased notes, 
   assert.match(entry, /- Added auto-open\./);
   assert.match(entry, /^### Changes since v1\.0\.7$/m);
   assert.match(entry, /- Add Mythic\+ auto-open support/);
+});
+
+test('versionedChangelogEntry supports CurseForge-friendly plain output', () => {
+  const entry = versionedChangelogEntry({
+    version: '1.0.8',
+    date: '2026-05-06',
+    previousTag: 'v1.0.7',
+    unreleased: '- Added auto-open.',
+    commitSubjects: ['Add Mythic+ auto-open support'],
+    plainTitle: true,
+  });
+
+  assert.match(entry, /^QuickWoWTalents 1\.0\.8 - 2026-05-06$/m);
+  assert.match(entry, /- Updated bundled recommendation data from quickwowtalents\.com\./);
+  assert.match(entry, /- Added auto-open\./);
+  assert.match(entry, /^Changes since v1\.0\.7$/m);
+  assert.doesNotMatch(entry, /^#/m);
+  assert.doesNotMatch(entry, /^## 1\.0\.8 - 2026-05-06$/m);
+});
+
+test('.pkgmeta points CurseForge at the scoped plain changelog', async () => {
+  const packageMeta = await fs.readFile(new URL('../.pkgmeta', import.meta.url), 'utf8');
+
+  assert.match(packageMeta, /manual-changelog:\n\s+filename: CURSEFORGE_CHANGELOG\.md\n\s+markup-type: plain/m);
 });

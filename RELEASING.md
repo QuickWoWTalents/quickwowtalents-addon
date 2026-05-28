@@ -17,11 +17,12 @@ On a scheduled run, the workflow:
 3. exits without bumping or releasing if the data is unchanged
 4. bumps the patch version in `package.json` and root-level `QuickWoWTalents.toc` if a release is needed
 5. moves `CHANGELOG.md` Unreleased notes into a versioned release section and adds commit subjects since the previous release tag
-6. validates scripts and tests
-7. packages `dist/QuickWoWTalents-<version>.zip`
-8. commits the generated data/version/changelog bump to `main`
-9. tags `v<version>`
-10. creates a GitHub release with the zip asset and the same versioned changelog section CurseForge packages
+6. writes `CURSEFORGE_CHANGELOG.md` with only the new version's notes for CurseForge automatic packaging
+7. validates scripts and tests
+8. packages `dist/QuickWoWTalents-<version>.zip`
+9. commits the generated data/version/changelog bump to `main`
+10. tags `v<version>`
+11. creates a GitHub release with the zip asset and the same scoped changelog section CurseForge packages
 
 The workflow uses the built-in `GITHUB_TOKEN`; no repository secrets are required.
 
@@ -64,6 +65,7 @@ If a release was created without an asset, rerun packaging locally and attach th
 npm test
 npm run build:data:download
 npm run package
+npm run release:verify
 unzip -l dist/QuickWoWTalents-*.zip | head -50
 ```
 
