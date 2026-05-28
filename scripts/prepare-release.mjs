@@ -118,13 +118,20 @@ export function versionedChangelogEntry({
   unreleased = '',
   commitSubjects = [],
   headingLevel = 2,
+  plainTitle = false,
 } = {}) {
-  const heading = '#'.repeat(Number(headingLevel));
-  if (!/^#{2,6}$/.test(heading)) {
-    throw new Error(`Changelog headingLevel must be an integer from 2 to 6; received ${JSON.stringify(headingLevel)}`);
+  let heading = '';
+  if (!plainTitle) {
+    heading = '#'.repeat(Number(headingLevel));
+    if (!/^#{2,6}$/.test(heading)) {
+      throw new Error(`Changelog headingLevel must be an integer from 2 to 6; received ${JSON.stringify(headingLevel)}`);
+    }
   }
 
-  const lines = [`${heading} ${assertReleaseVersion(version)} - ${date}`, ''];
+  const title = plainTitle
+    ? `QuickWoWTalents ${assertReleaseVersion(version)} - ${date}`
+    : `${heading} ${assertReleaseVersion(version)} - ${date}`;
+  const lines = [title, ''];
   lines.push('- Updated bundled recommendation data from quickwowtalents.com.');
 
   if (unreleased.trim()) {
@@ -132,7 +139,7 @@ export function versionedChangelogEntry({
   }
 
   if (commitSubjects.length > 0) {
-    lines.push('', `${heading}# Changes since ${previousTag ?? 'the previous release'}`);
+    lines.push('', plainTitle ? `Changes since ${previousTag ?? 'the previous release'}` : `${heading}# Changes since ${previousTag ?? 'the previous release'}`);
     for (const subject of commitSubjects) {
       lines.push(`- ${subject}`);
     }
@@ -160,7 +167,7 @@ export async function prepareChangelog({
     previousTag,
     unreleased,
     commitSubjects,
-    headingLevel: 3,
+    plainTitle: true,
   });
   const bounds = unreleasedChangelogBounds(raw);
 

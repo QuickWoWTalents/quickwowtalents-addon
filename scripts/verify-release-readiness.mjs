@@ -30,19 +30,19 @@ function extractTocVersion(tocText, sourceName) {
 }
 
 function assertPkgmetaScopedChangelog(packageMeta) {
-  if (!/manual-changelog:\n\s+filename:\s*CURSEFORGE_CHANGELOG\.md\n\s+markup-type:\s*markdown/m.test(packageMeta)) {
-    fail('.pkgmeta must set manual-changelog.filename to CURSEFORGE_CHANGELOG.md with markup-type markdown.');
+  if (!/manual-changelog:\n\s+filename:\s*CURSEFORGE_CHANGELOG\.md\n\s+markup-type:\s*plain/m.test(packageMeta)) {
+    fail('.pkgmeta must set manual-changelog.filename to CURSEFORGE_CHANGELOG.md with markup-type plain.');
   }
 }
 
 function assertScopedCurseforgeChangelog(changelog, version) {
   const trimmed = changelog.trim();
   if (!trimmed) fail('CURSEFORGE_CHANGELOG.md must not be empty.');
-  if (!new RegExp(`^### ${version.replaceAll('.', '\\.')} - \\d{4}-\\d{2}-\\d{2}$`, 'm').test(trimmed)) {
-    fail(`CURSEFORGE_CHANGELOG.md must start with ### ${version} - YYYY-MM-DD.`);
+  if (!new RegExp(`^QuickWoWTalents ${version.replaceAll('.', '\\.')} - \\d{4}-\\d{2}-\\d{2}$`, 'm').test(trimmed)) {
+    fail(`CURSEFORGE_CHANGELOG.md must start with QuickWoWTalents ${version} - YYYY-MM-DD.`);
   }
-  if (/^##\s/m.test(trimmed) || /^###\s+Unreleased\b/im.test(trimmed)) {
-    fail('CURSEFORGE_CHANGELOG.md must contain only the current version notes.');
+  if (/^#/m.test(trimmed) || /^Unreleased\b/im.test(trimmed) || new RegExp(`^QuickWoWTalents (?!${version.replaceAll('.', '\\.')}\\b)\\d+\\.\\d+\\.\\d+\\b`, 'm').test(trimmed)) {
+    fail('CURSEFORGE_CHANGELOG.md must contain only the current version notes with no Markdown headings.');
   }
 }
 

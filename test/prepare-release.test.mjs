@@ -44,9 +44,10 @@ test('prepareRelease updates package.json and TOC version together', async () =>
   assert.match(updatedChangelog, /- Updated bundled recommendation data from quickwowtalents\.com\./);
   assert.match(updatedChangelog, /- Added a test feature\./);
   assert.match(updatedChangelog, /^## 0\.2\.8$/m);
-  assert.match(curseforgeChangelog, /^### 0\.3\.0 - \d{4}-\d{2}-\d{2}$/m);
+  assert.match(curseforgeChangelog, /^QuickWoWTalents 0\.3\.0 - \d{4}-\d{2}-\d{2}$/m);
   assert.match(curseforgeChangelog, /- Updated bundled recommendation data from quickwowtalents\.com\./);
   assert.match(curseforgeChangelog, /- Added a test feature\./);
+  assert.doesNotMatch(curseforgeChangelog, /^#/m);
   assert.doesNotMatch(curseforgeChangelog, /^## Unreleased$/m);
   assert.doesNotMatch(curseforgeChangelog, /^## 0\.2\.8$/m);
   assert.doesNotMatch(curseforgeChangelog, /^## 0\.3\.0 - /m);
@@ -95,25 +96,26 @@ test('versionedChangelogEntry includes version, data refresh, unreleased notes, 
   assert.match(entry, /- Add Mythic\+ auto-open support/);
 });
 
-test('versionedChangelogEntry supports CurseForge-friendly Heading 3 output', () => {
+test('versionedChangelogEntry supports CurseForge-friendly plain output', () => {
   const entry = versionedChangelogEntry({
     version: '1.0.8',
     date: '2026-05-06',
     previousTag: 'v1.0.7',
     unreleased: '- Added auto-open.',
     commitSubjects: ['Add Mythic+ auto-open support'],
-    headingLevel: 3,
+    plainTitle: true,
   });
 
-  assert.match(entry, /^### 1\.0\.8 - 2026-05-06$/m);
+  assert.match(entry, /^QuickWoWTalents 1\.0\.8 - 2026-05-06$/m);
   assert.match(entry, /- Updated bundled recommendation data from quickwowtalents\.com\./);
   assert.match(entry, /- Added auto-open\./);
-  assert.match(entry, /^#### Changes since v1\.0\.7$/m);
+  assert.match(entry, /^Changes since v1\.0\.7$/m);
+  assert.doesNotMatch(entry, /^#/m);
   assert.doesNotMatch(entry, /^## 1\.0\.8 - 2026-05-06$/m);
 });
 
-test('.pkgmeta points CurseForge at the scoped Markdown changelog', async () => {
+test('.pkgmeta points CurseForge at the scoped plain changelog', async () => {
   const packageMeta = await fs.readFile(new URL('../.pkgmeta', import.meta.url), 'utf8');
 
-  assert.match(packageMeta, /manual-changelog:\n\s+filename: CURSEFORGE_CHANGELOG\.md\n\s+markup-type: markdown/m);
+  assert.match(packageMeta, /manual-changelog:\n\s+filename: CURSEFORGE_CHANGELOG\.md\n\s+markup-type: plain/m);
 });

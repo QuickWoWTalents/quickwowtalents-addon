@@ -13,8 +13,8 @@ const execFileAsync = promisify(execFile);
 async function writeFixture({
   packageVersion = '1.2.3',
   tocVersion = '1.2.3',
-  scopedChangelog = '### 1.2.3 - 2026-05-25\n\n- Updated bundled recommendation data from quickwowtalents.com.\n',
-  packageMeta = 'manual-changelog:\n  filename: CURSEFORGE_CHANGELOG.md\n  markup-type: markdown\n',
+  scopedChangelog = 'QuickWoWTalents 1.2.3 - 2026-05-25\n\n- Updated bundled recommendation data from quickwowtalents.com.\n',
+  packageMeta = 'manual-changelog:\n  filename: CURSEFORGE_CHANGELOG.md\n  markup-type: plain\n',
   zipTocVersion = '1.2.3',
   includeZip = true,
 } = {}) {
@@ -84,7 +84,7 @@ test('verifyReleaseReadiness rejects package and TOC version drift', async () =>
 
 test('verifyReleaseReadiness rejects noisy CurseForge changelogs', async () => {
   const repoRoot = await writeFixture({
-    scopedChangelog: '### 1.2.3 - 2026-05-25\n\n- Current.\n\n## 1.2.2\n\n- Older release.\n',
+    scopedChangelog: 'QuickWoWTalents 1.2.3 - 2026-05-25\n\n- Current.\n\n## 1.2.2\n\n- Older release.\n',
   });
 
   await assert.rejects(
