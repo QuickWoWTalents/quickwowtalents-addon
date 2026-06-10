@@ -16,6 +16,8 @@ async function writeFixture({
   scopedChangelog = 'QuickWoWTalents 1.2.3 - 2026-05-25\n\n- Updated bundled recommendation data from quickwowtalents.com.\n',
   packageMeta = 'manual-changelog:\n  filename: CURSEFORGE_CHANGELOG.md\n  markup-type: plain\n',
   zipTocVersion = '1.2.3',
+  tocInterface = '120007, 120005',
+  zipTocInterface = tocInterface,
   includeZip = true,
 } = {}) {
   const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'qwt-addon-readiness-'));
@@ -25,7 +27,7 @@ async function writeFixture({
     `${JSON.stringify({ name: 'quickwowtalents-addon', version: packageVersion }, null, 2)}\n`,
     'utf8',
   );
-  await fs.writeFile(path.join(repoRoot, 'QuickWoWTalents.toc'), `## Interface: 120005\n## Version: ${tocVersion}\n`, 'utf8');
+  await fs.writeFile(path.join(repoRoot, 'QuickWoWTalents.toc'), `## Interface: ${tocInterface}\n## Version: ${tocVersion}\n`, 'utf8');
   await fs.writeFile(path.join(repoRoot, 'QuickWoWTalents.lua'), '-- addon\n', 'utf8');
   await fs.writeFile(path.join(repoRoot, 'QuickWoWTalentsData.lua'), 'QuickWoWTalentsData = {}\n', 'utf8');
   await fs.writeFile(
@@ -40,7 +42,7 @@ async function writeFixture({
     const stagingRoot = path.join(repoRoot, 'stage');
     const addonDir = path.join(stagingRoot, 'QuickWoWTalents');
     await fs.mkdir(addonDir, { recursive: true });
-    await fs.writeFile(path.join(addonDir, 'QuickWoWTalents.toc'), `## Interface: 120005\n## Version: ${zipTocVersion}\n`, 'utf8');
+    await fs.writeFile(path.join(addonDir, 'QuickWoWTalents.toc'), `## Interface: ${zipTocInterface}\n## Version: ${zipTocVersion}\n`, 'utf8');
     await fs.writeFile(path.join(addonDir, 'QuickWoWTalents.lua'), '-- addon\n', 'utf8');
     await fs.writeFile(path.join(addonDir, 'QuickWoWTalentsData.lua'), 'QuickWoWTalentsData = {}\n', 'utf8');
     await execFileAsync('zip', ['-qr', path.join(repoRoot, 'dist', `QuickWoWTalents-${packageVersion}.zip`), 'QuickWoWTalents'], {
@@ -63,12 +65,14 @@ test('verifyReleaseReadiness accepts a scoped ready-to-publish addon release', a
     checks: [
       'package-version',
       'toc-version',
+      'toc-interface',
       'pkgmeta-changelog',
       'scoped-curseforge-changelog',
       'historical-changelog',
       'zip-exists',
       'zip-payload',
       'zip-toc-version',
+      'zip-toc-interface',
     ],
   });
 });
@@ -99,6 +103,24 @@ test('verifyReleaseReadiness rejects zipped TOC version drift', async () => {
   await assert.rejects(
     verifyReleaseReadiness({ repoRoot }),
     /packaged QuickWoWTalents\.toc version 1\.2\.2 does not match package\.json version 1\.2\.3/,
+  );
+});
+
+test('verifyReleaseReadiness rejects releases missing the current retail interface', async () => {
+  const repoRoot = await writeFixture({ tocInterface: '120005, 120001' });
+
+  await assert.rejects(
+    verifyReleaseReadiness({ repoRoot }),
+    /QuickWoWTalents\.toc must include interface 120007/,
+  );
+});
+
+test('verifyReleaseReadiness rejects packaged releases missing the current retail interface', async () => {
+  const repoRoot = await writeFixture({ zipTocInterface: '120005, 120001' });
+
+  await assert.rejects(
+    verifyReleaseReadiness({ repoRoot }),
+    /packaged QuickWoWTalents\.toc must include interface 120007/,
   );
 });
 
