@@ -1,4 +1,4 @@
-## Interface: 120005, 120001, 120000, 110200
+## Interface: 120007, 120005, 120001, 120000, 110200
 ## Title: Quick WoW Talents
 ## Notes: Offline Quick WoW Talents import string helper.
 ## Author: Darragh

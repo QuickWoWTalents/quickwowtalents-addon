@@ -9,6 +9,7 @@ const execFileAsync = promisify(execFile);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
 const ADDON_NAME = 'QuickWoWTalents';
+const REQUIRED_RETAIL_INTERFACE = '120007';
 const REQUIRED_ZIP_FILES = [
   `${ADDON_NAME}/QuickWoWTalents.toc`,
   `${ADDON_NAME}/QuickWoWTalents.lua`,
@@ -27,6 +28,19 @@ function extractTocVersion(tocText, sourceName) {
   const match = /^## Version:\s*(.+?)\s*$/m.exec(tocText);
   if (!match) fail(`Could not find ## Version in ${sourceName}.`);
   return match[1];
+}
+
+function assertTocInterface(tocText, sourceName) {
+  const match = /^## Interface:\s*(.+?)\s*$/m.exec(tocText);
+  if (!match) fail(`Could not find ## Interface in ${sourceName}.`);
+
+  const interfaces = match[1]
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+  if (!interfaces.includes(REQUIRED_RETAIL_INTERFACE)) {
+    fail(`${sourceName} must include interface ${REQUIRED_RETAIL_INTERFACE}.`);
+  }
 }
 
 function assertPkgmetaScopedChangelog(packageMeta) {
@@ -89,6 +103,7 @@ async function assertZipPayload(zipPath, version) {
   if (packagedVersion !== version) {
     fail(`packaged QuickWoWTalents.toc version ${packagedVersion} does not match package.json version ${version}.`);
   }
+  assertTocInterface(tocText, 'packaged QuickWoWTalents.toc');
 }
 
 export async function verifyReleaseReadiness({ repoRoot = REPO_ROOT, skipZip = false } = {}) {
@@ -102,10 +117,12 @@ export async function verifyReleaseReadiness({ repoRoot = REPO_ROOT, skipZip = f
   const version = String(pkg.version ?? '').trim();
   if (!version) fail('package.json must contain a version.');
 
-  const tocVersion = extractTocVersion(await fs.readFile(tocPath, 'utf8'), 'QuickWoWTalents.toc');
+  const tocText = await fs.readFile(tocPath, 'utf8');
+  const tocVersion = extractTocVersion(tocText, 'QuickWoWTalents.toc');
   if (tocVersion !== version) {
     fail(`package.json version ${version} does not match QuickWoWTalents.toc version ${tocVersion}.`);
   }
+  assertTocInterface(tocText, 'QuickWoWTalents.toc');
 
   assertPkgmetaScopedChangelog(await fs.readFile(packageMetaPath, 'utf8'));
   assertScopedCurseforgeChangelog(await fs.readFile(curseforgeChangelogPath, 'utf8'), version);
@@ -114,6 +131,7 @@ export async function verifyReleaseReadiness({ repoRoot = REPO_ROOT, skipZip = f
   const checks = [
     'package-version',
     'toc-version',
+    'toc-interface',
     'pkgmeta-changelog',
     'scoped-curseforge-changelog',
     'historical-changelog',
@@ -123,7 +141,7 @@ export async function verifyReleaseReadiness({ repoRoot = REPO_ROOT, skipZip = f
   if (!skipZip) {
     await fs.access(zipPath).catch(() => fail(`Expected package zip at ${zipPath}.`));
     await assertZipPayload(zipPath, version);
-    checks.push('zip-exists', 'zip-payload', 'zip-toc-version');
+    checks.push('zip-exists', 'zip-payload', 'zip-toc-version', 'zip-toc-interface');
   }
 
   return { ok: true, version, zipPath, checks };
