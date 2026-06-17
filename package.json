@@ -1,6 +1,6 @@
 {
   "name": "quickwowtalents-addon",
-  "version": "1.0.43",
+  "version": "1.0.44",
   "private": true,
   "description": "Offline World of Warcraft addon for Quick WoW Talents import strings.",
   "homepage": "https://quickwowtalents.com",
