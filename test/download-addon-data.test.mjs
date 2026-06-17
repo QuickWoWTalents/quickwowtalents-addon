@@ -162,3 +162,49 @@ test('download-addon-data only fetches the addon artifact', async () => {
   assert.deepEqual(calls, ['https://quickwowtalents.com/api/addon-data']);
   assert.equal(calls.some((url) => url.includes('/api/build')), false);
 });
+
+test('download-addon-data retries temporary incomplete addon artifact responses', async () => {
+  const originalFetch = globalThis.fetch;
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'qwt-addon-download-'));
+  const output = path.join(dir, 'QuickWoWTalentsData.lua');
+  const calls = [];
+
+  globalThis.fetch = async (url) => {
+    calls.push(String(url));
+    if (calls.length === 1) {
+      return {
+        ok: false,
+        status: 503,
+        statusText: 'Service Unavailable',
+        text: async () => JSON.stringify({ code: 'ADDON_DATA_INCOMPLETE' })
+      };
+    }
+
+    return {
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      text: async () => validAddonLua()
+    };
+  };
+
+  try {
+    const result = await downloadAddonData({
+      url: 'https://quickwowtalents.com/api/addon-data',
+      outputPath: output,
+      timeoutMs: 1000,
+      retries: 1,
+      retryDelayMs: 1
+    });
+
+    assert.equal(result.changed, true);
+    assert.equal(await fs.readFile(output, 'utf8'), validAddonLua());
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+
+  assert.deepEqual(calls, [
+    'https://quickwowtalents.com/api/addon-data',
+    'https://quickwowtalents.com/api/addon-data'
+  ]);
+});

@@ -8,6 +8,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
 const DEFAULT_URL = 'https://quickwowtalents.com/api/addon-data';
 const DEFAULT_OUTPUT = path.join(REPO_ROOT, 'QuickWoWTalentsData.lua');
+const DEFAULT_RETRY_DELAY_MS = 60_000;
 
 function readArg(flag, fallback = null) {
   const index = process.argv.indexOf(flag);
@@ -91,6 +92,19 @@ function countValidImportStrings(text) {
   return count;
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetriableDownloadError(error) {
+  const status = Number(error?.status ?? 0);
+  return error?.retriable === true
+    || status === 408
+    || status === 429
+    || status >= 500
+    || /ADDON_DATA_INCOMPLETE|temporarily|timeout|fetch failed/i.test(error?.message ?? '');
+}
+
 export function assertAddonDataCompleteness(text) {
   const countsBlock = extractNamedBlock(text, 'counts');
   if (!countsBlock) {
@@ -149,7 +163,7 @@ export function addonDataHash(text) {
   return createHash('sha256').update(normalizeAddonDataForComparison(text)).digest('hex');
 }
 
-export async function downloadAddonData({ url, outputPath, timeoutMs }) {
+async function fetchAddonDataText({ url, timeoutMs }) {
   const response = await fetch(url, {
     signal: Number.isFinite(timeoutMs) && timeoutMs > 0 ? AbortSignal.timeout(timeoutMs) : undefined,
     headers: {
@@ -160,7 +174,34 @@ export async function downloadAddonData({ url, outputPath, timeoutMs }) {
 
   const text = await response.text();
   if (!response.ok) {
-    throw new Error(`${response.status} ${response.statusText}: ${text.slice(0, 500)}`);
+    const error = new Error(`${response.status} ${response.statusText}: ${text.slice(0, 500)}`);
+    error.status = response.status;
+    error.retriable = response.status === 408 || response.status === 429 || response.status >= 500;
+    throw error;
+  }
+
+  return text;
+}
+
+export async function downloadAddonData({ url, outputPath, timeoutMs, retries = 0, retryDelayMs = DEFAULT_RETRY_DELAY_MS }) {
+  const maxRetries = Math.max(0, Number(retries) || 0);
+  const normalizedRetryDelayMs = Math.max(0, Number(retryDelayMs) || 0);
+  let text = null;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
+    try {
+      text = await fetchAddonDataText({ url, timeoutMs });
+      break;
+    } catch (error) {
+      if (attempt >= maxRetries || !isRetriableDownloadError(error)) {
+        throw error;
+      }
+
+      console.warn(`Addon data download attempt ${attempt + 1} failed; retrying in ${normalizedRetryDelayMs}ms: ${error.message}`);
+      if (normalizedRetryDelayMs > 0) {
+        await sleep(normalizedRetryDelayMs);
+      }
+    }
   }
 
   assertLooksLikeAddonLua(text);
@@ -196,6 +237,8 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const url = readArg('--url', process.env.QWT_ADDON_DATA_URL || DEFAULT_URL);
   const outputPath = path.resolve(REPO_ROOT, readArg('--output', DEFAULT_OUTPUT));
   const timeoutMs = Number(readArg('--timeout-ms', process.env.QWT_ADDON_DATA_TIMEOUT_MS || 45000));
-  const result = await downloadAddonData({ url, outputPath, timeoutMs });
+  const retries = Number(readArg('--retries', process.env.QWT_ADDON_DATA_RETRIES || 0));
+  const retryDelayMs = Number(readArg('--retry-delay-ms', process.env.QWT_ADDON_DATA_RETRY_DELAY_MS || DEFAULT_RETRY_DELAY_MS));
+  const result = await downloadAddonData({ url, outputPath, timeoutMs, retries, retryDelayMs });
   console.log(JSON.stringify({ ok: true, source: url, ...result }, null, 2));
 }

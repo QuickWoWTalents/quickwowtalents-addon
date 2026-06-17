@@ -53,6 +53,8 @@ jobs:
       - name: Generate bundled addon data
         env:
           QWT_ADDON_DATA_TIMEOUT_MS: '45000'
+          QWT_ADDON_DATA_RETRIES: '6'
+          QWT_ADDON_DATA_RETRY_DELAY_MS: '300000'
           QWT_ADDON_DELAY_MS: '100'
           QWT_ADDON_CONCURRENCY: '8'
           QWT_FETCH_TIMEOUT_MS: '30000'
