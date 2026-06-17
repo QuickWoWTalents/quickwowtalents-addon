@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Updated bundled raid recommendations for Rotmire and retained Voidspire Heroic coverage.
+
 ## 1.0.43 - 2026-06-15
 
 - Updated bundled recommendation data from quickwowtalents.com.
