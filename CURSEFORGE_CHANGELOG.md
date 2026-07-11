@@ -1,3 +1,3 @@
-QuickWoWTalents 1.0.68 - 2026-07-10
+QuickWoWTalents 1.0.69 - 2026-07-11
 
 - Updated bundled recommendation data from quickwowtalents.com.
