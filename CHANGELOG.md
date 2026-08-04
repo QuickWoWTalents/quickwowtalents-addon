@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 1.0.93 - 2026-08-04
+
+- Updated bundled recommendation data from quickwowtalents.com.
+
 ## 1.0.92 - 2026-08-03
 
 - Updated bundled recommendation data from quickwowtalents.com.
