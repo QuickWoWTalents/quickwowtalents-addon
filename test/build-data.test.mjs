@@ -75,7 +75,8 @@ test('buildAddonData requests Mythic+ Best Overall from keys 15 and above', asyn
             selectionBasis: request.mode === 'mplus' ? 'most-common-top-100-per-key-15-plus' : 'highest-average-top-100',
             mostCommon: {
               blizzardExportString: request.mode === 'mplus' ? 'MPLUS' : 'RAID',
-              mzTalentTree: { specId: 62 },
+              talentTree: request.mode === 'mplus' ? { specId: 62 } : undefined,
+              mzTalentTree: { specId: request.mode === 'mplus' ? 9999 : 62 },
               count: 10,
               adoptionRate: 0.1,
               averageAmount: 1000,
@@ -97,6 +98,65 @@ test('buildAddonData requests Mythic+ Best Overall from keys 15 and above', asyn
     assert.equal(entry.minimumKeystoneLevel, 15);
     assert.equal(entry.label, 'Arcane Mage — Pit of Saron Best Overall (15+)');
     assert.equal(entry.selectionBasis, 'most-common-top-100-per-key-15-plus');
+    assert.equal(payload.recommendations[62].raid.encounters[3176].importString, 'RAID');
+    assert.equal(payload.recommendations[9999], undefined);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+
+test('buildAddonData falls back to the 12.1 Devourer spec id', async () => {
+  const originalFetch = globalThis.fetch;
+
+  globalThis.fetch = async (url) => {
+    assert.equal(String(url), 'https://example.test/api/options');
+    return {
+      ok: true,
+      json: async () => ({
+        defaultRegion: 'all',
+        classes: [{
+          className: 'Demon Hunter',
+          specs: [{ specName: 'Devourer', role: 'DPS', metrics: ['dps'] }]
+        }],
+        mythicPlus: {
+          dungeons: [{ id: 12813, name: 'Murder Row' }]
+        },
+        raid: {
+          bosses: [],
+          difficulties: [{ id: 4, name: 'Heroic' }]
+        }
+      })
+    };
+  };
+
+  try {
+    const payload = await buildAddonData({
+      baseUrl: 'https://example.test',
+      generatedAt: '2026-08-21T00:00:00.000Z',
+      delayMs: 0,
+      concurrency: 1,
+      loadBuildPayload: async () => ({
+        cache: { servedDayKey: '2026-08-21', capturedAt: '2026-08-21T01:00:00.000Z' },
+        summary: {
+          totalLogs: 5,
+          distinctBuilds: 2,
+          selectionBasis: 'most-common-top-100-per-key-15-plus',
+          mostCommon: {
+            blizzardExportString: 'DEVOURER',
+            count: 2,
+            adoptionRate: 0.4,
+            averageAmount: 1000,
+            bestAmount: 1200
+          }
+        }
+      })
+    });
+
+    assert.equal(payload.counts.recommendations, 1);
+    assert.equal(payload.counts.skipped, 0);
+    assert.equal(payload.recommendations[1480].specName, 'Devourer');
+    assert.equal(payload.recommendations[1480].mplus.encounters[12813].importString, 'DEVOURER');
   } finally {
     globalThis.fetch = originalFetch;
   }

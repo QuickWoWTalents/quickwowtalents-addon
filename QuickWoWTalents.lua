@@ -3,10 +3,12 @@ local PREFIX = "|cff00c8ffQuick WoW Talents|r"
 local UI = { state = { mode = "mplus", encounterIds = {} } }
 local AUTO_OPEN_DELAY_SECONDS = 1.5
 
--- Current Mythic+ client IDs, cross-checked against Raider.IO's public dungeon DB.
+-- Supported Mythic+ client IDs, cross-checked against current addon databases.
 -- WoW exposes challenge map / instance map IDs in-game; QWT recommendation data uses
--- Warcraft Logs encounter IDs, so auto-open needs an explicit translation layer.
+-- Warcraft Logs encounter IDs, so auto-open needs an explicit translation layer. Keeping
+-- both Midnight pools makes auto-open safe while the bundled recommendation data rolls over.
 local MPLUS_DUNGEON_CONTEXTS = {
+  -- Midnight Season 1
   { qwtDungeonId = 10658, challengeMapId = 556, instanceMapIds = { 658 }, name = "Pit of Saron" },
   { qwtDungeonId = 61209, challengeMapId = 161, instanceMapIds = { 1209 }, name = "Skyreach" },
   { qwtDungeonId = 361753, challengeMapId = 239, instanceMapIds = { 1753 }, name = "Seat of the Triumvirate" },
@@ -14,7 +16,17 @@ local MPLUS_DUNGEON_CONTEXTS = {
   { qwtDungeonId = 12805, challengeMapId = 557, instanceMapIds = { 2805 }, name = "Windrunner Spire" },
   { qwtDungeonId = 12811, challengeMapId = 558, instanceMapIds = { 2811 }, name = "Magisters' Terrace" },
   { qwtDungeonId = 12874, challengeMapId = 560, instanceMapIds = { 2874 }, name = "Maisara Caverns" },
-  { qwtDungeonId = 12915, challengeMapId = 559, instanceMapIds = { 2915 }, name = "Nexus-Point Xenas" }
+  { qwtDungeonId = 12915, challengeMapId = 559, instanceMapIds = { 2915 }, name = "Nexus-Point Xenas" },
+
+  -- Midnight Season 2
+  { qwtDungeonId = 12993, challengeMapId = 588, instanceMapIds = { 2993 }, name = "Altar of Fangs" },
+  { qwtDungeonId = 12825, challengeMapId = 586, instanceMapIds = { 2825 }, name = "Den of Nalorakk" },
+  { qwtDungeonId = 61762, challengeMapId = 249, instanceMapIds = { 1762 }, name = "Kings' Rest" },
+  { qwtDungeonId = 12813, challengeMapId = 587, instanceMapIds = { 2813 }, name = "Murder Row" },
+  { qwtDungeonId = 112521, challengeMapId = 399, instanceMapIds = { 2521 }, name = "Ruby Life Pools" },
+  { qwtDungeonId = 61877, challengeMapId = 250, instanceMapIds = { 1877 }, name = "Temple of Sethraliss" },
+  { qwtDungeonId = 12859, challengeMapId = 584, instanceMapIds = { 2859 }, name = "The Blinding Vale" },
+  { qwtDungeonId = 12923, challengeMapId = 585, instanceMapIds = { 2923 }, name = "Voidscar Arena" }
 }
 
 local MPLUS_DUNGEON_BY_CHALLENGE_MAP_ID = {}
@@ -71,16 +83,19 @@ local function CountRecommendations()
 end
 
 local function GetCurrentSpecInfo()
-  if not GetSpecialization or not GetSpecializationInfo then
+  local getSpecialization = C_SpecializationInfo and C_SpecializationInfo.GetSpecialization or GetSpecialization
+  local getSpecializationInfo = C_SpecializationInfo and C_SpecializationInfo.GetSpecializationInfo or GetSpecializationInfo
+
+  if not getSpecialization or not getSpecializationInfo then
     return nil, nil, "Specialization API is not available."
   end
 
-  local specIndex = GetSpecialization()
+  local specIndex = getSpecialization()
   if not specIndex then
     return nil, nil, "Choose a specialization first, then run /qwt again."
   end
 
-  local specID, specName = GetSpecializationInfo(specIndex)
+  local specID, specName = getSpecializationInfo(specIndex)
   if not specID then
     return nil, nil, "Could not detect current specialization."
   end

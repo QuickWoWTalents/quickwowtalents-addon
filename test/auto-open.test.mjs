@@ -11,18 +11,18 @@ async function readAddonLua() {
   return readFile(addonLuaPath, 'utf8');
 }
 
-test('auto-open uses explicit current Mythic+ client ID mappings', async () => {
+test('auto-open includes explicit Midnight Season 2 Mythic+ client ID mappings', async () => {
   const source = await readAddonLua();
 
   const expectedMappings = [
-    { qwtDungeonId: 10658, challengeMapId: 556, instanceMapIds: [658], name: 'Pit of Saron' },
-    { qwtDungeonId: 61209, challengeMapId: 161, instanceMapIds: [1209], name: 'Skyreach' },
-    { qwtDungeonId: 361753, challengeMapId: 239, instanceMapIds: [1753], name: 'Seat of the Triumvirate' },
-    { qwtDungeonId: 112526, challengeMapId: 402, instanceMapIds: [2526], name: "Algeth'ar Academy" },
-    { qwtDungeonId: 12805, challengeMapId: 557, instanceMapIds: [2805], name: 'Windrunner Spire' },
-    { qwtDungeonId: 12811, challengeMapId: 558, instanceMapIds: [2811], name: "Magisters' Terrace" },
-    { qwtDungeonId: 12874, challengeMapId: 560, instanceMapIds: [2874], name: 'Maisara Caverns' },
-    { qwtDungeonId: 12915, challengeMapId: 559, instanceMapIds: [2915], name: 'Nexus-Point Xenas' }
+    { qwtDungeonId: 12993, challengeMapId: 588, instanceMapIds: [2993], name: 'Altar of Fangs' },
+    { qwtDungeonId: 12825, challengeMapId: 586, instanceMapIds: [2825], name: 'Den of Nalorakk' },
+    { qwtDungeonId: 61762, challengeMapId: 249, instanceMapIds: [1762], name: "Kings' Rest" },
+    { qwtDungeonId: 12813, challengeMapId: 587, instanceMapIds: [2813], name: 'Murder Row' },
+    { qwtDungeonId: 112521, challengeMapId: 399, instanceMapIds: [2521], name: 'Ruby Life Pools' },
+    { qwtDungeonId: 61877, challengeMapId: 250, instanceMapIds: [1877], name: 'Temple of Sethraliss' },
+    { qwtDungeonId: 12859, challengeMapId: 584, instanceMapIds: [2859], name: 'The Blinding Vale' },
+    { qwtDungeonId: 12923, challengeMapId: 585, instanceMapIds: [2923], name: 'Voidscar Arena' }
   ];
 
   for (const mapping of expectedMappings) {
@@ -35,13 +35,15 @@ test('auto-open uses explicit current Mythic+ client ID mappings', async () => {
   assert.match(source, /MPLUS_DUNGEON_BY_INSTANCE_MAP_ID\[instanceMapId\] = context/);
 });
 
-test('auto-open mapped dungeons exist in the committed recommendation bundle', async () => {
+test('Season 1 auto-open mappings remain available during the data handoff', async () => {
+  const source = await readAddonLua();
   const data = await readFile(addonDataPath, 'utf8');
   const expectedSpecCount = Number(data.match(/specs = (\d+)/)?.[1]);
   const mappedDungeonIds = [10658, 61209, 361753, 112526, 12805, 12811, 12874, 12915];
 
   assert.equal(expectedSpecCount, 40);
   for (const dungeonId of mappedDungeonIds) {
+    assert.match(source, new RegExp(`qwtDungeonId = ${dungeonId},`));
     const recommendationMatches = data.match(new RegExp(`\\[${dungeonId}\\] = \\{`, 'g')) ?? [];
     assert.equal(recommendationMatches.length, expectedSpecCount, `expected one ${dungeonId} recommendation per spec`);
   }
@@ -58,6 +60,15 @@ test('auto-open checks settled instance context and current spec before opening'
   assert.match(source, /HasMplusRecommendationForSpec\(specID, context\.qwtDungeonId\)/);
   assert.match(source, /UI\.state\.mode = "mplus"/);
   assert.match(source, /UI\.state\.encounterIds\.mplus = context\.dungeonId/);
+});
+
+test('current specialization detection prefers the 12.1 namespace API with legacy fallback', async () => {
+  const source = await readAddonLua();
+
+  assert.match(source, /C_SpecializationInfo and C_SpecializationInfo\.GetSpecialization/);
+  assert.match(source, /C_SpecializationInfo and C_SpecializationInfo\.GetSpecializationInfo/);
+  assert.match(source, /or GetSpecialization/);
+  assert.match(source, /or GetSpecializationInfo/);
 });
 
 test('auto-open is throttled, dismissible, and combat-safe', async () => {

@@ -4,10 +4,16 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 
-import { addonDataHash, downloadAddonData, normalizeAddonDataForComparison } from '../scripts/download-addon-data.mjs';
+import {
+  addonDataHash,
+  assertLooksLikeAddonLua,
+  downloadAddonData,
+  normalizeAddonDataForComparison
+} from '../scripts/download-addon-data.mjs';
 
-const SCRIPT = new URL('../scripts/download-addon-data.mjs', import.meta.url).pathname;
+const SCRIPT = fileURLToPath(new URL('../scripts/download-addon-data.mjs', import.meta.url));
 
 function validAddonLua({ generatedAt = '2026-05-01T00:00:00.000Z', importString = 'MPLUS' } = {}) {
   return [
@@ -38,7 +44,7 @@ test('download-addon-data rejects non-addon Lua content', async () => {
   assert.match(result.stderr, /QuickWoWTalentsData Lua assignment/);
 });
 
-test('download-addon-data rejects incomplete addon recommendation coverage', async () => {
+test('download-addon-data rejects skipped coverage without explicit no-log codes', async () => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'qwt-addon-download-'));
   const output = path.join(dir, 'QuickWoWTalentsData.lua');
   const lua = [
@@ -61,7 +67,78 @@ test('download-addon-data rejects incomplete addon recommendation coverage', asy
   });
 
   assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /Addon data is incomplete/);
+  assert.match(result.stderr, /explicit NO_USABLE_LOGS gaps are allowed/);
+});
+
+test('download-addon-data only accepts no-log codes from the skipped table', () => {
+  const lua = [
+    'QuickWoWTalentsData = {',
+    '  schemaVersion = 2,',
+    '  modes = {',
+    '    mplus = { minimumKeystoneLevel = 15, dungeons = { { id = 12993, name = "Altar of Fangs" } } },',
+    '    raid = { bosses = { { id = 3470, name = "Test Boss" } } }',
+    '  },',
+    '  counts = { specs = 1, attempted = 2, recommendations = 1, specsWithAnyRecommendation = 1, skipped = 1 },',
+    '  recommendations = { [251] = { mplus = { encounters = { [12993] = { importString = "MPLUS", code = "NO_USABLE_LOGS" } } }, raid = { encounters = {} } } },',
+    '  skipped = { { reason = "missing import string" } }',
+    '}'
+  ].join('\n');
+
+  assert.throws(
+    () => assertLooksLikeAddonLua(lua),
+    /only explicit NO_USABLE_LOGS gaps are allowed/
+  );
+});
+
+test('download-addon-data ignores no-log text in skipped-table comments', () => {
+  const lua = [
+    'QuickWoWTalentsData = {',
+    '  schemaVersion = 2,',
+    '  modes = {',
+    '    mplus = { minimumKeystoneLevel = 15, dungeons = { { id = 12993, name = "Altar of Fangs" } } },',
+    '    raid = { bosses = { { id = 3470, name = "Test Boss" } } }',
+    '  },',
+    '  counts = { specs = 1, attempted = 2, recommendations = 1, specsWithAnyRecommendation = 1, skipped = 1 },',
+    '  recommendations = { [251] = { mplus = { encounters = { [12993] = { importString = "MPLUS" } } }, raid = { encounters = {} } } },',
+    '  skipped = { { reason = "missing import string" } -- code = "NO_USABLE_LOGS"',
+    '  }',
+    '}'
+  ].join('\n');
+
+  assert.throws(
+    () => assertLooksLikeAddonLua(lua),
+    /only explicit NO_USABLE_LOGS gaps are allowed/
+  );
+});
+
+
+test('download-addon-data accepts explicit no-log current-tier gaps', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'qwt-addon-download-'));
+  const output = path.join(dir, 'QuickWoWTalentsData.lua');
+  const lua = [
+    'QuickWoWTalentsData = {',
+    '  schemaVersion = 2,',
+    '  modes = {',
+    '    mplus = { minimumKeystoneLevel = 15, dungeons = { { id = 12993, name = "Altar of Fangs" } } },',
+    '    raid = { bosses = { { id = 3470, name = "Nek\'zali the Soulcoiler" } } }',
+    '  },',
+    '  counts = { specs = 1, attempted = 2, recommendations = 1, specsWithAnyRecommendation = 1, skipped = 1 },',
+    '  recommendations = { [251] = { mplus = { encounters = {} }, raid = { encounters = { [3470] = { importString = "RAID" } } } } },',
+    '  skipped = { { code = "NO_USABLE_LOGS", reason = "No usable Warcraft Logs runs exist for this exact Mythic+ selection." } }',
+    '}',
+    ''
+  ].join('\n');
+  const url = `data:text/plain,${encodeURIComponent(lua)}`;
+
+  const result = spawnSync(process.execPath, [SCRIPT, '--url', url, '--output', output], {
+    encoding: 'utf8'
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(await fs.readFile(output, 'utf8'), lua);
+  assert.match(result.stdout, /"recommendations": 1/);
+  assert.match(result.stdout, /"skipped": 1/);
+  assert.match(result.stdout, /"partial": true/);
 });
 
 test('download-addon-data rejects missing import strings', async () => {

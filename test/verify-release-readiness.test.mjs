@@ -16,7 +16,7 @@ async function writeFixture({
   scopedChangelog = 'QuickWoWTalents 1.2.3 - 2026-05-25\n\n- Updated bundled recommendation data from quickwowtalents.com.\n',
   packageMeta = 'manual-changelog:\n  filename: CURSEFORGE_CHANGELOG.md\n  markup-type: plain\n',
   zipTocVersion = '1.2.3',
-  tocInterface = '120007, 120005',
+  tocInterface = '120100, 120007, 120005',
   zipTocInterface = tocInterface,
   includeZip = true,
 } = {}) {
@@ -111,7 +111,7 @@ test('verifyReleaseReadiness rejects releases missing the current retail interfa
 
   await assert.rejects(
     verifyReleaseReadiness({ repoRoot }),
-    /QuickWoWTalents\.toc must include interface 120007/,
+    /QuickWoWTalents\.toc must include interface 120100/,
   );
 });
 
@@ -120,7 +120,7 @@ test('verifyReleaseReadiness rejects packaged releases missing the current retai
 
   await assert.rejects(
     verifyReleaseReadiness({ repoRoot }),
-    /packaged QuickWoWTalents\.toc must include interface 120007/,
+    /packaged QuickWoWTalents\.toc must include interface 120100/,
   );
 });
 

@@ -75,6 +75,56 @@ function extractNamedBlock(text, name) {
   return extractBraceBlock(text, match.index + match[0].length);
 }
 
+function extractTopLevelNamedTableBlock(text, name) {
+  const rootAssignment = /^QuickWoWTalentsData\s*=\s*/m.exec(text);
+  if (!rootAssignment) return null;
+
+  const rootBrace = text.indexOf('{', rootAssignment.index + rootAssignment[0].length);
+  if (rootBrace === -1) return null;
+
+  const fieldPattern = new RegExp(`^${name}\\s*=\\s*\\{`);
+  let depth = 0;
+  let inString = false;
+  let escaping = false;
+
+  for (let index = rootBrace; index < text.length; index += 1) {
+    const char = text[index];
+
+    if (inString) {
+      if (escaping) {
+        escaping = false;
+      } else if (char === '\\') {
+        escaping = true;
+      } else if (char === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (char === '{') {
+      depth += 1;
+      continue;
+    }
+
+    if (char === '}') {
+      depth -= 1;
+      if (depth === 0) return null;
+      continue;
+    }
+
+    if (depth === 1 && fieldPattern.test(text.slice(index))) {
+      return extractBraceBlock(text, index);
+    }
+  }
+
+  return null;
+}
+
 function extractNumberField(text, name) {
   const match = new RegExp(`\\b${name}\\s*=\\s*(\\d+)`).exec(text);
   return match ? Number(match[1]) : null;
@@ -89,6 +139,47 @@ function countValidImportStrings(text) {
   for (const match of String(text).matchAll(/\bimportString\s*=\s*"((?:\\.|[^"\\])*)"/g)) {
     if (match[1].trim()) count += 1;
   }
+  return count;
+}
+
+function countAcceptedNoLogSkips(skippedBlock) {
+  const text = String(skippedBlock ?? '');
+  let count = 0;
+  let inString = false;
+  let escaping = false;
+
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+
+    if (inString) {
+      if (escaping) {
+        escaping = false;
+      } else if (char === '\\') {
+        escaping = true;
+      } else if (char === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === '-' && text[index + 1] === '-') {
+      index = text.indexOf('\n', index);
+      if (index === -1) break;
+      continue;
+    }
+
+    if (char === '"') {
+      inString = true;
+      continue;
+    }
+
+    const previousChar = text[index - 1] ?? '';
+    if (!/[A-Za-z0-9_]/.test(previousChar)
+      && /^code\s*=\s*"NO_USABLE_LOGS"/.test(text.slice(index))) {
+      count += 1;
+    }
+  }
+
   return count;
 }
 
@@ -123,8 +214,13 @@ export function assertAddonDataCompleteness(text) {
     }
   }
 
-  if (skipped !== 0 || recommendations !== attempted || specsWithAnyRecommendation !== specs) {
+  if (recommendations + skipped !== attempted || specsWithAnyRecommendation !== specs) {
     throw new Error(`Addon data is incomplete: attempted=${attempted}, recommendations=${recommendations}, specs=${specs}, specsWithAnyRecommendation=${specsWithAnyRecommendation}, skipped=${skipped}.`);
+  }
+
+  const skippedBlock = extractTopLevelNamedTableBlock(text, 'skipped');
+  if (skipped > 0 && countAcceptedNoLogSkips(skippedBlock) !== skipped) {
+    throw new Error(`Addon data has ${skipped} skipped recommendations, but only explicit NO_USABLE_LOGS gaps are allowed for current-tier partial bundles.`);
   }
 
   const mplusBlock = extractNamedBlock(text, 'mplus');
@@ -133,10 +229,10 @@ export function assertAddonDataCompleteness(text) {
   const bossesBlock = extractNamedBlock(raidBlock ?? '', 'bosses');
   const dungeons = countIdEntries(dungeonsBlock);
   const bosses = countIdEntries(bossesBlock);
-  const expectedRecommendations = specs * (dungeons + bosses);
+  const expectedAttempts = specs * (dungeons + bosses);
 
-  if (expectedRecommendations !== recommendations) {
-    throw new Error(`Addon data recommendation count does not match the expected matrix: expected=${expectedRecommendations}, recommendations=${recommendations}, specs=${specs}, dungeons=${dungeons}, bosses=${bosses}.`);
+  if (expectedAttempts !== attempted) {
+    throw new Error(`Addon data attempt count does not match the expected matrix: expected=${expectedAttempts}, attempted=${attempted}, specs=${specs}, dungeons=${dungeons}, bosses=${bosses}.`);
   }
 
   const minKeystoneLevel = extractNumberField(mplusBlock ?? '', 'minimumKeystoneLevel');
@@ -226,6 +322,8 @@ export async function downloadAddonData({ url, outputPath, timeoutMs, retries = 
     outputPath,
     bytes: Buffer.byteLength(normalizedText),
     recommendations: Number(text.match(/counts = \{[\s\S]*?recommendations = (\d+)/)?.[1] ?? 0),
+    skipped: Number(text.match(/counts = \{[\s\S]*?skipped = (\d+)/)?.[1] ?? 0),
+    partial: Number(text.match(/counts = \{[\s\S]*?skipped = (\d+)/)?.[1] ?? 0) > 0,
     generatedAt: text.match(/generatedAt = "([^"]+)"/)?.[1] ?? null,
     changed,
     previousHash,
