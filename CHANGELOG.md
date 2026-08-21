@@ -2,8 +2,11 @@
 
 ## Unreleased
 
-- Added 12.1 / current-tier addon data download support for explicit no-log gaps while preserving strict cache-miss failures.
+- Added 12.1 / current-tier addon data download support for explicit no-log gaps while preserving strict cache-miss failures and validating only the actual skipped entries.
 - Added Devourer Demon Hunter fallback spec ID support for generated addon data.
+- Added all eight Midnight Season 2 dungeon mappings for automatic Mythic+ recommendations.
+- Updated specialization detection to prefer the 12.1 namespaced API with legacy-client fallback.
+- Added read-only pull request checks for tests, packaging, and release readiness.
 
 ## 1.0.103 - 2026-08-17
 

@@ -75,7 +75,8 @@ test('buildAddonData requests Mythic+ Best Overall from keys 15 and above', asyn
             selectionBasis: request.mode === 'mplus' ? 'most-common-top-100-per-key-15-plus' : 'highest-average-top-100',
             mostCommon: {
               blizzardExportString: request.mode === 'mplus' ? 'MPLUS' : 'RAID',
-              mzTalentTree: { specId: 62 },
+              talentTree: request.mode === 'mplus' ? { specId: 62 } : undefined,
+              mzTalentTree: { specId: request.mode === 'mplus' ? 9999 : 62 },
               count: 10,
               adoptionRate: 0.1,
               averageAmount: 1000,
@@ -97,6 +98,8 @@ test('buildAddonData requests Mythic+ Best Overall from keys 15 and above', asyn
     assert.equal(entry.minimumKeystoneLevel, 15);
     assert.equal(entry.label, 'Arcane Mage — Pit of Saron Best Overall (15+)');
     assert.equal(entry.selectionBasis, 'most-common-top-100-per-key-15-plus');
+    assert.equal(payload.recommendations[62].raid.encounters[3176].importString, 'RAID');
+    assert.equal(payload.recommendations[9999], undefined);
   } finally {
     globalThis.fetch = originalFetch;
   }

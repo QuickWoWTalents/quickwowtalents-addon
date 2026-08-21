@@ -75,6 +75,56 @@ function extractNamedBlock(text, name) {
   return extractBraceBlock(text, match.index + match[0].length);
 }
 
+function extractTopLevelNamedTableBlock(text, name) {
+  const rootAssignment = /^QuickWoWTalentsData\s*=\s*/m.exec(text);
+  if (!rootAssignment) return null;
+
+  const rootBrace = text.indexOf('{', rootAssignment.index + rootAssignment[0].length);
+  if (rootBrace === -1) return null;
+
+  const fieldPattern = new RegExp(`^${name}\\s*=\\s*\\{`);
+  let depth = 0;
+  let inString = false;
+  let escaping = false;
+
+  for (let index = rootBrace; index < text.length; index += 1) {
+    const char = text[index];
+
+    if (inString) {
+      if (escaping) {
+        escaping = false;
+      } else if (char === '\\') {
+        escaping = true;
+      } else if (char === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (char === '{') {
+      depth += 1;
+      continue;
+    }
+
+    if (char === '}') {
+      depth -= 1;
+      if (depth === 0) return null;
+      continue;
+    }
+
+    if (depth === 1 && fieldPattern.test(text.slice(index))) {
+      return extractBraceBlock(text, index);
+    }
+  }
+
+  return null;
+}
+
 function extractNumberField(text, name) {
   const match = new RegExp(`\\b${name}\\s*=\\s*(\\d+)`).exec(text);
   return match ? Number(match[1]) : null;
@@ -93,7 +143,44 @@ function countValidImportStrings(text) {
 }
 
 function countAcceptedNoLogSkips(skippedBlock) {
-  return Array.from(String(skippedBlock ?? '').matchAll(/\bcode\s*=\s*"NO_USABLE_LOGS"/g)).length;
+  const text = String(skippedBlock ?? '');
+  let count = 0;
+  let inString = false;
+  let escaping = false;
+
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+
+    if (inString) {
+      if (escaping) {
+        escaping = false;
+      } else if (char === '\\') {
+        escaping = true;
+      } else if (char === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === '-' && text[index + 1] === '-') {
+      index = text.indexOf('\n', index);
+      if (index === -1) break;
+      continue;
+    }
+
+    if (char === '"') {
+      inString = true;
+      continue;
+    }
+
+    const previousChar = text[index - 1] ?? '';
+    if (!/[A-Za-z0-9_]/.test(previousChar)
+      && /^code\s*=\s*"NO_USABLE_LOGS"/.test(text.slice(index))) {
+      count += 1;
+    }
+  }
+
+  return count;
 }
 
 function sleep(ms) {
@@ -131,7 +218,8 @@ export function assertAddonDataCompleteness(text) {
     throw new Error(`Addon data is incomplete: attempted=${attempted}, recommendations=${recommendations}, specs=${specs}, specsWithAnyRecommendation=${specsWithAnyRecommendation}, skipped=${skipped}.`);
   }
 
-  if (skipped > 0 && countAcceptedNoLogSkips(text) !== skipped) {
+  const skippedBlock = extractTopLevelNamedTableBlock(text, 'skipped');
+  if (skipped > 0 && countAcceptedNoLogSkips(skippedBlock) !== skipped) {
     throw new Error(`Addon data has ${skipped} skipped recommendations, but only explicit NO_USABLE_LOGS gaps are allowed for current-tier partial bundles.`);
   }
 
