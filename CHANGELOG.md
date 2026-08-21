@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added 12.1 / current-tier addon data download support for explicit no-log gaps while preserving strict cache-miss failures.
+- Added Devourer Demon Hunter fallback spec ID support for generated addon data.
+
 ## 1.0.103 - 2026-08-17
 
 - Updated bundled recommendation data from quickwowtalents.com.

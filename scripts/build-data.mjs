@@ -21,6 +21,7 @@ const FALLBACK_SPEC_IDS = new Map([
   ['Death Knight:Unholy', 252],
   ['Demon Hunter:Havoc', 577],
   ['Demon Hunter:Vengeance', 581],
+  ['Demon Hunter:Devourer', 1480],
   ['Druid:Balance', 102],
   ['Druid:Feral', 103],
   ['Druid:Guardian', 104],
@@ -213,7 +214,11 @@ function getSpecJobs(options, onlySpec = null, limit = null) {
 function createRecommendation({ job, buildPayload, generatedAt, mode, encounter, difficulty = null }) {
   const mostCommon = buildPayload.summary?.mostCommon;
   const importString = mostCommon?.blizzardExportString;
-  const specId = Number(mostCommon?.mzTalentTree?.specId ?? FALLBACK_SPEC_IDS.get(job.key));
+  const specId = Number(
+    mostCommon?.talentTree?.specId
+    ?? mostCommon?.mzTalentTree?.specId
+    ?? FALLBACK_SPEC_IDS.get(job.key)
+  );
 
   if (!importString || !Number.isFinite(specId)) {
     return null;

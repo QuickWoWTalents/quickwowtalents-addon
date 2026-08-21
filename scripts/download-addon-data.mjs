@@ -92,6 +92,10 @@ function countValidImportStrings(text) {
   return count;
 }
 
+function countAcceptedNoLogSkips(skippedBlock) {
+  return Array.from(String(skippedBlock ?? '').matchAll(/\bcode\s*=\s*"NO_USABLE_LOGS"/g)).length;
+}
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -123,8 +127,12 @@ export function assertAddonDataCompleteness(text) {
     }
   }
 
-  if (skipped !== 0 || recommendations !== attempted || specsWithAnyRecommendation !== specs) {
+  if (recommendations + skipped !== attempted || specsWithAnyRecommendation !== specs) {
     throw new Error(`Addon data is incomplete: attempted=${attempted}, recommendations=${recommendations}, specs=${specs}, specsWithAnyRecommendation=${specsWithAnyRecommendation}, skipped=${skipped}.`);
+  }
+
+  if (skipped > 0 && countAcceptedNoLogSkips(text) !== skipped) {
+    throw new Error(`Addon data has ${skipped} skipped recommendations, but only explicit NO_USABLE_LOGS gaps are allowed for current-tier partial bundles.`);
   }
 
   const mplusBlock = extractNamedBlock(text, 'mplus');
@@ -133,10 +141,10 @@ export function assertAddonDataCompleteness(text) {
   const bossesBlock = extractNamedBlock(raidBlock ?? '', 'bosses');
   const dungeons = countIdEntries(dungeonsBlock);
   const bosses = countIdEntries(bossesBlock);
-  const expectedRecommendations = specs * (dungeons + bosses);
+  const expectedAttempts = specs * (dungeons + bosses);
 
-  if (expectedRecommendations !== recommendations) {
-    throw new Error(`Addon data recommendation count does not match the expected matrix: expected=${expectedRecommendations}, recommendations=${recommendations}, specs=${specs}, dungeons=${dungeons}, bosses=${bosses}.`);
+  if (expectedAttempts !== attempted) {
+    throw new Error(`Addon data attempt count does not match the expected matrix: expected=${expectedAttempts}, attempted=${attempted}, specs=${specs}, dungeons=${dungeons}, bosses=${bosses}.`);
   }
 
   const minKeystoneLevel = extractNumberField(mplusBlock ?? '', 'minimumKeystoneLevel');
@@ -226,6 +234,8 @@ export async function downloadAddonData({ url, outputPath, timeoutMs, retries = 
     outputPath,
     bytes: Buffer.byteLength(normalizedText),
     recommendations: Number(text.match(/counts = \{[\s\S]*?recommendations = (\d+)/)?.[1] ?? 0),
+    skipped: Number(text.match(/counts = \{[\s\S]*?skipped = (\d+)/)?.[1] ?? 0),
+    partial: Number(text.match(/counts = \{[\s\S]*?skipped = (\d+)/)?.[1] ?? 0) > 0,
     generatedAt: text.match(/generatedAt = "([^"]+)"/)?.[1] ?? null,
     changed,
     previousHash,

@@ -101,3 +101,60 @@ test('buildAddonData requests Mythic+ Best Overall from keys 15 and above', asyn
     globalThis.fetch = originalFetch;
   }
 });
+
+
+test('buildAddonData falls back to the 12.1 Devourer spec id', async () => {
+  const originalFetch = globalThis.fetch;
+
+  globalThis.fetch = async (url) => {
+    assert.equal(String(url), 'https://example.test/api/options');
+    return {
+      ok: true,
+      json: async () => ({
+        defaultRegion: 'all',
+        classes: [{
+          className: 'Demon Hunter',
+          specs: [{ specName: 'Devourer', role: 'DPS', metrics: ['dps'] }]
+        }],
+        mythicPlus: {
+          dungeons: [{ id: 12813, name: 'Murder Row' }]
+        },
+        raid: {
+          bosses: [],
+          difficulties: [{ id: 4, name: 'Heroic' }]
+        }
+      })
+    };
+  };
+
+  try {
+    const payload = await buildAddonData({
+      baseUrl: 'https://example.test',
+      generatedAt: '2026-08-21T00:00:00.000Z',
+      delayMs: 0,
+      concurrency: 1,
+      loadBuildPayload: async () => ({
+        cache: { servedDayKey: '2026-08-21', capturedAt: '2026-08-21T01:00:00.000Z' },
+        summary: {
+          totalLogs: 5,
+          distinctBuilds: 2,
+          selectionBasis: 'most-common-top-100-per-key-15-plus',
+          mostCommon: {
+            blizzardExportString: 'DEVOURER',
+            count: 2,
+            adoptionRate: 0.4,
+            averageAmount: 1000,
+            bestAmount: 1200
+          }
+        }
+      })
+    });
+
+    assert.equal(payload.counts.recommendations, 1);
+    assert.equal(payload.counts.skipped, 0);
+    assert.equal(payload.recommendations[1480].specName, 'Devourer');
+    assert.equal(payload.recommendations[1480].mplus.encounters[12813].importString, 'DEVOURER');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
