@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -76,6 +77,23 @@ function stepIds(workflow) {
 
 async function git(cwd, args) {
   return execFileAsync('git', args, { cwd, encoding: 'utf8' });
+}
+
+async function trackedTextFiles() {
+  const { stdout } = await execFileAsync('git', ['ls-files', '-z'], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+  });
+  const files = stdout.split('\0').filter(Boolean);
+  const entries = await Promise.all(files.map(async (file) => {
+    const content = await fs.readFile(path.join(REPO_ROOT, file));
+    return content.includes(0) ? null : { file, source: content.toString('utf8') };
+  }));
+  return entries.filter(Boolean);
+}
+
+function sha256(value) {
+  return createHash('sha256').update(value).digest('hex');
 }
 
 async function createReleaseRepository() {
@@ -213,42 +231,94 @@ for (const [name, workflow] of [
   });
 }
 
-test('tracked release-facing content uses portable paths and public project identifiers', async () => {
-  const { stdout } = await execFileAsync('git', [
-    'ls-files',
-    '.github',
-    'README.md',
-    'RELEASING.md',
-    'docs',
-    'scripts',
-    'test',
-    'package.json',
-    'package-lock.json',
-  ], { cwd: REPO_ROOT, encoding: 'utf8' });
-  const files = stdout.trim().split('\n').filter(Boolean);
-  const contents = (await Promise.all(
-    files.map((file) => fs.readFile(path.join(REPO_ROOT, file), 'utf8')),
-  )).join('\n');
-  assert.doesNotMatch(contents, /\/Users\//);
-  assert.doesNotMatch(contents, /\b[a-z0-9-]+-builds\b/i);
+test('all tracked text uses portable paths and approved public identifiers', async () => {
+  const entries = await trackedTextFiles();
+  const approvedHosts = new Set([
+    'github.com',
+    'quickwowtalents.com',
+    'registry.npmjs.org',
+  ]);
+  const forbiddenIdentifierHashes = new Set([
+    '2b2882e3ccb2cbebad0eca914f2503829579b44d8c67f6659e893b75885061ff',
+    'd89d1f644c210b2bb89251f25a70e3093dbfb1ef1360882e214008c742d29d41',
+    '9279d1ed92b99c3f5679f9d8fa017b1ec6cf0cb47e43cbd84e61f4e6efeca0ee',
+    '85229e67a6bd53b0520b64ec147e901269e9d9561926baabcd57207467c5f1b6',
+    'f2a6ce36f92ea66f8c726c7736adef7ffa5ac5acc6b4bec60ff39b39057f057b',
+    '56d15b754602815534f9f504e97a24ddeac9ffeb33cdf0e5695ccaa24d1998ec',
+    '9fd19c0a3f3d125b54775b7c55e3019ce118ad8365f24c2c902c094160e21b01',
+  ]);
+  const portablePathPatterns = [
+    new RegExp(['/', 'Users', '/[^/\\s]+/'].join(''), 'i'),
+    new RegExp(['/', 'home', '/[^/\\s]+/'].join(''), 'i'),
+    new RegExp(['[A-Za-z]:\\\\', 'Users', '\\\\'].join(''), 'i'),
+  ];
+
+  for (const { file, source } of entries) {
+    for (const pattern of portablePathPatterns) {
+      assert.doesNotMatch(source, pattern, `${file} must not contain a machine-specific path`);
+    }
+
+    for (const match of source.matchAll(/https?:\/\/[^\s"'<>`]+/g)) {
+      const rawUrl = match[0].replace(/[),.;:]+$/, '');
+      const hostname = new URL(rawUrl).hostname.toLowerCase();
+      const isSynthetic = hostname.endsWith('.test') || hostname.endsWith('.example');
+      assert.ok(
+        approvedHosts.has(hostname) || isSynthetic,
+        `${file} must not reference an unapproved URL host`,
+      );
+    }
+
+    const tokens = source.toLowerCase().match(/[a-z0-9._-]+/g) ?? [];
+    const candidates = new Set(tokens);
+    for (const token of tokens) {
+      const parts = token.split('-').filter(Boolean);
+      for (let start = 0; start < parts.length; start += 1) {
+        for (let end = start + 2; end <= parts.length; end += 1) {
+          candidates.add(parts.slice(start, end).join('-'));
+        }
+      }
+    }
+    assert.ok(
+      [...candidates].every((candidate) => !forbiddenIdentifierHashes.has(sha256(candidate))),
+      `${file} must not contain a non-public project identifier`,
+    );
+  }
 });
 
-test('public build generation has no external product repository import hooks', async () => {
-  const [builder, research] = await Promise.all([
-    fs.readFile(path.join(REPO_ROOT, 'scripts/build-data.mjs'), 'utf8'),
-    fs.readFile(path.join(REPO_ROOT, 'docs/research.md'), 'utf8'),
+test('repository tracks only public Markdown documents', async () => {
+  const { stdout } = await execFileAsync('git', ['ls-files', '*.md'], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+  });
+  const files = stdout.trim().split('\n').filter(Boolean).sort();
+  assert.deepEqual(files, ['CHANGELOG.md', 'CURSEFORGE_CHANGELOG.md', 'README.md']);
+
+  const readme = await fs.readFile(path.join(REPO_ROOT, 'README.md'), 'utf8');
+  const headings = [...readme.matchAll(/^## (.+)$/gm)].map((match) => match[1]);
+  assert.deepEqual(headings, [
+    'What it does',
+    'Install',
+    'Updating',
+    'Data source and privacy',
+    'Known limitations',
+    'Support',
+    'License',
   ]);
-  const forbiddenBuilderPatterns = [
-    new RegExp(['QWT', 'PRODUCT', 'REPO'].join('_')),
-    new RegExp(['--local', '-repo'].join('')),
-    new RegExp(['build', '-service\\.mjs'].join('')),
-    new RegExp(['path', 'ToFile', 'URL'].join('')),
-    /process\s*\.\s*chdir\s*\(/,
-    /\bimport\s*\(/,
+});
+
+test('public build generation is self-contained and uses the public endpoint', async () => {
+  const builder = await fs.readFile(path.join(REPO_ROOT, 'scripts/build-data.mjs'), 'utf8');
+  const importSpecifiers = [
+    ...[...builder.matchAll(/from\s+['"]([^'"]+)['"]/g)].map((match) => match[1]),
+    ...[...builder.matchAll(/^\s*import\s+['"]([^'"]+)['"]/gm)].map((match) => match[1]),
   ];
-  for (const pattern of forbiddenBuilderPatterns) assert.doesNotMatch(builder, pattern);
-  assert.doesNotMatch(research, new RegExp(['main', ' QWT', ' repo'].join(''), 'i'));
-  assert.match(research, /public.*(?:endpoint|snapshot)/i);
+  assert.ok(importSpecifiers.length > 0);
+  assert.ok(importSpecifiers.every((specifier) => (
+    specifier.startsWith('node:') || specifier.startsWith('./')
+  )));
+  assert.doesNotMatch(builder, /process\s*\.\s*chdir\s*\(/);
+  assert.doesNotMatch(builder, /\bimport\s*\(/);
+  assert.match(builder, /https:\/\/quickwowtalents\.com/);
 });
 
 test('daily conditions keep all gates before versioning and publication exact', () => {

@@ -2,7 +2,7 @@ name: Daily addon release
 
 on:
   schedule:
-    # GitHub cron is UTC. This runs after the production warm and monitor window.
+    # GitHub cron is UTC.
     - cron: '30 17 * * *'
   workflow_dispatch:
     inputs:
@@ -303,7 +303,7 @@ jobs:
           if [ ! -s "$RUNNER_TEMP/release-notes.md" ]; then
             printf '%s\n\n%s\n' \
               'Automated daily Quick WoW Talents addon data refresh.' \
-              'Bundled data is downloaded from the product-side quickwowtalents.com addon data artifact, then packaged as a static offline addon zip.' \
+              'Bundled data is downloaded from the public Quick WoW Talents addon endpoint, then packaged as a static offline addon zip.' \
               > "$RUNNER_TEMP/release-notes.md"
           fi
 
