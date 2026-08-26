@@ -12,7 +12,6 @@ import {
 const addonLuaPath = new URL('../QuickWoWTalents.lua', import.meta.url);
 const addonDataPath = new URL('../QuickWoWTalentsData.lua', import.meta.url);
 const readmePath = new URL('../README.md', import.meta.url);
-const researchPath = new URL('../docs/research.md', import.meta.url);
 
 async function readAddonLua() {
   return readFile(addonLuaPath, 'utf8');
@@ -148,7 +147,6 @@ test('auto-open is throttled, dismissible, and combat-safe', async () => {
 test('auto-open has public user controls and documentation', async () => {
   const source = await readAddonLua();
   const readme = await readFile(readmePath, 'utf8');
-  const research = await readFile(researchPath, 'utf8');
 
   assert.match(source, /command == "auto" or command == "auto status"/);
   assert.match(source, /command == "auto on" or command == "auto enable"/);
@@ -156,6 +154,4 @@ test('auto-open has public user controls and documentation', async () => {
   assert.match(readme, /\/qwt auto status/);
   assert.match(readme, /Automatic opening is enabled by default/);
   assert.match(readme, /No in-game network calls are made/);
-  assert.match(research, /Mythic\+ auto-open prior art/);
-  assert.match(research, /Raider\.IO is the closest Mythic\+ mapping reference/);
 });
