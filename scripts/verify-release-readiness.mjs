@@ -7,7 +7,7 @@ import yauzl from 'yauzl';
 
 import { assertReleaseVersion } from './prepare-release.mjs';
 import { loadCatalogForOptions, validateAddonContract } from './validate-addon-contract.mjs';
-import { verifyReleaseInputSnapshot } from './release-input-snapshot.mjs';
+import { loadVerifiedReleaseInputSnapshot } from './release-input-snapshot.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
@@ -227,16 +227,15 @@ export async function verifyReleaseReadiness({
   assertScopedCurseforgeChangelog(await fs.readFile(curseforgeChangelogPath, 'utf8'), version);
   assertHistoricalChangelog(await fs.readFile(changelogPath, 'utf8'), version);
 
-  const [sourceDataBytes, optionsBytes, catalogBytes] = await Promise.all([
-    fs.readFile(dataPath),
-    fs.readFile(optionsPath),
-    fs.readFile(catalogPath),
-  ]);
-  await verifyReleaseInputSnapshot({
-    manifestPath: snapshotManifestPath,
+  const {
     addonBytes: sourceDataBytes,
     optionsBytes,
     catalogBytes,
+  } = await loadVerifiedReleaseInputSnapshot({
+    manifestPath: snapshotManifestPath,
+    addonPath: dataPath,
+    optionsPath,
+    catalogPath,
   });
   const options = parseOptions(optionsBytes, optionsPath);
   const catalog = await loadCatalogForOptions(catalogPath, options, {

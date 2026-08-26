@@ -2,8 +2,12 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 
 export const RELEASE_INPUT_SNAPSHOT_VERSION = 1;
+export const MAX_RELEASE_INPUT_MANIFEST_BYTES = 64 * 1024;
+export const MAX_RELEASE_INPUT_OPTIONS_BYTES = 4 * 1024 * 1024;
+export const MAX_RELEASE_INPUT_CATALOG_GZIP_BYTES = 16 * 1024 * 1024;
+export const MAX_RELEASE_INPUT_CATALOG_JSON_BYTES = 128 * 1024 * 1024;
+export const MAX_RELEASE_INPUT_ADDON_BYTES = 16 * 1024 * 1024;
 
-const MAX_MANIFEST_BYTES = 64 * 1024;
 const FILE_NAMES = ['options', 'catalog', 'addon'];
 
 class ReleaseInputSnapshotError extends Error {
@@ -91,40 +95,77 @@ function parseReleaseInputSnapshotManifest(bytes) {
   return manifest;
 }
 
-async function readManifestBounded(manifestPath) {
-  if (typeof manifestPath !== 'string' || !manifestPath) {
-    fail('manifest path must be a non-empty string.');
+async function readRegularFileBounded(filePath, {
+  label,
+  maximumBytes,
+  expectedBytes = null,
+}) {
+  if (typeof filePath !== 'string' || !filePath) {
+    fail(`${label} path must be a non-empty string.`);
   }
   let handle;
   try {
-    handle = await fs.open(manifestPath, 'r');
+    handle = await fs.open(filePath, 'r');
     const stat = await handle.stat();
-    if (!stat.isFile() || stat.size > MAX_MANIFEST_BYTES) {
-      fail('manifest is not a bounded regular file.');
+    if (!stat.isFile()) {
+      fail(`${label} snapshot must be a regular file.`);
+    }
+    if (stat.size > maximumBytes) {
+      fail(`${label} byte length exceeds the fixed size limit.`);
+    }
+    if (expectedBytes !== null && stat.size !== expectedBytes) {
+      fail(`${label} byte length does not match the committed manifest.`);
     }
     const chunks = [];
     let length = 0;
     let position = 0;
-    const chunk = Buffer.allocUnsafe(4096);
+    const chunk = Buffer.allocUnsafe(Math.min(64 * 1024, maximumBytes + 1));
     while (true) {
       const { bytesRead } = await handle.read(chunk, 0, chunk.length, position);
       if (bytesRead === 0) break;
       length += bytesRead;
-      if (length > MAX_MANIFEST_BYTES) fail('manifest exceeds the size limit.');
+      if (length > maximumBytes) {
+        fail(`${label} byte length exceeds the fixed size limit.`);
+      }
+      if (expectedBytes !== null && length > expectedBytes) {
+        fail(`${label} byte length does not match the committed manifest.`);
+      }
       chunks.push(Buffer.from(chunk.subarray(0, bytesRead)));
       position += bytesRead;
+    }
+    if (expectedBytes !== null && length !== expectedBytes) {
+      fail(`${label} byte length does not match the committed manifest.`);
     }
     return Buffer.concat(chunks, length);
   } catch (error) {
     if (error instanceof ReleaseInputSnapshotError) throw error;
-    fail('manifest could not be read.');
+    fail(`${label} snapshot could not be read.`);
   } finally {
     if (handle) {
       try {
         await handle.close();
       } catch {
-        fail('manifest could not be closed safely.');
+        fail(`${label} snapshot could not be closed safely.`);
       }
+    }
+  }
+}
+
+async function readManifestBounded(manifestPath) {
+  return readRegularFileBounded(manifestPath, {
+    label: 'manifest',
+    maximumBytes: MAX_RELEASE_INPUT_MANIFEST_BYTES,
+  });
+}
+
+function verifySnapshotBytes(manifest, inputBytes) {
+  const actual = createReleaseInputSnapshotManifest(inputBytes);
+  for (const name of FILE_NAMES) {
+    if (manifest.files[name].bytes !== actual.files[name].bytes) {
+      fail(`${name} byte length does not match the committed manifest.`);
+    }
+    if (manifest.files[name].sha256 !== actual.files[name].sha256) {
+      fail(`${name} SHA-256 does not match the committed manifest.`);
     }
   }
 }
@@ -136,14 +177,47 @@ export async function verifyReleaseInputSnapshot({
   addonBytes,
 }) {
   const manifest = parseReleaseInputSnapshotManifest(await readManifestBounded(manifestPath));
-  const actual = createReleaseInputSnapshotManifest({ optionsBytes, catalogBytes, addonBytes });
+  verifySnapshotBytes(manifest, { optionsBytes, catalogBytes, addonBytes });
+  return manifest;
+}
+
+export async function loadVerifiedReleaseInputSnapshot({
+  manifestPath,
+  optionsPath,
+  catalogPath,
+  addonPath,
+}) {
+  const manifest = parseReleaseInputSnapshotManifest(await readManifestBounded(manifestPath));
+  const fileLimits = {
+    options: MAX_RELEASE_INPUT_OPTIONS_BYTES,
+    catalog: catalogPath.endsWith('.json')
+      ? MAX_RELEASE_INPUT_CATALOG_JSON_BYTES
+      : MAX_RELEASE_INPUT_CATALOG_GZIP_BYTES,
+    addon: MAX_RELEASE_INPUT_ADDON_BYTES,
+  };
   for (const name of FILE_NAMES) {
-    if (manifest.files[name].bytes !== actual.files[name].bytes) {
-      fail(`${name} byte length does not match the committed manifest.`);
-    }
-    if (manifest.files[name].sha256 !== actual.files[name].sha256) {
-      fail(`${name} SHA-256 does not match the committed manifest.`);
+    if (manifest.files[name].bytes > fileLimits[name]) {
+      fail(`${name} byte length exceeds the fixed size limit.`);
     }
   }
-  return manifest;
+
+  const [optionsBytes, catalogBytes, addonBytes] = await Promise.all([
+    readRegularFileBounded(optionsPath, {
+      label: 'options',
+      maximumBytes: fileLimits.options,
+      expectedBytes: manifest.files.options.bytes,
+    }),
+    readRegularFileBounded(catalogPath, {
+      label: 'catalog',
+      maximumBytes: fileLimits.catalog,
+      expectedBytes: manifest.files.catalog.bytes,
+    }),
+    readRegularFileBounded(addonPath, {
+      label: 'addon',
+      maximumBytes: fileLimits.addon,
+      expectedBytes: manifest.files.addon.bytes,
+    }),
+  ]);
+  verifySnapshotBytes(manifest, { optionsBytes, catalogBytes, addonBytes });
+  return { manifest, optionsBytes, catalogBytes, addonBytes };
 }

@@ -352,6 +352,19 @@ export async function downloadAddonData({
     ? (snapshotManifestOutputPath
       ?? path.join(path.dirname(catalogOutputPath), 'snapshot-manifest.json'))
     : null;
+  const conceptualOutputPaths = [
+    outputPath,
+    persistedOptionsOutputPath,
+    catalogOutputPath,
+    persistedSnapshotManifestOutputPath,
+  ].filter((output) => output !== null);
+  if (conceptualOutputPaths.some((output) => typeof output !== 'string' || !output)) {
+    throw new Error('Validated snapshot output paths must be non-empty strings.');
+  }
+  const resolvedConceptualOutputPaths = conceptualOutputPaths.map((output) => path.resolve(output));
+  if (new Set(resolvedConceptualOutputPaths).size !== resolvedConceptualOutputPaths.length) {
+    throw new Error('Validated snapshot output paths must be distinct.');
+  }
   const optionsText = await fetchTextWithRetries({
     label: 'Options', url: optionsUrl, timeoutMs, accept: 'application/json',
     retries: maxRetries, retryDelayMs: normalizedRetryDelayMs

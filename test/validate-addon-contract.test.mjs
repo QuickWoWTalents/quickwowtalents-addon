@@ -5,7 +5,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 import { gzipSync } from 'node:zlib';
 
@@ -713,6 +713,73 @@ test('verified catalog loading rejects a sparse oversized file without using an 
     assert.equal(unboundedRead.mock.callCount(), 0);
   } finally {
     mock.restoreAll();
+    await fs.rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('validate:data rejects a sparse oversized persisted catalog without an unbounded read', async () => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'qwt-validator-bounded-inputs-'));
+  const fixture = makeFixture();
+  const addonPath = path.join(directory, 'QuickWoWTalentsData.lua');
+  const optionsPath = path.join(directory, 'options.json');
+  const catalogPath = path.join(directory, 'talent-catalog.json.gz');
+  const snapshotManifestPath = path.join(directory, 'snapshot-manifest.json');
+  const preloadPath = path.join(directory, 'reject-unbounded-read.mjs');
+  const oversizedCatalogBytes = 17 * 1024 * 1024;
+
+  try {
+    const addonBytes = Buffer.from(renderAddonData(fixture.data));
+    const optionsBytes = Buffer.from(JSON.stringify(fixture.options));
+    const catalogBytes = gzipSync(JSON.stringify(fixture.catalog));
+    await Promise.all([
+      fs.writeFile(addonPath, addonBytes),
+      fs.writeFile(optionsPath, optionsBytes),
+      fs.writeFile(preloadPath, [
+        "import fs from 'node:fs/promises';",
+        "import path from 'node:path';",
+        'const originalReadFile = fs.readFile.bind(fs);',
+        'fs.readFile = async (filePath, ...args) => {',
+        '  if (path.resolve(String(filePath)) === path.resolve(process.env.QWT_TEST_BLOCKED_READ_PATH)) {',
+        "    throw new Error('unbounded persisted input read was used');",
+        '  }',
+        '  return originalReadFile(filePath, ...args);',
+        '};',
+      ].join('\n')),
+    ]);
+    const catalogHandle = await fs.open(catalogPath, 'w');
+    await catalogHandle.truncate(oversizedCatalogBytes);
+    await catalogHandle.close();
+    const digestRecord = (bytes) => ({
+      sha256: createHash('sha256').update(bytes).digest('hex'),
+      bytes: bytes.length,
+    });
+    await fs.writeFile(snapshotManifestPath, `${JSON.stringify({
+      version: 1,
+      files: {
+        options: digestRecord(optionsBytes),
+        catalog: digestRecord(catalogBytes),
+        addon: digestRecord(addonBytes),
+      },
+    })}\n`);
+
+    await assert.rejects(
+      execFileAsync(process.execPath, [
+        '--import', pathToFileURL(preloadPath).href,
+        validatorPath,
+        '--addon', addonPath,
+        '--options', optionsPath,
+        '--catalog', catalogPath,
+        '--snapshot-manifest', snapshotManifestPath,
+      ], {
+        env: { ...process.env, QWT_TEST_BLOCKED_READ_PATH: catalogPath },
+      }),
+      (error) => {
+        assert.match(error.stderr, /catalog byte length.*size limit/i);
+        assert.doesNotMatch(error.stderr, /unbounded persisted input read/i);
+        return true;
+      },
+    );
+  } finally {
     await fs.rm(directory, { recursive: true, force: true });
   }
 });

@@ -353,6 +353,51 @@ test('verifyReleaseReadiness requires the commit marker and rejects a stale exac
   }
 });
 
+for (const oversizedInput of [
+  { name: 'options', relativePath: 'options.json', bytes: 5 * 1024 * 1024 },
+  { name: 'catalog', relativePath: 'talent-catalog.json.gz', bytes: 17 * 1024 * 1024 },
+  { name: 'addon', relativePath: 'QuickWoWTalentsData.lua', bytes: 17 * 1024 * 1024 },
+]) {
+  test(`release:verify rejects a sparse oversized ${oversizedInput.name} snapshot without an unbounded read`, async ({ mock }) => {
+    const fixture = await writeFixture({ includeZip: false });
+    const targetPath = path.join(fixture.repoRoot, oversizedInput.relativePath);
+    const targetHandle = await fs.open(targetPath, 'w');
+    await targetHandle.truncate(oversizedInput.bytes);
+    await targetHandle.close();
+
+    const originalReadFile = fs.readFile.bind(fs);
+    const readFile = mock.method(fs, 'readFile', async (filePath, ...args) => {
+      if (path.resolve(String(filePath)) === path.resolve(targetPath)) {
+        throw new Error('unbounded persisted input read was used');
+      }
+      return originalReadFile(filePath, ...args);
+    });
+    try {
+      await assert.rejects(
+        verifyReleaseReadiness({
+          ...fixture,
+          catalogPath: oversizedInput.name === 'catalog' ? targetPath : fixture.catalogPath,
+          skipZip: true,
+        }),
+        (error) => {
+          assert.match(error.message, new RegExp(`${oversizedInput.name} byte length.*size limit`, 'i'));
+          assert.doesNotMatch(error.message, /unbounded persisted input read/i);
+          return true;
+        },
+      );
+      assert.equal(
+        readFile.mock.calls.filter(({ arguments: [filePath] }) => (
+          path.resolve(String(filePath)) === path.resolve(targetPath)
+        )).length,
+        0,
+      );
+    } finally {
+      mock.restoreAll();
+      await fs.rm(fixture.repoRoot, { recursive: true, force: true });
+    }
+  });
+}
+
 test('verifyReleaseReadiness validates one captured archive snapshot after its path disappears', async () => {
   const fixture = await writeFixture();
   const zipPath = path.join(fixture.repoRoot, 'dist', 'QuickWoWTalents-1.2.3.zip');

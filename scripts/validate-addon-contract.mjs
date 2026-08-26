@@ -12,7 +12,7 @@ import {
   parseVerifiedCatalogArchive,
 } from './catalog-download-contract.mjs';
 import { getParsedLuaKeyKind, parseAddonLua } from './parse-addon-lua.mjs';
-import { verifyReleaseInputSnapshot } from './release-input-snapshot.mjs';
+import { loadVerifiedReleaseInputSnapshot } from './release-input-snapshot.mjs';
 
 const gunzipAsync = promisify(gunzip);
 const EXPECTED_SCHEMA_VERSION = 3;
@@ -739,16 +739,11 @@ async function runCli() {
   const catalogPath = readCliArgument('--catalog');
   const snapshotManifestPath = readCliArgument('--snapshot-manifest');
   const requireDownloadIdentity = readCliBooleanFlag('--require-catalog-download');
-  const [addonBytes, optionsBytes, catalogBytes] = await Promise.all([
-    fs.readFile(addonPath),
-    fs.readFile(optionsPath),
-    fs.readFile(catalogPath),
-  ]);
-  await verifyReleaseInputSnapshot({
+  const { addonBytes, optionsBytes, catalogBytes } = await loadVerifiedReleaseInputSnapshot({
     manifestPath: snapshotManifestPath,
-    addonBytes,
-    optionsBytes,
-    catalogBytes,
+    addonPath,
+    optionsPath,
+    catalogPath,
   });
   let options;
   try {

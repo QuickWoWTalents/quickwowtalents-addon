@@ -278,6 +278,45 @@ test('downloads and atomically persists the exact production catalog before addo
   });
 });
 
+test('rejects aliased conceptual snapshot destinations before fetch when addon bytes are unchanged', async () => {
+  await withRemoteDownloadFixture(async ({
+    optionsOutputPath,
+    catalogOutputPath,
+    outputPath,
+    fixture,
+    catalogBytes,
+    catalogUrl,
+  }) => {
+    const originalFetch = globalThis.fetch;
+    const addonText = renderAddonData(fixture.data);
+    await fs.writeFile(outputPath, addonText);
+    let fetchCount = 0;
+    globalThis.fetch = async (url) => {
+      fetchCount += 1;
+      if (String(url) === OPTIONS_URL) return response(JSON.stringify(fixture.options));
+      if (String(url) === catalogUrl) return response(catalogBytes);
+      if (String(url) === ADDON_URL) return response(addonText);
+      throw new Error('Unexpected test URL.');
+    };
+
+    try {
+      await assert.rejects(
+        downloadAddonData({
+          optionsOutputPath,
+          catalogOutputPath,
+          snapshotManifestOutputPath: outputPath,
+          outputPath,
+        }),
+        /snapshot output paths must be distinct/i,
+      );
+      assert.equal(fetchCount, 0);
+      assert.equal(await fs.readFile(outputPath, 'utf8'), addonText);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+});
+
 for (const redirectCase of [
   {
     name: 'same-origin options redirect',
