@@ -233,6 +233,24 @@ test('tracked release-facing content uses portable paths and public project iden
   assert.doesNotMatch(contents, /\b[a-z0-9-]+-builds\b/i);
 });
 
+test('public build generation has no external product repository import hooks', async () => {
+  const [builder, research] = await Promise.all([
+    fs.readFile(path.join(REPO_ROOT, 'scripts/build-data.mjs'), 'utf8'),
+    fs.readFile(path.join(REPO_ROOT, 'docs/research.md'), 'utf8'),
+  ]);
+  const forbiddenBuilderPatterns = [
+    new RegExp(['QWT', 'PRODUCT', 'REPO'].join('_')),
+    new RegExp(['--local', '-repo'].join('')),
+    new RegExp(['build', '-service\\.mjs'].join('')),
+    new RegExp(['path', 'ToFile', 'URL'].join('')),
+    /process\s*\.\s*chdir\s*\(/,
+    /\bimport\s*\(/,
+  ];
+  for (const pattern of forbiddenBuilderPatterns) assert.doesNotMatch(builder, pattern);
+  assert.doesNotMatch(research, new RegExp(['main', ' QWT', ' repo'].join(''), 'i'));
+  assert.match(research, /public.*(?:endpoint|snapshot)/i);
+});
+
 test('daily conditions keep all gates before versioning and publication exact', () => {
   const unconditionalIds = [
     'checkout_addon', 'setup_node', 'install_dependencies',

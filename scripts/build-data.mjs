@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 
 import { replaceFileAtomically } from './download-addon-data.mjs';
@@ -80,20 +80,6 @@ export function toLua(value, indent = 0) {
 
 function normalizeBaseUrl(value) {
   return String(value || DEFAULT_BASE_URL).replace(/\/+$/, '');
-}
-
-async function createLocalBuildPayloadLoader(localRepoPath) {
-  if (!localRepoPath) return null;
-
-  const resolvedRepoPath = path.resolve(localRepoPath);
-  process.chdir(resolvedRepoPath);
-
-  const buildServiceUrl = pathToFileURL(path.resolve(resolvedRepoPath, 'src/build-service.mjs')).href;
-  const { getBuildPayload } = await import(buildServiceUrl);
-
-  return async function loadLocalBuildPayload(request) {
-    return getBuildPayload(Object.fromEntries(request.params.entries()));
-  };
 }
 
 async function fetchJson(url, { retries = 2, timeoutMs = Number(process.env.QWT_FETCH_TIMEOUT_MS || 30000) } = {}) {
@@ -591,18 +577,16 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const delayMs = Number(readArg('--delay-ms', process.env.QWT_ADDON_DELAY_MS || 1200));
   const limitValue = readArg('--limit', null);
   const spec = readArg('--spec', null);
-  const localRepo = readArg('--local-repo', process.env.QWT_PRODUCT_REPO || null);
   const catalogArgument = readArg('--catalog', process.env.QWT_TALENT_CATALOG_PATH || null);
   const catalogPath = catalogArgument ? path.resolve(REPO_ROOT, catalogArgument) : null;
-  const concurrencyValue = Number(readArg('--concurrency', process.env.QWT_ADDON_CONCURRENCY || (localRepo ? 12 : 6)));
+  const concurrencyValue = Number(readArg('--concurrency', process.env.QWT_ADDON_CONCURRENCY || 6));
   const limit = limitValue == null ? null : Number(limitValue);
 
   const result = await writeAddonData(outputPath, {
     baseUrl,
     delayMs: Number.isFinite(delayMs) ? delayMs : 1200,
-    concurrency: Number.isFinite(concurrencyValue) ? concurrencyValue : (localRepo ? 12 : 6),
+    concurrency: Number.isFinite(concurrencyValue) ? concurrencyValue : 6,
     catalogPath,
-    loadBuildPayload: await createLocalBuildPayloadLoader(localRepo),
     onlySpec: spec,
     limit: Number.isFinite(limit) ? limit : null,
     onProgress({ index, total, request }) {

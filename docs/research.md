@@ -191,6 +191,6 @@ QWT website uses WCL/static data IDs; WoW client APIs use spec IDs and Mythic+ c
 
 ## Recommended next implementation step
 
-Add a branch in the main QWT repo to export a small Lua data file for **Mythic+ Best Overall by spec** from cached recommendations, then copy that file into this addon repo.
+Generate the bundled Lua snapshot from the public quickwowtalents.com endpoints and the content-addressed normalized catalog snapshot.
 
-Then implement addon v0 UI around that bundled data.
+The add-on UI consumes only that validated bundled snapshot.

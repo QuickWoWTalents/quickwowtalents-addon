@@ -85,7 +85,10 @@ export function parseCatalogDownloadDescriptor(
   return { ...descriptor, url };
 }
 
-async function expandGzipWithLimit(bytes, maxExpandedBytes) {
+export async function expandCatalogGzipWithLimit(
+  bytes,
+  maxExpandedBytes = DEFAULT_MAX_CATALOG_EXPANDED_BYTES,
+) {
   const maximum = positiveLimit(maxExpandedBytes, 'expanded catalog size limit');
   const source = Readable.from([bytes]);
   const gunzip = createGunzip();
@@ -124,7 +127,7 @@ export async function parseVerifiedCatalogArchive(
   if (actualSha256 !== descriptor.sha256) {
     fail('downloaded catalog SHA-256 does not match options.');
   }
-  const expandedBytes = await expandGzipWithLimit(bytes, maxExpandedBytes);
+  const expandedBytes = await expandCatalogGzipWithLimit(bytes, maxExpandedBytes);
   let catalog;
   try {
     catalog = JSON.parse(expandedBytes.toString('utf8'));

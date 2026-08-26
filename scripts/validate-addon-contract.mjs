@@ -2,11 +2,11 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { gunzip } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
-import { promisify } from 'node:util';
 
 import {
+  DEFAULT_MAX_CATALOG_EXPANDED_BYTES,
+  expandCatalogGzipWithLimit,
   loadVerifiedCatalogSnapshot,
   parseCatalogDownloadDescriptor,
   parseVerifiedCatalogArchive,
@@ -14,7 +14,6 @@ import {
 import { getParsedLuaKeyKind, parseAddonLua } from './parse-addon-lua.mjs';
 import { loadVerifiedReleaseInputSnapshot } from './release-input-snapshot.mjs';
 
-const gunzipAsync = promisify(gunzip);
 const EXPECTED_SCHEMA_VERSION = 3;
 const EXPECTED_CLIENT_INTERFACE = 120100;
 const EXPECTED_SPEC_COUNT = 40;
@@ -670,12 +669,14 @@ export function validateAddonContract({ addonText, options, catalog } = {}) {
 }
 
 /** Loads a normalized catalog from uncompressed JSON or gzip-compressed JSON. */
-async function parseNormalizedCatalogBytes(filePath, inputBytes) {
+async function parseNormalizedCatalogBytes(filePath, inputBytes, {
+  maxExpandedBytes = DEFAULT_MAX_CATALOG_EXPANDED_BYTES,
+} = {}) {
   if (typeof filePath !== 'string' || !filePath) fail('catalog path must be a non-empty string.');
   let bytes = Buffer.from(inputBytes);
   try {
     if (filePath.endsWith('.json.gz')) {
-      bytes = await gunzipAsync(bytes);
+      bytes = await expandCatalogGzipWithLimit(bytes, maxExpandedBytes);
     } else if (!filePath.endsWith('.json')) {
       fail('catalog path must end in .json or .json.gz.');
     }
@@ -687,14 +688,14 @@ async function parseNormalizedCatalogBytes(filePath, inputBytes) {
   }
 }
 
-export async function loadNormalizedCatalog(filePath) {
+export async function loadNormalizedCatalog(filePath, limits = {}) {
   let bytes;
   try {
     bytes = await fs.readFile(filePath);
   } catch (error) {
     fail(`could not load normalized talent catalog ${filePath}: ${error.message ?? String(error)}`);
   }
-  return parseNormalizedCatalogBytes(filePath, bytes);
+  return parseNormalizedCatalogBytes(filePath, bytes, limits);
 }
 
 export async function loadCatalogForOptions(filePath, options, {
@@ -713,8 +714,8 @@ export async function loadCatalogForOptions(filePath, options, {
       fail(error.message ?? 'persisted catalog snapshot validation failed.');
     }
   }
-  if (catalogBytes !== null) return parseNormalizedCatalogBytes(filePath, catalogBytes);
-  return loadNormalizedCatalog(filePath);
+  if (catalogBytes !== null) return parseNormalizedCatalogBytes(filePath, catalogBytes, limits);
+  return loadNormalizedCatalog(filePath, limits);
 }
 
 function readCliArgument(flag) {

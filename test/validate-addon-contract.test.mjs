@@ -1,13 +1,16 @@
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import { createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import test from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
-import { gzipSync } from 'node:zlib';
+import { createGzip, gzipSync } from 'node:zlib';
 
 import {
   loadNormalizedCatalog,
@@ -259,6 +262,23 @@ async function writeSnapshotManifest(manifestPath, { addonPath, optionsPath, cat
       addon: record(addonBytes),
     },
   })}\n`);
+}
+
+async function writeHighlyCompressibleGzip(filePath, expandedBytes) {
+  const chunk = Buffer.alloc(1024 * 1024, 0x20);
+  async function* chunks() {
+    let remaining = expandedBytes;
+    while (remaining > 0) {
+      const length = Math.min(chunk.length, remaining);
+      yield chunk.subarray(0, length);
+      remaining -= length;
+    }
+  }
+  await pipeline(
+    Readable.from(chunks()),
+    createGzip({ level: 9 }),
+    createWriteStream(filePath, { flags: 'wx' }),
+  );
 }
 
 function validateFixture(fixture) {
@@ -775,6 +795,82 @@ test('validate:data rejects a sparse oversized persisted catalog without an unbo
       }),
       (error) => {
         assert.match(error.stderr, /catalog byte length.*size limit/i);
+        assert.doesNotMatch(error.stderr, /unbounded persisted input read/i);
+        return true;
+      },
+    );
+  } finally {
+    await fs.rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('validate:data bounds semantic gzip expansion before parsing independently compressed catalog bytes', async () => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'qwt-validator-expanded-catalog-'));
+  const fixture = makeFixture();
+  const addonPath = path.join(directory, 'QuickWoWTalentsData.lua');
+  const optionsPath = path.join(directory, 'options.json');
+  const catalogPath = path.join(directory, 'talent-catalog.json.gz');
+  const snapshotManifestPath = path.join(directory, 'snapshot-manifest.json');
+  try {
+    await Promise.all([
+      fs.writeFile(addonPath, renderAddonData(fixture.data)),
+      fs.writeFile(optionsPath, JSON.stringify(fixture.options)),
+      writeHighlyCompressibleGzip(catalogPath, (128 * 1024 * 1024) + 1),
+    ]);
+    assert.ok((await fs.stat(catalogPath)).size < 16 * 1024 * 1024);
+    await writeSnapshotManifest(snapshotManifestPath, { addonPath, optionsPath, catalogPath });
+
+    await assert.rejects(
+      execFileAsync(process.execPath, [
+        validatorPath,
+        '--addon', addonPath,
+        '--options', optionsPath,
+        '--catalog', catalogPath,
+        '--snapshot-manifest', snapshotManifestPath,
+      ], { maxBuffer: 1024 * 1024 }),
+      (error) => {
+        assert.match(error.stderr, /expanded catalog size.*limit/i);
+        return true;
+      },
+    );
+  } finally {
+    await fs.rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('validate:data rejects an oversized sparse manifest without an unbounded read', async () => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'qwt-validator-bounded-manifest-'));
+  const manifestPath = path.join(directory, 'snapshot-manifest.json');
+  const preloadPath = path.join(directory, 'reject-unbounded-read.mjs');
+  try {
+    const handle = await fs.open(manifestPath, 'w');
+    await handle.truncate((64 * 1024) + 1);
+    await handle.close();
+    await fs.writeFile(preloadPath, [
+      "import fs from 'node:fs/promises';",
+      "import path from 'node:path';",
+      'const originalReadFile = fs.readFile.bind(fs);',
+      'fs.readFile = async (filePath, ...args) => {',
+      '  if (path.resolve(String(filePath)) === path.resolve(process.env.QWT_TEST_BLOCKED_READ_PATH)) {',
+      "    throw new Error('unbounded persisted input read was used');",
+      '  }',
+      '  return originalReadFile(filePath, ...args);',
+      '};',
+    ].join('\n'));
+
+    await assert.rejects(
+      execFileAsync(process.execPath, [
+        '--import', pathToFileURL(preloadPath).href,
+        validatorPath,
+        '--addon', path.join(directory, 'addon.lua'),
+        '--options', path.join(directory, 'options.json'),
+        '--catalog', path.join(directory, 'catalog.json.gz'),
+        '--snapshot-manifest', manifestPath,
+      ], {
+        env: { ...process.env, QWT_TEST_BLOCKED_READ_PATH: manifestPath },
+      }),
+      (error) => {
+        assert.match(error.stderr, /manifest byte length.*size limit/i);
         assert.doesNotMatch(error.stderr, /unbounded persisted input read/i);
         return true;
       },
