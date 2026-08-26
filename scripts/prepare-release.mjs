@@ -11,7 +11,7 @@ const PACKAGE_JSON = path.join(REPO_ROOT, 'package.json');
 const TOC_FILE = path.join(REPO_ROOT, 'QuickWoWTalents.toc');
 const CHANGELOG_FILE = path.join(REPO_ROOT, 'CHANGELOG.md');
 const CURSEFORGE_CHANGELOG_BASENAME = 'CURSEFORGE_CHANGELOG.md';
-const SEMVER_RE = /^(\d+)\.(\d+)\.(\d+)$/;
+const SEMVER_RE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 const SEMVER_WITH_PRERELEASE_RE = /^(\d+)\.(\d+)\.(\d+)(?:-[0-9A-Za-z.-]+)?$/;
 const execFileAsync = promisify(execFile);
 
@@ -23,7 +23,7 @@ function readArg(flag, fallback = null) {
 }
 
 export function assertReleaseVersion(version) {
-  const normalized = String(version ?? '').trim().replace(/^v/i, '');
+  const normalized = String(version ?? '');
   if (!SEMVER_RE.test(normalized)) {
     throw new Error(`Release version must be plain semver like 0.2.9; received ${JSON.stringify(version)}`);
   }

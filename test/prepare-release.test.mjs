@@ -1,15 +1,18 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 
+import { packageAddon } from '../scripts/package-addon.mjs';
 import {
   nextPatchVersion,
   prepareRelease,
   unreleasedChangelogSection,
   versionedChangelogEntry,
 } from '../scripts/prepare-release.mjs';
+import { verifyReleaseReadiness } from '../scripts/verify-release-readiness.mjs';
 
 test('nextPatchVersion increments the patch version', () => {
   assert.equal(nextPatchVersion('0.2.8'), '0.2.9');
@@ -72,6 +75,63 @@ test('prepareRelease accepts a prerelease package version when cutting stable', 
   assert.equal(updatedPackage.version, '1.0.5');
   assert.match(updatedToc, /^## Version: 1\.0\.5$/m);
   assert.match(updatedChangelog, /^## 1\.0\.5 - \d{4}-\d{2}-\d{2}$/m);
+});
+
+test('preparing and packaging a release cannot make stale addon data ready', async () => {
+  const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'qwt-addon-stale-release-'));
+  const packagePath = path.join(repoRoot, 'package.json');
+  const tocPath = path.join(repoRoot, 'QuickWoWTalents.toc');
+  const changelogPath = path.join(repoRoot, 'CHANGELOG.md');
+  const curseforgeChangelogPath = path.join(repoRoot, 'CURSEFORGE_CHANGELOG.md');
+  const dataPath = path.join(repoRoot, 'QuickWoWTalentsData.lua');
+  const optionsPath = path.join(repoRoot, 'options.json');
+  const catalogPath = path.join(repoRoot, 'talent-trees.json');
+  const snapshotManifestPath = path.join(repoRoot, 'snapshot-manifest.json');
+  const staleData = 'QuickWoWTalentsData = { schemaVersion = 2 }\n';
+
+  await Promise.all([
+    fs.writeFile(packagePath, `${JSON.stringify({ name: 'quickwowtalents-addon', version: '0.2.8' }, null, 2)}\n`, 'utf8'),
+    fs.writeFile(tocPath, '## Interface: 120100\n## Version: 0.2.8\nQuickWoWTalentsData.lua\nQuickWoWTalents.lua\n', 'utf8'),
+    fs.writeFile(path.join(repoRoot, 'QuickWoWTalents.lua'), '-- addon\n', 'utf8'),
+    fs.writeFile(dataPath, staleData, 'utf8'),
+    fs.writeFile(changelogPath, '# Changelog\n\n## Unreleased\n\n- Prepared metadata only.\n\n## 0.2.8\n\nPrevious release.\n', 'utf8'),
+    fs.writeFile(path.join(repoRoot, '.pkgmeta'), 'manual-changelog:\n  filename: CURSEFORGE_CHANGELOG.md\n  markup-type: plain\n', 'utf8'),
+    fs.writeFile(optionsPath, '{}\n', 'utf8'),
+    fs.writeFile(catalogPath, '{}\n', 'utf8'),
+  ]);
+  const [addonBytes, optionsBytes, catalogBytes] = await Promise.all([
+    fs.readFile(dataPath),
+    fs.readFile(optionsPath),
+    fs.readFile(catalogPath),
+  ]);
+  const record = (bytes) => ({
+    sha256: createHash('sha256').update(bytes).digest('hex'),
+    bytes: bytes.length,
+  });
+  await fs.writeFile(snapshotManifestPath, JSON.stringify({
+    version: 1,
+    files: {
+      options: record(optionsBytes),
+      catalog: record(catalogBytes),
+      addon: record(addonBytes),
+    },
+  }));
+
+  await prepareRelease({
+    packagePath,
+    tocPath,
+    changelogPath,
+    curseforgeChangelogPath,
+    repoRoot,
+    version: '0.2.9',
+  });
+  await packageAddon({ repoRoot });
+
+  assert.equal(await fs.readFile(dataPath, 'utf8'), staleData);
+  await assert.rejects(
+    verifyReleaseReadiness({ repoRoot, optionsPath, catalogPath, snapshotManifestPath }),
+    /source data contract.*schema 3/i,
+  );
 });
 
 test('unreleasedChangelogSection extracts pending release notes', () => {

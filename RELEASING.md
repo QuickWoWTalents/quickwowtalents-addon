@@ -1,72 +1,115 @@
 # Releasing Quick WoW Talents Addon
 
-The addon release process is automated through GitHub Actions.
+The add-on release process is automated through GitHub Actions and fails closed unless the deployed production options, content-addressed catalog, and add-on artifact describe one exact snapshot.
 
 ## Schedule
 
-`.github/workflows/daily-release.yml` checks for release-worthy data daily at **15:30 UTC**.
+`.github/workflows/daily-release.yml` checks for release-worthy data daily at **17:30 UTC** (`30 17 * * *`). This is after the production cache warm and monitor window.
 
-That timing is intentional: the addon release downloads the product-side `QuickWoWTalentsData.lua` artifact from `quickwowtalents.com`, so release checks should happen after the public cache has warmed. A scheduled run publishes a new release only when the bundled recommendation data actually changes.
+A scheduled run publishes only when the validated recommendation data differs from the committed `QuickWoWTalentsData.lua`. A manual full release may continue when data is unchanged, but it runs every gate and cannot bypass validation. A manual dry-run also runs through packaging and release readiness, but never commits, tags, pushes, or creates a release.
 
-## Normal automated release
+## Production prerequisites
 
-On a scheduled run, the workflow:
+All of these conditions must hold before a release can publish:
 
-1. downloads the product-side addon data artifact
-2. compares recommendation data against the committed `QuickWoWTalentsData.lua`
-3. exits without bumping or releasing if the data is unchanged
-4. bumps the patch version in `package.json` and root-level `QuickWoWTalents.toc` if a release is needed
-5. moves `CHANGELOG.md` Unreleased notes into a versioned release section and adds commit subjects since the previous release tag
-6. writes `CURSEFORGE_CHANGELOG.md` with only the new version's notes for CurseForge automatic packaging
-7. validates scripts and tests
-8. packages `dist/QuickWoWTalents-<version>.zip`
-9. commits the generated data/version/changelog bump to `main`
-10. tags `v<version>`
-11. creates a GitHub release with the zip asset and the same scoped changelog section CurseForge packages
+- `https://quickwowtalents.com/api/options`, its advertised same-origin `/api/talent-catalog?sha256=<sha>` path, and `https://quickwowtalents.com/api/addon-data` are available from one production deployment.
+- Options contain exact four-field `talentCatalogDownload` metadata; the catalog response is raw `application/gzip` with no content encoding, and its compressed bytes match the declared length and SHA-256.
+- Production options, the parsed normalized catalog, and the add-on artifact report the same catalog source, live environment, WoW 12.1 build, interface `120100`, 40-spec count, and content hash.
+- Options and the artifact report the same ordered Mythic+ and raid activity identities.
+- The artifact is schema 3, its counts reconcile, all emitted strings decode against that exact catalog, and every omission uses an allowed safe skip code.
+- A publishing run is on `refs/heads/main`, and the add-on checkout's captured base `HEAD` still equals a freshly queried remote `refs/heads/main` immediately before the workflow enables publication.
+- The version/tag does not already exist.
 
-The workflow uses the built-in `GITHUB_TOKEN`; no repository secrets are required.
+The downloader persists the exact validated production options response, raw catalog gzip, and add-on data, then atomically renames a strict version-1 snapshot manifest last. The manifest records the SHA-256 and byte length of all three files. Source and ZIP readiness require that marker, re-hash the exact tuple, recheck the catalog download identity, and do not refetch. This makes deployment lag or an interrupted commit a hard failure.
+
+Both workflows use Node.js 22 and `npm ci`. The pull-request workflow runs the same production acquisition, catalog/schema/source validation, tests, packaging, and readiness checks, but has read-only permissions and no publication steps.
+
+## Gate order
+
+For a release candidate, the workflow runs in this order:
+
+1. Check out only the add-on repository without persisting its checkout credential.
+2. Download production `/api/options`, the exact same-origin catalog gzip it advertises, and `/api/addon-data`; persist the validated tuple and atomically commit its snapshot manifest last.
+3. Require and re-hash the snapshot manifest, revalidate the source file from those exact inputs, check script syntax, and run the full test suite.
+4. Decide whether the run is a dry-run, scheduled no-change skip, or publishable release. Publication requires `refs/heads/main`, a captured base `HEAD` equal to both the current checkout and a fresh remote-main query, and scheduled comparison against committed `HEAD` so staged and unstaged changes are both visible.
+5. Prepare the version/changelogs only for a publishable release and reject an existing tag.
+6. Package `dist/QuickWoWTalents-<version>.zip`.
+7. Re-hash the manifest-bound tuple, validate both source and ZIP data against the same options and catalog, and capture readiness `zipSha256`.
+8. Only after all gates pass, create the local commit/tag. Immediately before publication, hash the final archive again and require it to equal readiness `zipSha256`; authenticate Git with the job token, atomically push fully qualified `main` and tag refspecs, then create the GitHub release with remote-tag verification enabled.
+
+No commit, tag, push, or release occurs before source and archive readiness succeeds.
 
 ## Manual dry-run
 
 Use **Actions → Daily addon release → Run workflow** and leave `dry_run=true`.
 
-Dry-runs generate a limited one-spec data file into `/tmp`, run checks, and package locally. They do **not** commit, tag, or publish a release.
+The dry-run obtains the full current production snapshots and catalog, then runs validation, syntax checks, tests, packaging, and source/ZIP readiness. It does not prepare a new version and cannot commit, tag, push, or publish. Because publication is unreachable, a dry-run may be launched from a non-`main` ref.
 
 ## Manual full release
 
-Use this only when intentionally publishing outside the normal schedule:
+Use a manual full release after an add-on code-only change or when intentionally publishing outside the recurring schedule. Follow this order:
 
-1. Open **Actions → Daily addon release → Run workflow**.
-2. Set `dry_run=false`.
-3. Optional: set an explicit semver `version`, such as `0.2.11`.
-4. Start the workflow.
+1. Deploy the production endpoints that produce schema-3 data.
+2. Complete production warming and monitoring; confirm `/api/options`, its `talentCatalogDownload` endpoint, and `/api/addon-data` describe the same deployed catalog.
+3. Let the add-on pull-request workflow pass its production snapshot/catalog/package/readiness checks, then merge the add-on change.
+4. Select the merged `main` branch in **Actions → Daily addon release → Run workflow**. A non-dry manual run from any other branch or tag fails before version preparation.
+5. Set `dry_run=false`. Optionally provide a new plain-semver `version`; otherwise the workflow chooses the next patch.
+6. Confirm the acquisition, validation, test, version, tag-protection, package, source/ZIP readiness, and final digest gates all pass.
+7. Verify the pushed tag and GitHub release reference the expected commit and that the attached ZIP is the verified archive.
 
-Use a manual full release after merging addon code changes when bundled recommendation data has not changed. Scheduled runs publish only when `QuickWoWTalentsData.lua` changes, so code-only improvements such as UI behavior, slash commands, or documentation-visible addon features should be shipped with an intentional manual full release and an explicit minor/patch version.
+A manual full release may publish when recommendation data is unchanged, but it cannot bypass any schema, catalog, source, package, readiness, tag, or digest gate.
 
 ## Failure handling
 
-### Product artifact unavailable
+### Product inputs unavailable or mismatched
 
-If `https://quickwowtalents.com/api/addon-data` returns an error, do not force a release. The endpoint is cache-only by design; a failure usually means the public cache is incomplete or stale.
-
-Fix the product/cache issue first, then rerun a manual dry-run before publishing.
+Do not force a release. Fix the deployment/cache issue first, wait for production options, raw catalog gzip, and artifact to agree, then rerun a manual dry-run. A deployment lag is expected to fail before version preparation.
 
 ### Tag already exists
 
-The workflow refuses to overwrite existing tags. Use a new version or delete the failed release/tag only if you are certain the tag was never validly published.
+The workflow checks both local and remote tags and refuses to overwrite one. The final push updates `refs/heads/main` and the fully qualified tag ref atomically, and release creation uses `--verify-tag` rather than recreating a missing tag. Use a new version. Delete a failed release/tag only when you have independently established that it was never validly published.
+
+### Checkout is not current remote main
+
+Do not publish from a branch, tag, or stale `main` checkout. Rerun the workflow on the current `main` ref after the prior run or merge finishes. Non-main dry-runs remain available for validation because their publish output is permanently false.
+
+### Archive digest changed
+
+Do not upload the archive. Re-run packaging and readiness from the same persisted options/catalog inputs. Publication deliberately fails if the final ZIP differs by even one byte from the archive inspected by readiness.
 
 ### Release asset missing
 
-If a release was created without an asset, rerun packaging locally and attach the matching zip to the existing release only if the tag points at the correct commit.
+If a push succeeds but GitHub release creation fails, attach an archive only after rerunning readiness for the exact tagged source and independently confirming its SHA-256 digest.
 
-## Local verification
+## Local release-equivalent verification
+
+Use absolute paths for the persisted production inputs:
 
 ```bash
+OPTIONS_PATH=/tmp/quickwowtalents-release-options.json
+CATALOG_PATH=/tmp/quickwowtalents-release-catalog.json.gz
+MANIFEST_PATH=/tmp/quickwowtalents-release-snapshot-manifest.json
+
+npm ci
+npm run build:data:download -- \
+  --url https://quickwowtalents.com/api/addon-data \
+  --options-url https://quickwowtalents.com/api/options \
+  --options-output "$OPTIONS_PATH" \
+  --catalog-output "$CATALOG_PATH" \
+  --snapshot-manifest-output "$MANIFEST_PATH"
+npm run validate:data -- \
+  --addon "$PWD/QuickWoWTalentsData.lua" \
+  --options "$OPTIONS_PATH" \
+  --catalog "$CATALOG_PATH" \
+  --snapshot-manifest "$MANIFEST_PATH" \
+  --require-catalog-download
 npm test
-npm run build:data:download
 npm run package
-npm run release:verify
-unzip -l dist/QuickWoWTalents-*.zip | head -50
+npm run release:verify -- \
+  --options "$OPTIONS_PATH" \
+  --catalog "$CATALOG_PATH" \
+  --snapshot-manifest "$MANIFEST_PATH" \
+  --require-catalog-download
 ```
 
-The source addon files intentionally live at the repository root for CurseForge automatic packaging compatibility. The generated zip should still contain a top-level `QuickWoWTalents/` folder with the `.toc`, addon Lua, and bundled data Lua files.
+`release:verify` prints the verified archive path and `zipSha256`. The source files intentionally remain at repository root for CurseForge automatic packaging compatibility; the ZIP must contain only the top-level `QuickWoWTalents/` folder and its three expected files.

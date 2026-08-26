@@ -1,71 +1,28 @@
 #!/usr/bin/env node
-import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { isDeepStrictEqual } from 'node:util';
+
+import { replaceFileAtomically } from './download-addon-data.mjs';
+import { loadNormalizedCatalog, validateAddonContract } from './validate-addon-contract.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
 const DEFAULT_BASE_URL = 'https://quickwowtalents.com';
 const DEFAULT_OUTPUT = path.join(REPO_ROOT, 'QuickWoWTalentsData.lua');
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 const HEROIC_RAID_DIFFICULTY_ID = 4;
 const MPLUS_BEST_OVERALL_MIN_KEYSTONE_LEVEL = 15;
+const SAFE_SKIP_CODES = new Set(['NO_USABLE_LOGS', 'NO_COMPATIBLE_CURRENT_LOGS']);
 
 function getMplusBestOverallLabel() {
   return `Best Overall (${MPLUS_BEST_OVERALL_MIN_KEYSTONE_LEVEL}+)`;
 }
 
-const FALLBACK_SPEC_IDS = new Map([
-  ['Death Knight:Blood', 250],
-  ['Death Knight:Frost', 251],
-  ['Death Knight:Unholy', 252],
-  ['Demon Hunter:Havoc', 577],
-  ['Demon Hunter:Vengeance', 581],
-  ['Demon Hunter:Devourer', 1480],
-  ['Druid:Balance', 102],
-  ['Druid:Feral', 103],
-  ['Druid:Guardian', 104],
-  ['Druid:Restoration', 105],
-  ['Evoker:Devastation', 1467],
-  ['Evoker:Preservation', 1468],
-  ['Evoker:Augmentation', 1473],
-  ['Hunter:Beast Mastery', 253],
-  ['Hunter:Marksmanship', 254],
-  ['Hunter:Survival', 255],
-  ['Mage:Arcane', 62],
-  ['Mage:Fire', 63],
-  ['Mage:Frost', 64],
-  ['Monk:Brewmaster', 268],
-  ['Monk:Mistweaver', 270],
-  ['Monk:Windwalker', 269],
-  ['Paladin:Holy', 65],
-  ['Paladin:Protection', 66],
-  ['Paladin:Retribution', 70],
-  ['Priest:Discipline', 256],
-  ['Priest:Holy', 257],
-  ['Priest:Shadow', 258],
-  ['Rogue:Assassination', 259],
-  ['Rogue:Outlaw', 260],
-  ['Rogue:Subtlety', 261],
-  ['Shaman:Elemental', 262],
-  ['Shaman:Enhancement', 263],
-  ['Shaman:Restoration', 264],
-  ['Warlock:Affliction', 265],
-  ['Warlock:Demonology', 266],
-  ['Warlock:Destruction', 267],
-  ['Warrior:Arms', 71],
-  ['Warrior:Fury', 72],
-  ['Warrior:Protection', 73]
-]);
-
 function readArg(flag, fallback = null) {
   const index = process.argv.indexOf(flag);
   if (index === -1 || index === process.argv.length - 1) return fallback;
   return process.argv[index + 1];
-}
-
-function hasFlag(flag) {
-  return process.argv.includes(flag);
 }
 
 function sleep(ms) {
@@ -185,12 +142,103 @@ async function fetchJson(url, { retries = 2, timeoutMs = Number(process.env.QWT_
 }
 
 function getHeroicDifficulty(raid) {
-  return (raid?.difficulties ?? []).find((entry) => Number(entry.id) === HEROIC_RAID_DIFFICULTY_ID)
-    ?? { id: HEROIC_RAID_DIFFICULTY_ID, name: 'Heroic' };
+  const difficulty = (raid?.difficulties ?? []).find((entry) => (
+    Number(entry.id) === HEROIC_RAID_DIFFICULTY_ID && entry.name === 'Heroic'
+  ));
+  if (!difficulty) {
+    throw new Error(`Resolved raid does not include exact Heroic difficulty ${HEROIC_RAID_DIFFICULTY_ID}.`);
+  }
+  return difficulty;
 }
 
 function normalizeEncounters(entries = []) {
   return entries.map((entry) => ({ id: Number(entry.id), name: entry.name })).filter((entry) => Number.isFinite(entry.id) && entry.name);
+}
+
+function normalizeRaidEncounters(entries = []) {
+  return entries.map((entry) => {
+    const encounter = {
+      id: Number(entry.id),
+      name: entry.name,
+      encounterName: entry.encounterName ?? entry.name,
+      raidName: entry.raidName,
+      zoneId: Number(entry.zoneId)
+    };
+    if (Number.isFinite(encounter.id) && encounter.name && (
+      !Number.isInteger(encounter.zoneId)
+      || encounter.zoneId <= 0
+      || !String(encounter.raidName ?? '').trim()
+    )) {
+      throw new Error(`Resolved raid boss ${encounter.id} has incomplete zone identity.`);
+    }
+    return encounter;
+  }).filter((entry) => Number.isFinite(entry.id) && entry.name);
+}
+
+function ensureResolvedOptions(options) {
+  if (options?.mythicPlus?.fallback === true) {
+    throw new Error('Cannot build addon data from a fallback Mythic+ activity.');
+  }
+  if (options?.raid?.fallback === true) {
+    throw new Error('Cannot build addon data from a fallback raid activity.');
+  }
+  if (!options?.talentCatalog || typeof options.talentCatalog !== 'object') {
+    throw new Error('Resolved options do not include a talent catalog descriptor.');
+  }
+}
+
+function clientInterfaceFromBuild(wowBuild) {
+  const match = /^(\d+)\.(\d+)\.(\d+)(?:\.|$)/.exec(String(wowBuild ?? ''));
+  if (!match) return null;
+  return Number(match[1]) * 10_000 + Number(match[2]) * 100 + Number(match[3]);
+}
+
+function assertCatalogMatchesOptions(catalog, talentCatalog) {
+  const descriptor = {
+    source: catalog?.source,
+    environment: catalog?.environment,
+    generatedAt: catalog?.generatedAt,
+    wowBuild: catalog?.wowBuild,
+    contentHash: catalog?.contentHash,
+    clientInterface: clientInterfaceFromBuild(catalog?.wowBuild),
+    specCount: catalog?.specs && typeof catalog.specs === 'object'
+      ? Object.keys(catalog.specs).length
+      : 0
+  };
+  if (!isDeepStrictEqual(descriptor, talentCatalog)) {
+    throw new Error('Normalized talent catalog descriptor does not match resolved options.');
+  }
+}
+
+function createActivityDescriptor({ mythicPlus, raid, mplusDungeons, raidBosses, heroicDifficulty }) {
+  const zones = [];
+  const zonesById = new Map();
+  for (const boss of raidBosses) {
+    let zone = zonesById.get(boss.zoneId);
+    if (!zone) {
+      zone = { zoneId: boss.zoneId, name: boss.raidName, bossIds: [] };
+      zonesById.set(boss.zoneId, zone);
+      zones.push(zone);
+    } else if (zone.name !== boss.raidName) {
+      throw new Error(`Resolved raid zone ${boss.zoneId} has inconsistent names.`);
+    }
+    zone.bossIds.push(boss.id);
+  }
+
+  return {
+    mythicPlus: {
+      expansionId: Number(mythicPlus.expansionId),
+      zoneId: Number(mythicPlus.zoneId),
+      dungeonIds: mplusDungeons.map((dungeon) => dungeon.id)
+    },
+    raid: {
+      expansionId: Number(raid.expansionId),
+      primaryZoneId: Number(raid.zoneId),
+      difficultyId: Number(heroicDifficulty.id),
+      zones,
+      bossIds: raidBosses.map((boss) => boss.id)
+    }
+  };
 }
 
 function getSpecJobs(options, onlySpec = null, limit = null) {
@@ -217,12 +265,10 @@ function createRecommendation({ job, buildPayload, generatedAt, mode, encounter,
   const specId = Number(
     mostCommon?.talentTree?.specId
     ?? mostCommon?.mzTalentTree?.specId
-    ?? FALLBACK_SPEC_IDS.get(job.key)
   );
 
-  if (!importString || !Number.isFinite(specId)) {
-    return null;
-  }
+  if (!importString) throw new Error('Build payload does not include a Blizzard import string.');
+  if (!Number.isInteger(specId) || specId <= 0) throw new Error('Build payload does not include a specialization ID.');
 
   const base = {
     mode,
@@ -275,6 +321,49 @@ function createRecommendation({ job, buildPayload, generatedAt, mode, encounter,
   };
 }
 
+function createSkippedEntry(request, code, reason) {
+  return {
+    key: request.job.key,
+    mode: request.mode,
+    encounterId: request.encounter.id,
+    encounterName: request.encounter.name,
+    code,
+    reason
+  };
+}
+
+function getSafeGap(request, buildPayload) {
+  const code = buildPayload?.empty?.reason;
+  const confirmedEmpty = SAFE_SKIP_CODES.has(code)
+    && buildPayload?.cache?.stale === false
+    && buildPayload?.empty?.checkedWarcraftLogs === true
+    && typeof buildPayload?.summary?.totalLogs === 'number'
+    && Number.isFinite(buildPayload.summary.totalLogs)
+    && buildPayload.summary.totalLogs === 0
+    && !buildPayload?.summary?.mostCommon;
+  if (!confirmedEmpty) return null;
+
+  const reason = code === 'NO_COMPATIBLE_CURRENT_LOGS'
+    ? 'Warcraft Logs runs were found, but all use talents outside the current talent catalog.'
+    : 'No usable Warcraft Logs runs exist for this exact selection.';
+  return createSkippedEntry(request, code, reason);
+}
+
+function assertBuildPayloadIdentity(buildPayload, talentCatalog) {
+  if (!isDeepStrictEqual(buildPayload?.talentCatalog, talentCatalog)) {
+    throw new Error('Per-build talent catalog descriptor mismatch.');
+  }
+}
+
+function assertBuildSpecIdentity(buildPayload, catalog, job) {
+  const expectedSpecId = catalog?.specs?.[job.key]?.specId;
+  const actualSpecId = buildPayload?.summary?.mostCommon?.talentTree?.specId
+    ?? buildPayload?.summary?.mostCommon?.mzTalentTree?.specId;
+  if (!Number.isInteger(expectedSpecId) || Number(actualSpecId) !== expectedSpecId) {
+    throw new Error(`Build payload specialization ${actualSpecId ?? 'missing'} does not match ${job.key} catalog specId ${expectedSpecId ?? 'missing'}.`);
+  }
+}
+
 function ensureSpecEntry(recommendations, specId, job) {
   if (!recommendations[specId]) {
     recommendations[specId] = {
@@ -303,6 +392,7 @@ function createRequests({ options, jobs, mplusDungeons, raidBosses, heroicDiffic
           region,
           dungeonId: String(dungeon.id),
           keystoneLevel: 'overall',
+          bestOverallMinKeystoneLevel: String(MPLUS_BEST_OVERALL_MIN_KEYSTONE_LEVEL),
           minKeystoneLevel: String(MPLUS_BEST_OVERALL_MIN_KEYSTONE_LEVEL),
           className: job.className,
           specName: job.specName,
@@ -322,6 +412,7 @@ function createRequests({ options, jobs, mplusDungeons, raidBosses, heroicDiffic
           region,
           bossId: String(boss.id),
           difficulty: String(heroicDifficulty.id),
+          exactSelection: 'true',
           className: job.className,
           specName: job.specName,
           metric: job.metric
@@ -333,7 +424,7 @@ function createRequests({ options, jobs, mplusDungeons, raidBosses, heroicDiffic
   return requests;
 }
 
-export async function buildAddonData({
+async function buildAddonDataResult({
   baseUrl = DEFAULT_BASE_URL,
   generatedAt = new Date().toISOString(),
   delayMs = 1200,
@@ -341,17 +432,31 @@ export async function buildAddonData({
   onlySpec = null,
   limit = null,
   onProgress = () => {},
-  loadBuildPayload = null
+  loadBuildPayload = null,
+  catalog = null,
+  catalogPath = null
 } = {}) {
   const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
+  const resolvedCatalog = catalog ?? (catalogPath ? await loadNormalizedCatalog(catalogPath) : null);
+  if (!resolvedCatalog) throw new Error('Local addon builder requires a normalized talent catalog.');
   const options = await fetchJson(`${normalizedBaseUrl}/api/options`);
+  ensureResolvedOptions(options);
+  assertCatalogMatchesOptions(resolvedCatalog, options.talentCatalog);
   const mplusDungeons = normalizeEncounters(options.mythicPlus?.dungeons ?? []);
-  const raidBosses = normalizeEncounters(options.raid?.bosses ?? []);
+  const raidBosses = normalizeRaidEncounters(options.raid?.bosses ?? []);
   const heroicDifficulty = getHeroicDifficulty(options.raid);
+  const activities = createActivityDescriptor({
+    mythicPlus: options.mythicPlus,
+    raid: options.raid,
+    mplusDungeons,
+    raidBosses,
+    heroicDifficulty
+  });
   const jobs = getSpecJobs(options, onlySpec, limit);
   const requests = createRequests({ options, jobs, mplusDungeons, raidBosses, heroicDifficulty });
   const recommendations = {};
-  const skipped = [];
+  const skippedByRequest = [];
+  const errorsByRequest = [];
   let recommendationCount = 0;
 
   async function processRequest(index, request) {
@@ -362,6 +467,26 @@ export async function buildAddonData({
       const buildPayload = loadBuildPayload
         ? await loadBuildPayload(request)
         : await fetchJson(url);
+      assertBuildPayloadIdentity(buildPayload, options.talentCatalog);
+      if (buildPayload?.cache?.stale !== false) {
+        const code = buildPayload?.cache?.stale === true ? 'CACHE_STALE' : 'CACHE_INCOMPLETE';
+        throw new Error(`Build payload lacks explicit fresh cache evidence (${code}) for ${request.job.key}.`);
+      }
+      if (request.mode === 'raid' && buildPayload.fallback) {
+        throw new Error(`Unsafe addon data gap SELECTION_FALLBACK for ${request.job.key} raid ${request.encounter.id}.`);
+      }
+      const safeGap = getSafeGap(request, buildPayload);
+      if (safeGap) {
+        skippedByRequest[index] = safeGap;
+        return;
+      }
+      if (!buildPayload?.summary?.mostCommon) {
+        const code = buildPayload?.cache?.stale === true
+          ? 'CACHE_STALE'
+          : (buildPayload?.empty?.reason ?? 'BUILD_PAYLOAD_INCOMPLETE');
+        throw new Error(`Unsafe addon data gap ${code} for ${request.job.key} ${request.mode} ${request.encounter.id}.`);
+      }
+      assertBuildSpecIdentity(buildPayload, resolvedCatalog, request.job);
       const recommendation = createRecommendation({
         job: request.job,
         buildPayload,
@@ -371,15 +496,11 @@ export async function buildAddonData({
         difficulty: request.difficulty
       });
 
-      if (recommendation) {
-        const specEntry = ensureSpecEntry(recommendations, recommendation.specId, request.job);
-        specEntry[recommendation.mode].encounters[recommendation.encounterId] = recommendation.entry;
-        recommendationCount += 1;
-      } else {
-        skipped.push({ key: request.job.key, mode: request.mode, encounterId: request.encounter.id, encounterName: request.encounter.name, reason: 'missing import string or spec id' });
-      }
+      const specEntry = ensureSpecEntry(recommendations, recommendation.specId, request.job);
+      specEntry[recommendation.mode].encounters[recommendation.encounterId] = recommendation.entry;
+      recommendationCount += 1;
     } catch (error) {
-      skipped.push({ key: request.job.key, mode: request.mode, encounterId: request.encounter.id, encounterName: request.encounter.name, reason: error?.message ?? String(error) });
+      errorsByRequest[index] = error;
     }
   }
 
@@ -403,10 +524,17 @@ export async function buildAddonData({
 
   await Promise.all(inFlight);
 
-  return {
+  const firstError = errorsByRequest.find(Boolean);
+  if (firstError) throw firstError;
+  const skipped = skippedByRequest.filter(Boolean);
+
+  const payload = {
     schemaVersion: SCHEMA_VERSION,
     source: normalizedBaseUrl,
     generatedAt,
+    clientInterface: options.talentCatalog.clientInterface,
+    talentCatalog: options.talentCatalog,
+    activities,
     modes: {
       mplus: {
         label: 'Mythic+',
@@ -426,13 +554,18 @@ export async function buildAddonData({
     counts: {
       specs: jobs.length,
       attempted: requests.length,
-      recommendations: recommendationCount,
+      emitted: recommendationCount,
       specsWithAnyRecommendation: Object.keys(recommendations).length,
       skipped: skipped.length
     },
     recommendations,
     skipped
   };
+  return { payload, options, catalog: resolvedCatalog };
+}
+
+export async function buildAddonData(options = {}) {
+  return (await buildAddonDataResult(options)).payload;
 }
 
 export function renderLuaData(payload) {
@@ -445,9 +578,10 @@ export function renderLuaData(payload) {
 }
 
 export async function writeAddonData(outputPath = DEFAULT_OUTPUT, options = {}) {
-  const payload = await buildAddonData(options);
-  await fs.mkdir(path.dirname(outputPath), { recursive: true });
-  await fs.writeFile(outputPath, renderLuaData(payload), 'utf8');
+  const { payload, options: resolvedOptions, catalog } = await buildAddonDataResult(options);
+  const addonText = renderLuaData(payload);
+  validateAddonContract({ addonText, options: resolvedOptions, catalog });
+  await replaceFileAtomically(outputPath, addonText);
   return { outputPath, payload };
 }
 
@@ -458,14 +592,16 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const limitValue = readArg('--limit', null);
   const spec = readArg('--spec', null);
   const localRepo = readArg('--local-repo', process.env.QWT_PRODUCT_REPO || null);
+  const catalogArgument = readArg('--catalog', process.env.QWT_TALENT_CATALOG_PATH || null);
+  const catalogPath = catalogArgument ? path.resolve(REPO_ROOT, catalogArgument) : null;
   const concurrencyValue = Number(readArg('--concurrency', process.env.QWT_ADDON_CONCURRENCY || (localRepo ? 12 : 6)));
-  const strict = hasFlag('--strict');
   const limit = limitValue == null ? null : Number(limitValue);
 
   const result = await writeAddonData(outputPath, {
     baseUrl,
     delayMs: Number.isFinite(delayMs) ? delayMs : 1200,
     concurrency: Number.isFinite(concurrencyValue) ? concurrencyValue : (localRepo ? 12 : 6),
+    catalogPath,
     loadBuildPayload: await createLocalBuildPayloadLoader(localRepo),
     onlySpec: spec,
     limit: Number.isFinite(limit) ? limit : null,
@@ -475,7 +611,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   });
 
   console.log(JSON.stringify({
-    ok: !strict || result.payload.skipped.length === 0,
+    ok: true,
     outputPath: result.outputPath,
     generatedAt: result.payload.generatedAt,
     counts: result.payload.counts,
@@ -486,8 +622,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     },
     skipped: result.payload.skipped
   }, null, 2));
-
-  if (strict && result.payload.skipped.length > 0) {
-    process.exitCode = 1;
-  }
 }

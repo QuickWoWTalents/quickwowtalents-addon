@@ -69,7 +69,7 @@ Automatic opening is enabled by default. Use `/qwt auto off` if you prefer fully
 
 Install the newest zip from [Releases](https://github.com/QuickWoWTalents/quickwowtalents-addon/releases) over the existing `QuickWoWTalents` folder.
 
-Automated release checks are scheduled daily at **15:30 UTC**, after the public Quick WoW Talents cache should be warm. A new release is published only when the bundled recommendation data actually changes.
+Automated release checks are scheduled daily at **17:30 UTC**, after the production warm and monitor window. A scheduled release is published only when the fully validated recommendation data actually changes.
 
 ## Data source and privacy
 
@@ -107,10 +107,10 @@ Requirements:
 - Node.js 20+
 - `zip` or macOS `ditto` for packaging
 
-Install dependencies:
+Install locked dependencies:
 
 ```bash
-npm install
+npm ci
 ```
 
 Run tests:
@@ -119,11 +119,31 @@ Run tests:
 npm test
 ```
 
-Download the product-side generated addon data artifact:
+Download and validate one production options/catalog/artifact snapshot, while persisting the exact options and content-addressed catalog inputs for later readiness checks:
 
 ```bash
-npm run build:data:download
+npm run build:data:download -- \
+  --options-output /tmp/quickwowtalents-release-options.json \
+  --catalog-output /tmp/quickwowtalents-release-catalog.json.gz \
+  --snapshot-manifest-output /tmp/quickwowtalents-release-snapshot-manifest.json
 ```
+
+Production `/api/options` supplies `talentCatalogDownload` with exactly `path`, `sha256`, `bytes`, and `mediaType`. The downloader accepts only the same-origin HTTPS `/api/talent-catalog?sha256=<sha>` path, raw `application/gzip` bytes with no content encoding, the declared compressed length and SHA-256, and bounded compressed/expanded sizes. It rejects redirects, parses and descriptor-checks that gzip, and then fetches add-on data. After all three inputs validate, it stages the exact options, catalog, and add-on outputs, commits each with an atomic rename, and writes the snapshot manifest last. That strict version-1 manifest records the SHA-256 and byte length of the exact three persisted files. Validation and readiness require and re-hash the manifest tuple, so an interrupted commit or deployment lag fails closed.
+
+For explicit local/offline verification, `--catalog /path/to/talent-trees.json.gz` (or `.json`) remains supported instead of `--catalog-output`. Local mode validates the parsed catalog descriptor and import strings against options but does not claim that a JSON file or independently recompressed gzip has the production archive's exact bytes.
+
+The production endpoints default to `https://quickwowtalents.com/api/addon-data` and `https://quickwowtalents.com/api/options`. Override downloader inputs when needed:
+
+```bash
+npm run build:data:download -- \
+  --catalog /path/to/talent-trees.json \
+  --url https://example.test/api/addon-data \
+  --options-url https://example.test/api/options \
+  --options-output /path/to/options.json \
+  --output /path/to/QuickWoWTalentsData.lua
+```
+
+Equivalent environment variables are `QWT_TALENT_CATALOG_PATH` for an explicit local input, `QWT_TALENT_CATALOG_OUTPUT_PATH` for a remote catalog destination, `QWT_RELEASE_INPUT_MANIFEST_OUTPUT_PATH`, `QWT_ADDON_DATA_URL`, `QWT_OPTIONS_URL`, and `QWT_ADDON_OPTIONS_OUTPUT_PATH`. Validation and readiness accept `QWT_RELEASE_INPUT_MANIFEST_PATH` for the committed marker. Retry controls remain available through `--retries`, `--retry-delay-ms`, and `--timeout-ms` (or their existing `QWT_ADDON_DATA_*` environment variables).
 
 Generate data from individual cached public build payloads instead:
 
@@ -151,23 +171,24 @@ dist/QuickWoWTalents-<package-version>.zip
 
 ## Daily release pipeline
 
-GitHub Actions runs `.github/workflows/daily-release.yml` every day at `15:30 UTC` and can also be started manually with **Run workflow**.
+GitHub Actions runs `.github/workflows/daily-release.yml` every day at `17:30 UTC` (`30 17 * * *`) and can also be started manually with **Run workflow**. Both release and pull-request workflows use Node.js 22 with `npm ci`.
 
-Manual runs default to a fast dry-run that generates one spec, runs checks, and packages locally without committing, tagging, or publishing. Set `dry_run=false` only when intentionally publishing a manual full release.
+Manual runs default to a non-publishing dry-run. A dry-run still downloads the full production options/catalog/artifact snapshot, runs tests, packages, and performs source/ZIP readiness; it may be run from a non-`main` ref because publication is unreachable. Set `dry_run=false` only when intentionally publishing a manual full release from `refs/heads/main`. Manual full releases may continue when data is unchanged, but never bypass a gate or the fresh remote-`main` identity check.
 
 The pipeline:
 
-1. downloads `QuickWoWTalentsData.lua` from the product-side addon data artifact at `quickwowtalents.com`
-2. skips publishing if the bundled recommendation data is unchanged
-3. bumps the addon patch version in `package.json` and `QuickWoWTalents.toc` when a release is needed
-4. moves `CHANGELOG.md` Unreleased notes into the new version and adds commit subjects since the previous release tag
-5. writes `CURSEFORGE_CHANGELOG.md` with only the new version's notes for CurseForge automatic packaging
-6. verifies scripts and tests
-7. packages the addon zip
-8. commits the generated data/version/changelog bump to `main`
-9. creates a matching Git tag and GitHub release with the zip asset and versioned changelog notes
+1. checks out only the add-on repository, without persisting checkout credentials
+2. downloads production `/api/options`, its same-origin content-addressed catalog gzip, and `/api/addon-data`; persists the exact options/catalog/add-on tuple and writes its snapshot manifest last
+3. requires the snapshot manifest, re-hashes and validates the source tuple, checks script syntax, and runs all tests
+4. requires every publishing event to be the current remote `refs/heads/main`, then compares generated data with committed `HEAD`; scheduled runs skip when it is unchanged, while a manual full release may continue
+5. prepares version/changelog files and rejects an existing local or remote tag
+6. packages the add-on ZIP
+7. re-hashes the same manifest-bound inputs, validates source and packaged data against them, and captures readiness `zipSha256`
+8. commits and tags only after readiness, then re-hashes the exact final ZIP, authenticates Git only for publication, atomically pushes fully qualified `main` and tag refs, and creates the release only after verifying the remote tag exists
 
-No GitHub secrets are required beyond the built-in `GITHUB_TOKEN`.
+The pull-request workflow runs the same production schema/catalog/source/package/readiness checks with read-only permissions and never publishes. Each workflow has exactly one add-on checkout with no repository override. A production deployment lag fails closed because the options download descriptor, raw catalog gzip, parsed catalog descriptor, artifact, and snapshot manifest must agree. No GitHub secrets are required beyond the built-in `GITHUB_TOKEN` used only by the final publishing step.
+
+See [RELEASING.md](RELEASING.md) for the exact production prerequisites and manual release order.
 
 ## Support
 

@@ -2,6 +2,13 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
+import {
+  TEST_IMPORT_STRING,
+  UPDATE_REQUIRED_MESSAGE,
+  createAddonHarness,
+  makeRuntimeData
+} from './helpers/lua-addon-harness.mjs';
+
 const addonLuaPath = new URL('../QuickWoWTalents.lua', import.meta.url);
 const addonDataPath = new URL('../QuickWoWTalentsData.lua', import.meta.url);
 const readmePath = new URL('../README.md', import.meta.url);
@@ -60,6 +67,31 @@ test('auto-open checks settled instance context and current spec before opening'
   assert.match(source, /HasMplusRecommendationForSpec\(specID, context\.qwtDungeonId\)/);
   assert.match(source, /UI\.state\.mode = "mplus"/);
   assert.match(source, /UI\.state\.encounterIds\.mplus = context\.dungeonId/);
+});
+
+test('actual Lua auto-open flow exposes a compatible encounter recommendation', async () => {
+  const harness = await createAddonHarness();
+  harness.fire('ADDON_LOADED', 'QuickWoWTalents');
+  harness.fire('PLAYER_ENTERING_WORLD');
+  harness.runTimers();
+
+  assert.equal(harness.boolean('TEST.mainFrame ~= nil and TEST.mainFrame:IsShown()'), true);
+  assert.equal(harness.string('TEST.importBox:GetText()'), TEST_IMPORT_STRING);
+});
+
+test('scheduled and explicit auto-open report incompatible data once without opening', async () => {
+  const harness = await createAddonHarness({ data: makeRuntimeData({ schemaVersion: 2 }) });
+  harness.fire('ADDON_LOADED', 'QuickWoWTalents');
+  harness.fire('PLAYER_ENTERING_WORLD');
+  harness.fire('ZONE_CHANGED_NEW_AREA');
+  harness.slash('auto on');
+  harness.slash('auto on');
+  harness.runTimers();
+
+  const compatibilityMessages = harness.messages().filter((message) => message.includes(UPDATE_REQUIRED_MESSAGE));
+  assert.equal(compatibilityMessages.length, 1);
+  assert.equal(harness.boolean('TEST.mainFrame == nil'), true);
+  assert.equal(harness.number('#TEST.timers'), 0);
 });
 
 test('current specialization detection prefers the 12.1 namespace API with legacy fallback', async () => {

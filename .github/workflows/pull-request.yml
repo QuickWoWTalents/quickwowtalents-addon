@@ -6,32 +6,104 @@ on:
 permissions:
   contents: read
 
+env:
+  QWT_TALENT_CATALOG_PATH: ${{ github.workspace }}/tmp/release-inputs/talent-catalog.json.gz
+  QWT_ADDON_OPTIONS_PATH: ${{ github.workspace }}/tmp/release-inputs/options.json
+  QWT_RELEASE_INPUT_MANIFEST_PATH: ${{ github.workspace }}/tmp/release-inputs/snapshot-manifest.json
+  QWT_ADDON_DATA_URL: https://quickwowtalents.com/api/addon-data
+  QWT_OPTIONS_URL: https://quickwowtalents.com/api/options
+
 jobs:
   test:
-    name: Test and package
+    name: Validate production data, test, and package
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
 
     steps:
-      - name: Check out repo
+      - name: Check out addon repository
+        id: checkout_addon
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Set up Node
+        id: setup_node
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: Check scripts and run tests
+      - name: Install dependencies
+        id: install_dependencies
+        run: npm ci
+
+      - name: Verify addon checkout
+        id: verify_addon_checkout
+        shell: bash
         run: |
+          set -euo pipefail
+          ADDON_STATUS="$(git status --porcelain --untracked-files=all)"
+          if [ -n "$ADDON_STATUS" ]; then
+            echo 'Addon checkout must be clean before release inputs are acquired.' >&2
+            exit 1
+          fi
+          BASE_HEAD="$(git rev-parse HEAD)"
+          if [[ ! "$BASE_HEAD" =~ ^([0-9a-f]{40}|[0-9a-f]{64})$ ]]; then
+            echo 'Addon checkout HEAD is not a valid Git object ID.' >&2
+            exit 1
+          fi
+          echo "head=$BASE_HEAD" >> "$GITHUB_OUTPUT"
+
+      - name: Acquire production addon inputs
+        id: acquire_inputs
+        env:
+          QWT_ADDON_DATA_TIMEOUT_MS: '45000'
+          QWT_ADDON_DATA_RETRIES: '2'
+          QWT_ADDON_DATA_RETRY_DELAY_MS: '15000'
+        run: |
+          set -euo pipefail
+          npm run build:data:download -- \
+            --url "$QWT_ADDON_DATA_URL" \
+            --options-url "$QWT_OPTIONS_URL" \
+            --options-output "$QWT_ADDON_OPTIONS_PATH" \
+            --catalog-output "$QWT_TALENT_CATALOG_PATH" \
+            --snapshot-manifest-output "$QWT_RELEASE_INPUT_MANIFEST_PATH" \
+            --output "$GITHUB_WORKSPACE/QuickWoWTalentsData.lua"
+
+      - name: Validate downloaded addon data
+        id: validate_data
+        run: |
+          set -euo pipefail
+          npm run validate:data -- \
+            --addon "$GITHUB_WORKSPACE/QuickWoWTalentsData.lua" \
+            --options "$QWT_ADDON_OPTIONS_PATH" \
+            --catalog "$QWT_TALENT_CATALOG_PATH" \
+            --snapshot-manifest "$QWT_RELEASE_INPUT_MANIFEST_PATH" \
+            --require-catalog-download
+
+      - name: Verify scripts and run tests
+        id: verify_code
+        run: |
+          set -euo pipefail
           node --check scripts/build-data.mjs
+          node --check scripts/catalog-download-contract.mjs
           node --check scripts/download-addon-data.mjs
           node --check scripts/package-addon.mjs
           node --check scripts/prepare-release.mjs
+          node --check scripts/release-input-snapshot.mjs
+          node --check scripts/validate-addon-contract.mjs
           node --check scripts/verify-release-readiness.mjs
           npm test
 
-      - name: Package addon
+      - name: Package addon zip
+        id: package_addon
         run: npm run package
 
-      - name: Verify release readiness
-        run: npm run release:verify
+      - name: Verify source and package readiness
+        id: readiness
+        run: |
+          set -euo pipefail
+          npm run release:verify -- \
+            --options "$QWT_ADDON_OPTIONS_PATH" \
+            --catalog "$QWT_TALENT_CATALOG_PATH" \
+            --snapshot-manifest "$QWT_RELEASE_INPUT_MANIFEST_PATH" \
+            --require-catalog-download

@@ -2,6 +2,7 @@ local ADDON_NAME = ...
 local PREFIX = "|cff00c8ffQuick WoW Talents|r"
 local UI = { state = { mode = "mplus", encounterIds = {} } }
 local AUTO_OPEN_DELAY_SECONDS = 1.5
+local DATA_UPDATE_REQUIRED_MESSAGE = "Update required: install the latest Quick WoW Talents."
 
 -- Supported Mythic+ client IDs, cross-checked against current addon databases.
 -- WoW exposes challenge map / instance map IDs in-game; QWT recommendation data uses
@@ -43,6 +44,31 @@ local function Print(message)
   DEFAULT_CHAT_FRAME:AddMessage(PREFIX .. ": " .. tostring(message))
 end
 
+local function GetDataCompatibilityError()
+  local data = QuickWoWTalentsData
+  local clientInterface = select(4, GetBuildInfo())
+  if type(data) ~= "table" or data.schemaVersion ~= 3 then
+    return DATA_UPDATE_REQUIRED_MESSAGE
+  end
+  if data.clientInterface ~= clientInterface then
+    return DATA_UPDATE_REQUIRED_MESSAGE
+  end
+  return nil
+end
+
+local function ReportDataCompatibilityError()
+  local compatibilityError = GetDataCompatibilityError()
+  if not compatibilityError then
+    UI.reportedCompatibilityError = nil
+    return false
+  end
+  if UI.reportedCompatibilityError ~= compatibilityError then
+    UI.reportedCompatibilityError = compatibilityError
+    Print(compatibilityError)
+  end
+  return true
+end
+
 local function IsInCombat()
   return InCombatLockdown and InCombatLockdown()
 end
@@ -60,15 +86,15 @@ local function CountRecommendationTable(encounters)
 end
 
 local function CountRecommendations()
+  if GetDataCompatibilityError() then
+    return 0
+  end
   local data = QuickWoWTalentsData or {}
   local count = 0
 
   if type(data.recommendations) == "table" then
     for _, entry in pairs(data.recommendations) do
       if type(entry) == "table" then
-        if type(entry.mplusBestOverall) == "table" and entry.mplusBestOverall.importString then
-          count = count + 1
-        end
         if type(entry.mplus) == "table" then
           count = count + CountRecommendationTable(entry.mplus.encounters)
         end
@@ -104,6 +130,9 @@ local function GetCurrentSpecInfo()
 end
 
 local function GetModeConfig(mode)
+  if GetDataCompatibilityError() then
+    return nil
+  end
   local data = QuickWoWTalentsData or {}
   if data.modes and data.modes[mode] then
     return data.modes[mode]
@@ -206,6 +235,10 @@ local function GetSelectedEncounter()
 end
 
 local function GetRecommendation()
+  local compatibilityError = GetDataCompatibilityError()
+  if compatibilityError then
+    return nil, compatibilityError
+  end
   EnsureState()
 
   local data = QuickWoWTalentsData or {}
@@ -226,9 +259,6 @@ local function GetRecommendation()
     recommendation = specEntry.raid and specEntry.raid.encounters and specEntry.raid.encounters[selectedEncounterId]
   else
     recommendation = specEntry.mplus and specEntry.mplus.encounters and specEntry.mplus.encounters[selectedEncounterId]
-    if not recommendation and type(specEntry.mplusBestOverall) == "table" then
-      recommendation = specEntry.mplusBestOverall
-    end
   end
 
   if not recommendation or not recommendation.importString then
@@ -273,6 +303,20 @@ local function CloseAfterNativeCopy()
 end
 
 local function SelectImportText(closeOnNextCopy)
+  local compatibilityError = GetDataCompatibilityError()
+  if compatibilityError then
+    ReportDataCompatibilityError()
+    DisarmCloseAfterCopy()
+    if UI.importBox then
+      UI.importBox:SetText("")
+      UI.importBox:ClearFocus()
+    end
+    if UI.hint then
+      UI.hint:SetText(compatibilityError)
+    end
+    return
+  end
+
   if UI.importBox then
     local text = UI.importBox:GetText() or ""
     UI.importBox:SetFocus()
@@ -567,6 +611,9 @@ local function GetMplusContextFromClient()
 end
 
 local function HasMplusRecommendationForSpec(specID, dungeonId)
+  if GetDataCompatibilityError() then
+    return false
+  end
   local data = QuickWoWTalentsData or {}
   local specEntry = data.recommendations and data.recommendations[specID]
   local recommendation = specEntry
@@ -578,6 +625,10 @@ local function HasMplusRecommendationForSpec(specID, dungeonId)
 end
 
 local function BuildAutoOpenContext(reason)
+  local compatibilityError = GetDataCompatibilityError()
+  if compatibilityError then
+    return nil, compatibilityError
+  end
   EnsureState()
 
   if QuickWoWTalentsDB.autoOpenEnabled == false then
@@ -612,6 +663,9 @@ local function BuildAutoOpenContext(reason)
 end
 
 local function OpenAutoRecommendation(context)
+  if ReportDataCompatibilityError() then
+    return false
+  end
   if not context or not context.dungeonId then
     return false
   end
@@ -645,13 +699,18 @@ local function OpenAutoRecommendation(context)
 end
 
 local function TryAutoOpen(reason)
-  local context = BuildAutoOpenContext(reason)
+  local context, errorMessage = BuildAutoOpenContext(reason)
   if context then
     OpenAutoRecommendation(context)
+  elseif errorMessage == DATA_UPDATE_REQUIRED_MESSAGE then
+    ReportDataCompatibilityError()
   end
 end
 
 local function ScheduleAutoOpenCheck(reason)
+  if ReportDataCompatibilityError() then
+    return
+  end
   EnsureState()
   if QuickWoWTalentsDB.autoOpenEnabled == false then
     return
@@ -667,6 +726,9 @@ local function ScheduleAutoOpenCheck(reason)
 end
 
 local function ShowRecommendation()
+  if ReportDataCompatibilityError() then
+    return
+  end
   if IsInCombat() then
     Print("can't open during combat. Try /qwt again when combat ends.")
     return

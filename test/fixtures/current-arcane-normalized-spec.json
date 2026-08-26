@@ -1,0 +1,1523 @@
+{
+  "talentCatalog": {
+    "source": "raidbots",
+    "environment": "live",
+    "generatedAt": "2026-08-20T20:24:24.981Z",
+    "wowBuild": "12.1.0.69404",
+    "contentHash": "ede9afa9b5123625aa8cb14d6941e755",
+    "clientInterface": 120100,
+    "specCount": 40
+  },
+  "specKey": "Mage:Arcane",
+  "importString": "C4DAAAAAAAAAAAAAAAAAAAAAAMzwYZmZmFMzQzMGAAAGAwMz0sssNDAgNAAWgZmZsZZGzsMjxMmZGWYmZmZGAgBAAYAmZAGAMMzM",
+  "specRecord": {
+    "sourceKey": "raidbots:ede9afa9b5123625aa8cb14d6941e755:Mage:Arcane",
+    "traitTreeId": 658,
+    "className": "Mage",
+    "classId": 8,
+    "specName": "Arcane",
+    "specId": 62,
+    "fullNodeOrder": [
+      62084,
+      62085,
+      62086,
+      62087,
+      62088,
+      62091,
+      62092,
+      62094,
+      62096,
+      62098,
+      62100,
+      62102,
+      62104,
+      62105,
+      62107,
+      62110,
+      62112,
+      62114,
+      62115,
+      62116,
+      62117,
+      62119,
+      62121,
+      62122,
+      62123,
+      62124,
+      62125,
+      62127,
+      62129,
+      62150,
+      62151,
+      62153,
+      62157,
+      62163,
+      62164,
+      62170,
+      62173,
+      62174,
+      62176,
+      62177,
+      62178,
+      62179,
+      62180,
+      62181,
+      62182,
+      62184,
+      62185,
+      81468,
+      93524,
+      94632,
+      94633,
+      94634,
+      94635,
+      94636,
+      94637,
+      94638,
+      94639,
+      94640,
+      94641,
+      94642,
+      94643,
+      94644,
+      94645,
+      94646,
+      94647,
+      94648,
+      94649,
+      94650,
+      94651,
+      94652,
+      94653,
+      94654,
+      94655,
+      94656,
+      94657,
+      94658,
+      94659,
+      94660,
+      94661,
+      94662,
+      94663,
+      94664,
+      99828,
+      99829,
+      99830,
+      100989,
+      100995,
+      100998,
+      100999,
+      101004,
+      101007,
+      101009,
+      101015,
+      101016,
+      101019,
+      101021,
+      101024,
+      101027,
+      101029,
+      101883,
+      102438,
+      102439,
+      102440,
+      102441,
+      102445,
+      102446,
+      102449,
+      102451,
+      102453,
+      102454,
+      102460,
+      102462,
+      102465,
+      102467,
+      102468,
+      102469,
+      102470,
+      102471,
+      102472,
+      102474,
+      102475,
+      102476,
+      102480,
+      103771,
+      104113,
+      108535,
+      108536,
+      108537,
+      108538,
+      108539,
+      108541,
+      108551,
+      108653,
+      108654,
+      108655,
+      108656,
+      108657,
+      108658,
+      108659,
+      108660,
+      108661,
+      108662,
+      108664,
+      108665,
+      108849,
+      108850,
+      108851,
+      108852,
+      108853,
+      108855,
+      108857,
+      108858,
+      108859,
+      108860,
+      108863,
+      108864,
+      109002,
+      109393,
+      109394,
+      109395,
+      109396,
+      109397,
+      109398,
+      109399,
+      109400,
+      109401,
+      109402,
+      109403,
+      109404,
+      109406,
+      109407,
+      109408,
+      109409,
+      109411,
+      109412,
+      109478,
+      109667,
+      109668,
+      109669,
+      109670,
+      109671,
+      109672,
+      109673,
+      109674,
+      109675,
+      109915,
+      109916,
+      109956,
+      110078,
+      110079,
+      110080,
+      110081,
+      110082,
+      110086,
+      110087,
+      110088,
+      110089,
+      110258,
+      110283,
+      110321,
+      110322,
+      110420,
+      110422,
+      110423,
+      110442,
+      110597,
+      110849,
+      110850
+    ],
+    "nodes": {
+      "62084": {
+        "id": 62084,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 80140,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "62085": {
+        "id": 62085,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 80141,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "62086": {
+        "id": 62086,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 80142,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "62091": {
+        "id": 62091,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 80147,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "62094": {
+        "id": 62094,
+        "type": "choice",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 126060,
+            "maxRanks": 1
+          },
+          {
+            "id": 136580,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "62096": {
+        "id": 62096,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 80153,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "62098": {
+        "id": 62098,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 80155,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "62100": {
+        "id": 62100,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 80157,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "62102": {
+        "id": 62102,
+        "type": "single",
+        "maxRanks": 2,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 80159,
+            "maxRanks": 2
+          }
+        ]
+      },
+      "62104": {
+        "id": 62104,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 80161,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "62105": {
+        "id": 62105,
+        "type": "choice",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 80163,
+            "maxRanks": 1
+          },
+          {
+            "id": 134197,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "62114": {
+        "id": 62114,
+        "type": "single",
+        "maxRanks": 2,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 80173,
+            "maxRanks": 2
+          }
+        ]
+      },
+      "62115": {
+        "id": 62115,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 80174,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "62116": {
+        "id": 62116,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 80175,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "62121": {
+        "id": 62121,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": true,
+        "entries": [
+          {
+            "id": 80180,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "62122": {
+        "id": 62122,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 80181,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "62123": {
+        "id": 62123,
+        "type": "single",
+        "maxRanks": 2,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 80182,
+            "maxRanks": 2
+          }
+        ]
+      },
+      "62124": {
+        "id": 62124,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 80183,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "62127": {
+        "id": 62127,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 80187,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "93524": {
+        "id": 93524,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 115877,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "94643": {
+        "id": 94643,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 117246,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "94644": {
+        "id": 94644,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 117247,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "94645": {
+        "id": 94645,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 117248,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "94646": {
+        "id": 94646,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 117249,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "94647": {
+        "id": 94647,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": true,
+        "entries": [
+          {
+            "id": 117250,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "94648": {
+        "id": 94648,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 117251,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "94649": {
+        "id": 94649,
+        "type": "choice",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 117252,
+            "maxRanks": 1
+          },
+          {
+            "id": 135598,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "94650": {
+        "id": 94650,
+        "type": "choice",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 117253,
+            "maxRanks": 1
+          },
+          {
+            "id": 123867,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "94651": {
+        "id": 94651,
+        "type": "choice",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 117254,
+            "maxRanks": 1
+          },
+          {
+            "id": 134249,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "94652": {
+        "id": 94652,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 117255,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "94653": {
+        "id": 94653,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 117256,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "99830": {
+        "id": 99830,
+        "type": "subtree",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 123344,
+            "maxRanks": 1
+          },
+          {
+            "id": 123341,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "101883": {
+        "id": 101883,
+        "type": "choice",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 125819,
+            "maxRanks": 1
+          },
+          {
+            "id": 125818,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "102445": {
+        "id": 102445,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 126515,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "102446": {
+        "id": 102446,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 126516,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "102449": {
+        "id": 102449,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 126519,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "102451": {
+        "id": 102451,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 126521,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "102453": {
+        "id": 102453,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 126523,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "102460": {
+        "id": 102460,
+        "type": "choice",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 126530,
+            "maxRanks": 1
+          },
+          {
+            "id": 134025,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "102465": {
+        "id": 102465,
+        "type": "choice",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 134020,
+            "maxRanks": 1
+          },
+          {
+            "id": 135699,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "102467": {
+        "id": 102467,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 126537,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "102468": {
+        "id": 102468,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 126538,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "102470": {
+        "id": 102470,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 126540,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "102471": {
+        "id": 102471,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 126541,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "102472": {
+        "id": 102472,
+        "type": "choice",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 126542,
+            "maxRanks": 1
+          },
+          {
+            "id": 134022,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "102474": {
+        "id": 102474,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 126544,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "102475": {
+        "id": 102475,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 126545,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "102480": {
+        "id": 102480,
+        "type": "single",
+        "maxRanks": 2,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 126550,
+            "maxRanks": 2
+          }
+        ]
+      },
+      "104113": {
+        "id": 104113,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 128689,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "108535": {
+        "id": 108535,
+        "type": "single",
+        "maxRanks": 2,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 134023,
+            "maxRanks": 2
+          }
+        ]
+      },
+      "108537": {
+        "id": 108537,
+        "type": "single",
+        "maxRanks": 2,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 134026,
+            "maxRanks": 2
+          }
+        ]
+      },
+      "108538": {
+        "id": 108538,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 134027,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "108539": {
+        "id": 108539,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 134028,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "108541": {
+        "id": 108541,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 134030,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "108654": {
+        "id": 108654,
+        "type": "choice",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 134183,
+            "maxRanks": 1
+          },
+          {
+            "id": 134182,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "108657": {
+        "id": 108657,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 134187,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "108658": {
+        "id": 108658,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 134188,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "108659": {
+        "id": 108659,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 134189,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "108660": {
+        "id": 108660,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 134190,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "108661": {
+        "id": 108661,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 134191,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "108662": {
+        "id": 108662,
+        "type": "single",
+        "maxRanks": 2,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 134192,
+            "maxRanks": 2
+          }
+        ]
+      },
+      "108664": {
+        "id": 108664,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 134194,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "108665": {
+        "id": 108665,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 134196,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "109002": {
+        "id": 109002,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 134834,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "109478": {
+        "id": 109478,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 135698,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "109673": {
+        "id": 109673,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 135924,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "109674": {
+        "id": 109674,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 135925,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "109675": {
+        "id": 109675,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 135926,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "110081": {
+        "id": 110081,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 136579,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "110420": {
+        "id": 110420,
+        "type": "tiered",
+        "maxRanks": 4,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 137028,
+            "maxRanks": 1
+          },
+          {
+            "id": 137027,
+            "maxRanks": 2
+          },
+          {
+            "id": 137026,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "110442": {
+        "id": 110442,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 137084,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "110597": {
+        "id": 110597,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 137410,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "110849": {
+        "id": 110849,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 137841,
+            "maxRanks": 1
+          }
+        ]
+      },
+      "110850": {
+        "id": 110850,
+        "type": "single",
+        "maxRanks": 1,
+        "freeNode": false,
+        "entries": [
+          {
+            "id": 137842,
+            "maxRanks": 1
+          }
+        ]
+      }
+    },
+    "talents": {
+      "80140": {
+        "id": 80140,
+        "nodeId": 62084
+      },
+      "80141": {
+        "id": 80141,
+        "nodeId": 62085
+      },
+      "80142": {
+        "id": 80142,
+        "nodeId": 62086
+      },
+      "80147": {
+        "id": 80147,
+        "nodeId": 62091
+      },
+      "80153": {
+        "id": 80153,
+        "nodeId": 62096
+      },
+      "80155": {
+        "id": 80155,
+        "nodeId": 62098
+      },
+      "80157": {
+        "id": 80157,
+        "nodeId": 62100
+      },
+      "80159": {
+        "id": 80159,
+        "nodeId": 62102
+      },
+      "80161": {
+        "id": 80161,
+        "nodeId": 62104
+      },
+      "80163": {
+        "id": 80163,
+        "nodeId": 62105
+      },
+      "80173": {
+        "id": 80173,
+        "nodeId": 62114
+      },
+      "80174": {
+        "id": 80174,
+        "nodeId": 62115
+      },
+      "80175": {
+        "id": 80175,
+        "nodeId": 62116
+      },
+      "80180": {
+        "id": 80180,
+        "nodeId": 62121
+      },
+      "80181": {
+        "id": 80181,
+        "nodeId": 62122
+      },
+      "80182": {
+        "id": 80182,
+        "nodeId": 62123
+      },
+      "80183": {
+        "id": 80183,
+        "nodeId": 62124
+      },
+      "80187": {
+        "id": 80187,
+        "nodeId": 62127
+      },
+      "115877": {
+        "id": 115877,
+        "nodeId": 93524
+      },
+      "117246": {
+        "id": 117246,
+        "nodeId": 94643
+      },
+      "117247": {
+        "id": 117247,
+        "nodeId": 94644
+      },
+      "117248": {
+        "id": 117248,
+        "nodeId": 94645
+      },
+      "117249": {
+        "id": 117249,
+        "nodeId": 94646
+      },
+      "117250": {
+        "id": 117250,
+        "nodeId": 94647
+      },
+      "117251": {
+        "id": 117251,
+        "nodeId": 94648
+      },
+      "117252": {
+        "id": 117252,
+        "nodeId": 94649
+      },
+      "117253": {
+        "id": 117253,
+        "nodeId": 94650
+      },
+      "117254": {
+        "id": 117254,
+        "nodeId": 94651
+      },
+      "117255": {
+        "id": 117255,
+        "nodeId": 94652
+      },
+      "117256": {
+        "id": 117256,
+        "nodeId": 94653
+      },
+      "123341": {
+        "id": 123341,
+        "nodeId": 99830
+      },
+      "123344": {
+        "id": 123344,
+        "nodeId": 99830
+      },
+      "123867": {
+        "id": 123867,
+        "nodeId": 94650
+      },
+      "125818": {
+        "id": 125818,
+        "nodeId": 101883
+      },
+      "125819": {
+        "id": 125819,
+        "nodeId": 101883
+      },
+      "126060": {
+        "id": 126060,
+        "nodeId": 62094
+      },
+      "126515": {
+        "id": 126515,
+        "nodeId": 102445
+      },
+      "126516": {
+        "id": 126516,
+        "nodeId": 102446
+      },
+      "126519": {
+        "id": 126519,
+        "nodeId": 102449
+      },
+      "126521": {
+        "id": 126521,
+        "nodeId": 102451
+      },
+      "126523": {
+        "id": 126523,
+        "nodeId": 102453
+      },
+      "126530": {
+        "id": 126530,
+        "nodeId": 102460
+      },
+      "126537": {
+        "id": 126537,
+        "nodeId": 102467
+      },
+      "126538": {
+        "id": 126538,
+        "nodeId": 102468
+      },
+      "126540": {
+        "id": 126540,
+        "nodeId": 102470
+      },
+      "126541": {
+        "id": 126541,
+        "nodeId": 102471
+      },
+      "126542": {
+        "id": 126542,
+        "nodeId": 102472
+      },
+      "126544": {
+        "id": 126544,
+        "nodeId": 102474
+      },
+      "126545": {
+        "id": 126545,
+        "nodeId": 102475
+      },
+      "126550": {
+        "id": 126550,
+        "nodeId": 102480
+      },
+      "128689": {
+        "id": 128689,
+        "nodeId": 104113
+      },
+      "134020": {
+        "id": 134020,
+        "nodeId": 102465
+      },
+      "134022": {
+        "id": 134022,
+        "nodeId": 102472
+      },
+      "134023": {
+        "id": 134023,
+        "nodeId": 108535
+      },
+      "134025": {
+        "id": 134025,
+        "nodeId": 102460
+      },
+      "134026": {
+        "id": 134026,
+        "nodeId": 108537
+      },
+      "134027": {
+        "id": 134027,
+        "nodeId": 108538
+      },
+      "134028": {
+        "id": 134028,
+        "nodeId": 108539
+      },
+      "134030": {
+        "id": 134030,
+        "nodeId": 108541
+      },
+      "134182": {
+        "id": 134182,
+        "nodeId": 108654
+      },
+      "134183": {
+        "id": 134183,
+        "nodeId": 108654
+      },
+      "134187": {
+        "id": 134187,
+        "nodeId": 108657
+      },
+      "134188": {
+        "id": 134188,
+        "nodeId": 108658
+      },
+      "134189": {
+        "id": 134189,
+        "nodeId": 108659
+      },
+      "134190": {
+        "id": 134190,
+        "nodeId": 108660
+      },
+      "134191": {
+        "id": 134191,
+        "nodeId": 108661
+      },
+      "134192": {
+        "id": 134192,
+        "nodeId": 108662
+      },
+      "134194": {
+        "id": 134194,
+        "nodeId": 108664
+      },
+      "134196": {
+        "id": 134196,
+        "nodeId": 108665
+      },
+      "134197": {
+        "id": 134197,
+        "nodeId": 62105
+      },
+      "134249": {
+        "id": 134249,
+        "nodeId": 94651
+      },
+      "134834": {
+        "id": 134834,
+        "nodeId": 109002
+      },
+      "135598": {
+        "id": 135598,
+        "nodeId": 94649
+      },
+      "135698": {
+        "id": 135698,
+        "nodeId": 109478
+      },
+      "135699": {
+        "id": 135699,
+        "nodeId": 102465
+      },
+      "135924": {
+        "id": 135924,
+        "nodeId": 109673
+      },
+      "135925": {
+        "id": 135925,
+        "nodeId": 109674
+      },
+      "135926": {
+        "id": 135926,
+        "nodeId": 109675
+      },
+      "136579": {
+        "id": 136579,
+        "nodeId": 110081
+      },
+      "136580": {
+        "id": 136580,
+        "nodeId": 62094
+      },
+      "137026": {
+        "id": 137026,
+        "nodeId": 110420
+      },
+      "137027": {
+        "id": 137027,
+        "nodeId": 110420
+      },
+      "137028": {
+        "id": 137028,
+        "nodeId": 110420
+      },
+      "137084": {
+        "id": 137084,
+        "nodeId": 110442
+      },
+      "137410": {
+        "id": 137410,
+        "nodeId": 110597
+      },
+      "137841": {
+        "id": 137841,
+        "nodeId": 110849
+      },
+      "137842": {
+        "id": 137842,
+        "nodeId": 110850
+      }
+    }
+  }
+}

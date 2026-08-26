@@ -2,3 +2,5 @@
 *.zip
 /dist/
 /tmp/
+/node_modules/
+/.superpowers/
