@@ -18,12 +18,44 @@ async function readAddonLua() {
   return readFile(addonLuaPath, 'utf8');
 }
 
-function parseMplusContextDungeonIds(source) {
+const expectedMappings = [
+  { qwtDungeonId: 12993, challengeMapId: 588, instanceMapIds: [2993], name: 'Altar of Fangs' },
+  { qwtDungeonId: 12825, challengeMapId: 586, instanceMapIds: [2825], name: 'Den of Nalorakk' },
+  { qwtDungeonId: 61762, challengeMapId: 249, instanceMapIds: [1762], name: "Kings' Rest" },
+  { qwtDungeonId: 12813, challengeMapId: 587, instanceMapIds: [2813], name: 'Murder Row' },
+  { qwtDungeonId: 112521, challengeMapId: 399, instanceMapIds: [2521], name: 'Ruby Life Pools' },
+  { qwtDungeonId: 61877, challengeMapId: 250, instanceMapIds: [1877], name: 'Temple of Sethraliss' },
+  { qwtDungeonId: 12859, challengeMapId: 584, instanceMapIds: [2859], name: 'The Blinding Vale' },
+  { qwtDungeonId: 12923, challengeMapId: 585, instanceMapIds: [2923], name: 'Voidscar Arena' }
+];
+
+function readMplusContextBlock(source) {
   const contextBlock = source.match(
     /local MPLUS_DUNGEON_CONTEXTS = \{([\s\S]*?)\n\}\n\nlocal MPLUS_DUNGEON_BY_CHALLENGE_MAP_ID/,
   )?.[1];
   assert.ok(contextBlock, 'expected MPLUS_DUNGEON_CONTEXTS block');
-  return [...contextBlock.matchAll(/\bqwtDungeonId = (\d+)/g)].map((match) => Number(match[1]));
+  return contextBlock;
+}
+
+function parseMplusContextMappings(source) {
+  const contextBlock = readMplusContextBlock(source);
+  return [...contextBlock.matchAll(
+    /\{\s*qwtDungeonId = (\d+), challengeMapId = (\d+), instanceMapIds = \{([^}]*)\}, name = "([^"]+)"\s*\}/g,
+  )].map((match) => ({
+    qwtDungeonId: Number(match[1]),
+    challengeMapId: Number(match[2]),
+    instanceMapIds: match[3].split(',').map((value) => Number(value.trim())),
+    name: match[4]
+  }));
+}
+
+function assertMplusContextMappings(source) {
+  assert.deepEqual(parseMplusContextMappings(source), expectedMappings);
+}
+
+function parseMplusContextDungeonIds(source) {
+  return [...readMplusContextBlock(source).matchAll(/\bqwtDungeonId\s*=\s*(\d+)/g)]
+    .map((match) => Number(match[1]));
 }
 
 function parseBundleMplusDungeonIds(source) {
@@ -38,26 +70,20 @@ test('auto-open includes explicit Midnight Season 2 Mythic+ client ID mappings i
   const source = await readAddonLua();
   const data = await readFile(addonDataPath, 'utf8');
 
-  const expectedMappings = [
-    { qwtDungeonId: 12993, challengeMapId: 588, instanceMapIds: [2993], name: 'Altar of Fangs' },
-    { qwtDungeonId: 12825, challengeMapId: 586, instanceMapIds: [2825], name: 'Den of Nalorakk' },
-    { qwtDungeonId: 61762, challengeMapId: 249, instanceMapIds: [1762], name: "Kings' Rest" },
-    { qwtDungeonId: 12813, challengeMapId: 587, instanceMapIds: [2813], name: 'Murder Row' },
-    { qwtDungeonId: 112521, challengeMapId: 399, instanceMapIds: [2521], name: 'Ruby Life Pools' },
-    { qwtDungeonId: 61877, challengeMapId: 250, instanceMapIds: [1877], name: 'Temple of Sethraliss' },
-    { qwtDungeonId: 12859, challengeMapId: 584, instanceMapIds: [2859], name: 'The Blinding Vale' },
-    { qwtDungeonId: 12923, challengeMapId: 585, instanceMapIds: [2923], name: 'Voidscar Arena' }
-  ];
-
-  for (const mapping of expectedMappings) {
-    assert.match(source, new RegExp(`qwtDungeonId = ${mapping.qwtDungeonId}, challengeMapId = ${mapping.challengeMapId}`));
-    assert.match(source, new RegExp(`instanceMapIds = \\{ ${mapping.instanceMapIds.join(', ')} \\}`));
-    assert.match(source, new RegExp(`name = "${mapping.name.replaceAll("'", "\\'")}"`));
-  }
-
+  assertMplusContextMappings(source);
   assert.match(source, /MPLUS_DUNGEON_BY_CHALLENGE_MAP_ID\[context\.challengeMapId\] = context/);
   assert.match(source, /MPLUS_DUNGEON_BY_INSTANCE_MAP_ID\[instanceMapId\] = context/);
   assert.deepEqual(parseMplusContextDungeonIds(source), parseBundleMplusDungeonIds(data));
+});
+
+test('auto-open mapping assertion rejects an instance map ID mutation within one context row', async () => {
+  const source = await readAddonLua();
+  const mutatedSource = source.replace(
+    'instanceMapIds = { 2993 }',
+    'instanceMapIds = { 2923 }',
+  );
+
+  assert.throws(() => assertMplusContextMappings(mutatedSource), /deep.*equal/i);
 });
 
 test('auto-open checks settled instance context and current spec before opening', async () => {
