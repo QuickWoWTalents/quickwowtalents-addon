@@ -18,8 +18,25 @@ async function readAddonLua() {
   return readFile(addonLuaPath, 'utf8');
 }
 
-test('auto-open includes explicit Midnight Season 2 Mythic+ client ID mappings', async () => {
+function parseMplusContextDungeonIds(source) {
+  const contextBlock = source.match(
+    /local MPLUS_DUNGEON_CONTEXTS = \{([\s\S]*?)\n\}\n\nlocal MPLUS_DUNGEON_BY_CHALLENGE_MAP_ID/,
+  )?.[1];
+  assert.ok(contextBlock, 'expected MPLUS_DUNGEON_CONTEXTS block');
+  return [...contextBlock.matchAll(/\bqwtDungeonId = (\d+)/g)].map((match) => Number(match[1]));
+}
+
+function parseBundleMplusDungeonIds(source) {
+  const dungeonIdsBlock = source.match(
+    /activities = \{[\s\S]*?mythicPlus = \{[\s\S]*?dungeonIds = \{([\s\S]*?)\n\s*\}/,
+  )?.[1];
+  assert.ok(dungeonIdsBlock, 'expected schema-3 Mythic+ dungeonIds block');
+  return [...dungeonIdsBlock.matchAll(/\b\d+\b/g)].map((match) => Number(match[0]));
+}
+
+test('auto-open includes explicit Midnight Season 2 Mythic+ client ID mappings in bundle order', async () => {
   const source = await readAddonLua();
+  const data = await readFile(addonDataPath, 'utf8');
 
   const expectedMappings = [
     { qwtDungeonId: 12993, challengeMapId: 588, instanceMapIds: [2993], name: 'Altar of Fangs' },
@@ -40,20 +57,7 @@ test('auto-open includes explicit Midnight Season 2 Mythic+ client ID mappings',
 
   assert.match(source, /MPLUS_DUNGEON_BY_CHALLENGE_MAP_ID\[context\.challengeMapId\] = context/);
   assert.match(source, /MPLUS_DUNGEON_BY_INSTANCE_MAP_ID\[instanceMapId\] = context/);
-});
-
-test('Season 1 auto-open mappings remain available during the data handoff', async () => {
-  const source = await readAddonLua();
-  const data = await readFile(addonDataPath, 'utf8');
-  const expectedSpecCount = Number(data.match(/specs = (\d+)/)?.[1]);
-  const mappedDungeonIds = [10658, 61209, 361753, 112526, 12805, 12811, 12874, 12915];
-
-  assert.equal(expectedSpecCount, 40);
-  for (const dungeonId of mappedDungeonIds) {
-    assert.match(source, new RegExp(`qwtDungeonId = ${dungeonId},`));
-    const recommendationMatches = data.match(new RegExp(`\\[${dungeonId}\\] = \\{`, 'g')) ?? [];
-    assert.equal(recommendationMatches.length, expectedSpecCount, `expected one ${dungeonId} recommendation per spec`);
-  }
+  assert.deepEqual(parseMplusContextDungeonIds(source), parseBundleMplusDungeonIds(data));
 });
 
 test('auto-open checks settled instance context and current spec before opening', async () => {

@@ -145,6 +145,10 @@
 
 - Modify: `QuickWoWTalentsData.lua`
 
+**Authorized rollover completion:**
+
+When the ordered current Mythic+ activity IDs in the schema-3 bundle no longer match the auto-open translation table, also modify `QuickWoWTalents.lua` and `test/auto-open.test.mjs` so the runtime list matches that ordered bundle list exactly. Keep explicit client-ID assertions for each mapping; do not require recommendation coverage because safe skips are valid.
+
 - [ ] After the production schema-3 deployment is live and cache warming is complete, download using production `/api/options`, its advertised content-addressed catalog gzip, and `/api/addon-data`.
 - [ ] Run `npm run validate:data`, `npm test`, `npm run package`, and `npm run release:verify`.
 - [ ] Confirm the bundled data reports schema 3/interface 120100, exact production catalog hash/activity IDs, only allowed safe skips, and no structural decoder failures.

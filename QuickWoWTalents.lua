@@ -6,20 +6,8 @@ local DATA_UPDATE_REQUIRED_MESSAGE = "Update required: install the latest Quick 
 
 -- Supported Mythic+ client IDs, cross-checked against current addon databases.
 -- WoW exposes challenge map / instance map IDs in-game; QWT recommendation data uses
--- Warcraft Logs encounter IDs, so auto-open needs an explicit translation layer. Keeping
--- both Midnight pools makes auto-open safe while the bundled recommendation data rolls over.
+-- Warcraft Logs encounter IDs, so auto-open needs an explicit translation layer.
 local MPLUS_DUNGEON_CONTEXTS = {
-  -- Midnight Season 1
-  { qwtDungeonId = 10658, challengeMapId = 556, instanceMapIds = { 658 }, name = "Pit of Saron" },
-  { qwtDungeonId = 61209, challengeMapId = 161, instanceMapIds = { 1209 }, name = "Skyreach" },
-  { qwtDungeonId = 361753, challengeMapId = 239, instanceMapIds = { 1753 }, name = "Seat of the Triumvirate" },
-  { qwtDungeonId = 112526, challengeMapId = 402, instanceMapIds = { 2526 }, name = "Algeth'ar Academy" },
-  { qwtDungeonId = 12805, challengeMapId = 557, instanceMapIds = { 2805 }, name = "Windrunner Spire" },
-  { qwtDungeonId = 12811, challengeMapId = 558, instanceMapIds = { 2811 }, name = "Magisters' Terrace" },
-  { qwtDungeonId = 12874, challengeMapId = 560, instanceMapIds = { 2874 }, name = "Maisara Caverns" },
-  { qwtDungeonId = 12915, challengeMapId = 559, instanceMapIds = { 2915 }, name = "Nexus-Point Xenas" },
-
-  -- Midnight Season 2
   { qwtDungeonId = 12993, challengeMapId = 588, instanceMapIds = { 2993 }, name = "Altar of Fangs" },
   { qwtDungeonId = 12825, challengeMapId = 586, instanceMapIds = { 2825 }, name = "Den of Nalorakk" },
   { qwtDungeonId = 61762, challengeMapId = 249, instanceMapIds = { 1762 }, name = "Kings' Rest" },
