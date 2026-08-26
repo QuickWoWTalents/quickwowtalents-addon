@@ -316,10 +316,11 @@ local function SelectImportText(closeOnNextCopy)
     UI.closeOnNextCopy = true
     UI.copyModifierDown = false
     if UI.hint then
-      UI.hint:SetText("Selected. Press Ctrl+C or Cmd+C to copy; this window will close after copy.")
+      UI.hint:SetText("2. Import string selected — press Ctrl+C now")
+      UI.hint:SetTextColor(0.2, 1, 0.2)
     end
   elseif UI.hint then
-    UI.hint:SetText("Selected. Press Ctrl+C or Cmd+C, then paste in Talents → Loadouts → Import.")
+    UI.hint:SetText("Import string selected. Press Ctrl+C, then paste in Talents → Loadouts → Import.")
   end
 end
 
@@ -379,7 +380,8 @@ local function UpdateRecommendation(selectText)
   UI.subtitle:SetText(recommendation.label or ((recommendation.specName or "Current spec") .. " — " .. encounterName))
   UI.meta:SetText(contextText .. " · " .. encounterName .. " · Metric: " .. tostring(recommendation.metric or "default") .. " · Samples: " .. tostring(sampleCount))
   UI.importBox:SetText(recommendation.importString or "")
-  UI.hint:SetText("Press Copy to select the full string, then press Ctrl+C or Cmd+C.")
+  UI.hint:SetText("2. Press Ctrl+C to copy")
+  UI.hint:SetTextColor(1, 0.82, 0)
   UI.footer:SetText("Snapshot: " .. tostring(snapshot) .. " · Bundled: " .. tostring(generated) .. " · Offline addon data; no live calls from WoW.")
 
   if selectText then
@@ -532,7 +534,7 @@ local function CreateMainFrame()
   importBox:SetFontObject(ChatFontNormal)
   importBox:SetScript("OnEscapePressed", importBox.ClearFocus)
   importBox:SetScript("OnEditFocusGained", function(self) self:SetCursorPosition(0) end)
-  importBox:SetScript("OnMouseUp", function(self) self:SetFocus(); self:SetCursorPosition(0) end)
+  importBox:SetScript("OnMouseUp", function() SelectImportText(true) end)
   importBox:SetScript("OnKeyDown", function(_, key)
     if UI.closeOnNextCopy and IsCopyModifierKey(key) then
       UI.copyModifierDown = true
@@ -553,18 +555,24 @@ local function CreateMainFrame()
   UI.importBox = importBox
 
   local selectButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
-  selectButton:SetSize(120, 26)
+  selectButton:SetSize(180, 30)
   selectButton:SetPoint("TOPLEFT", importBox, "BOTTOMLEFT", 0, -14)
-  selectButton:SetText("Copy")
+  selectButton:SetText("1. Select Import String")
   selectButton:SetScript("OnClick", function() SelectImportText(true) end)
   UI.selectButton = selectButton
 
-  local hint = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-  hint:SetPoint("LEFT", selectButton, "RIGHT", 14, 0)
+  local hint = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+  hint:SetPoint("TOPLEFT", selectButton, "TOPRIGHT", 16, 0)
   hint:SetPoint("RIGHT", frame, "RIGHT", -28, 0)
   hint:SetJustifyH("LEFT")
-  hint:SetText("Press Copy to select the full string, then press Ctrl+C or Cmd+C.")
+  hint:SetText("2. Press Ctrl+C to copy")
   UI.hint = hint
+
+  local copyNote = frame:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+  copyNote:SetPoint("TOPLEFT", hint, "BOTTOMLEFT", 0, -4)
+  copyNote:SetPoint("RIGHT", frame, "RIGHT", -28, 0)
+  copyNote:SetJustifyH("LEFT")
+  copyNote:SetText("WoW requires this keyboard shortcut; the window closes after copying.")
 
   local footer = frame:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
   footer:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 24, 22)

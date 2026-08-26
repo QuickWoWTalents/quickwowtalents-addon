@@ -74,6 +74,7 @@ SlashCmdList = {}
 UIParent = {}
 ChatFontNormal = {}
 GameFontNormalLarge = {}
+GameFontNormal = {}
 GameFontHighlightSmall = {}
 GameFontNormalSmall = {}
 GameFontHighlight = {}
@@ -144,10 +145,12 @@ local function NewWidget(frameType, name, template)
   function widget:ClearFocus() self.focused = false end
   function widget:SetCursorPosition(position) self.cursor = position end
   function widget:HighlightText(first, last) self.highlightFirst = first; self.highlightLast = last end
+  function widget:SetTextColor(red, green, blue, alpha)
+    self.textColor = { red = red, green = green, blue = blue, alpha = alpha }
+    TEST.hint = self
+  end
   function widget:SetText(value)
     self.text = tostring(value or "")
-    if self.text == "Copy" then TEST.copyButton = self end
-    if self.text:match("^Press Copy") then TEST.hint = self end
   end
   function widget:GetText() return self.text end
   function widget:SetScript(scriptName, callback)
@@ -175,6 +178,7 @@ function CreateFrame(frameType, name, parent, template)
   local widget = NewWidget(frameType, name, template)
   if name == "QuickWoWTalentsFrame" then TEST.mainFrame = widget end
   if template == "InputBoxTemplate" then TEST.importBox = widget end
+  if template == "UIPanelButtonTemplate" then TEST.copyButton = widget end
   return widget
 end
 
