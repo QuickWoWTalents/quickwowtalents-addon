@@ -1,7 +1,128 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import test from 'node:test';
 
-import { buildAddonData, luaString, renderLuaData, toLua } from '../scripts/build-data.mjs';
+import { buildAddonData, luaString, renderLuaData, toLua, writeAddonData } from '../scripts/build-data.mjs';
+
+const currentArcaneFixture = JSON.parse(await fs.readFile(
+  new URL('./fixtures/current-arcane-normalized-spec.json', import.meta.url),
+  'utf8'
+));
+const CATALOG_DESCRIPTOR = currentArcaneFixture.talentCatalog;
+const VALID_IMPORT = currentArcaneFixture.importString;
+
+function makeFixture() {
+  const catalog = {
+    source: CATALOG_DESCRIPTOR.source,
+    environment: CATALOG_DESCRIPTOR.environment,
+    generatedAt: CATALOG_DESCRIPTOR.generatedAt,
+    wowBuild: CATALOG_DESCRIPTOR.wowBuild,
+    contentHash: CATALOG_DESCRIPTOR.contentHash,
+    specs: {
+      'Mage:Arcane': structuredClone(currentArcaneFixture.specRecord)
+    }
+  };
+  const classes = [{
+    className: 'Mage',
+    specs: [{ specName: 'Arcane', role: 'DPS', metrics: ['dps'] }]
+  }];
+
+  for (let index = 1; index < 40; index += 1) {
+    const className = `Test Class ${index}`;
+    const specName = `Spec ${index}`;
+    const key = `${className}:${specName}`;
+    catalog.specs[key] = { specId: 1000 + index, className, specName };
+    classes.push({ className, specs: [{ specName, role: 'DPS', metrics: ['dps'] }] });
+  }
+
+  const options = {
+    defaultRegion: 'all',
+    talentCatalog: structuredClone(CATALOG_DESCRIPTOR),
+    classes,
+    mythicPlus: {
+      expansionId: 11,
+      zoneId: 51,
+      dungeons: [
+        { id: 12993, name: 'Altar of Fangs' },
+        { id: 12825, name: 'Den of Nalorakk' }
+      ]
+    },
+    raid: {
+      expansionId: 11,
+      zoneId: 50,
+      bosses: [
+        { id: 3159, name: 'Rotmire', raidName: 'Sporefall', zoneId: 50 },
+        { id: 3012, name: 'Imperator Averzian', raidName: 'The Voidspire', zoneId: 46 }
+      ],
+      difficulties: [{ id: 4, name: 'Heroic' }]
+    }
+  };
+  return { catalog, options };
+}
+
+function responseJson(value) {
+  return { ok: true, json: async () => structuredClone(value) };
+}
+
+async function withOptionsFetch(options, run) {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    assert.equal(String(url), 'https://example.test/api/options');
+    return responseJson(options);
+  };
+  try {
+    return await run();
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+}
+
+function safeGapPayload(code, talentCatalog) {
+  return {
+    talentCatalog: structuredClone(talentCatalog),
+    cache: { stale: false, capturedAt: '2026-08-25T01:00:00.000Z' },
+    empty: { reason: code, checkedWarcraftLogs: true },
+    summary: { totalLogs: 0, mostCommon: null }
+  };
+}
+
+function recommendationPayload(request, talentCatalog, importString = VALID_IMPORT) {
+  return {
+    talentCatalog: structuredClone(talentCatalog),
+    cache: { stale: false, servedDayKey: '2026-08-25', capturedAt: '2026-08-25T01:00:00.000Z' },
+    summary: {
+      totalLogs: 100,
+      distinctBuilds: 3,
+      selectionBasis: request.mode === 'mplus'
+        ? 'most-common-top-100-per-key-15-plus'
+        : 'highest-average-top-100',
+      mostCommon: {
+        blizzardExportString: importString,
+        talentTree: { specId: 62 },
+        count: 10,
+        adoptionRate: 0.1,
+        averageAmount: 1000,
+        bestAmount: 1200,
+        apexTalent: 'Test Apex'
+      }
+    }
+  };
+}
+
+function createMatrixLoader(talentCatalog, requests, importString = VALID_IMPORT) {
+  return async (request) => {
+    requests.push(request);
+    if (request.job.key === 'Mage:Arcane'
+      && ((request.mode === 'mplus' && request.encounter.id === 12993)
+        || (request.mode === 'raid' && request.encounter.id === 3159))) {
+      return recommendationPayload(request, talentCatalog, importString);
+    }
+    const code = requests.length % 2 === 0 ? 'NO_USABLE_LOGS' : 'NO_COMPATIBLE_CURRENT_LOGS';
+    return safeGapPayload(code, talentCatalog);
+  };
+}
 
 test('luaString escapes characters that would break a Lua string literal', () => {
   assert.equal(luaString('A "quote" and \\ slash\nnext'), '"A \\"quote\\" and \\\\ slash\\nnext"');
@@ -18,146 +139,214 @@ test('toLua renders numeric recommendation keys and nested encounter fields', ()
   });
 
   assert.match(rendered, /\[266\] = \{/);
-  assert.match(rendered, /mplus = \{/);
-  assert.match(rendered, /raid = \{/);
   assert.match(rendered, /\[112526\] = \{/);
   assert.match(rendered, /\[3176\] = \{/);
   assert.match(rendered, /importString = "CoQAAA"/);
   assert.match(rendered, /importString = "CoRAID"/);
 });
 
-test('renderLuaData creates a loadable addon data assignment', () => {
-  const rendered = renderLuaData({ schemaVersion: 2, recommendations: {} });
+test('renderLuaData creates a schema-3 addon data assignment', () => {
+  const rendered = renderLuaData({ schemaVersion: 3, recommendations: {} });
   assert.match(rendered, /^-- Generated by scripts\/build-data\.mjs/m);
   assert.match(rendered, /QuickWoWTalentsData = \{/);
-  assert.match(rendered, /schemaVersion = 2/);
+  assert.match(rendered, /schemaVersion = 3/);
 });
 
-
-test('buildAddonData requests Mythic+ Best Overall from keys 15 and above', async () => {
-  const originalFetch = globalThis.fetch;
+test('buildAddonData emits the schema-3 matrix identity and exact request semantics', async () => {
+  const { catalog, options } = makeFixture();
   const requests = [];
 
-  globalThis.fetch = async (url) => {
-    assert.equal(String(url), 'https://example.test/api/options');
-    return {
-      ok: true,
-      json: async () => ({
-        defaultRegion: 'all',
-        classes: [{
-          className: 'Mage',
-          specs: [{ specName: 'Arcane', role: 'DPS', metrics: ['dps'] }]
-        }],
-        mythicPlus: {
-          dungeons: [{ id: 10658, name: 'Pit of Saron' }]
-        },
-        raid: {
-          bosses: [{ id: 3176, name: 'Test Boss' }],
-          difficulties: [{ id: 4, name: 'Heroic' }]
-        }
-      })
-    };
-  };
+  const payload = await withOptionsFetch(options, () => buildAddonData({
+    baseUrl: 'https://example.test',
+    generatedAt: '2026-08-25T02:00:00.000Z',
+    delayMs: 0,
+    concurrency: 8,
+    catalog,
+    loadBuildPayload: createMatrixLoader(options.talentCatalog, requests)
+  }));
 
-  try {
-    const payload = await buildAddonData({
-      baseUrl: 'https://example.test',
-      generatedAt: '2026-04-27T00:00:00.000Z',
-      delayMs: 0,
-      concurrency: 1,
-      loadBuildPayload: async (request) => {
-        requests.push(request);
-        return {
-          cache: { servedDayKey: '2026-04-26', capturedAt: '2026-04-26T01:00:00.000Z' },
-          summary: {
-            totalLogs: 100,
-            distinctBuilds: 3,
-            selectionBasis: request.mode === 'mplus' ? 'most-common-top-100-per-key-15-plus' : 'highest-average-top-100',
-            mostCommon: {
-              blizzardExportString: request.mode === 'mplus' ? 'MPLUS' : 'RAID',
-              talentTree: request.mode === 'mplus' ? { specId: 62 } : undefined,
-              mzTalentTree: { specId: request.mode === 'mplus' ? 9999 : 62 },
-              count: 10,
-              adoptionRate: 0.1,
-              averageAmount: 1000,
-              bestAmount: 1200,
-              apexTalent: 'Test Apex'
-            }
-          }
-        };
-      }
-    });
+  assert.equal(payload.schemaVersion, 3);
+  assert.equal(payload.clientInterface, 120100);
+  assert.deepEqual(payload.talentCatalog, CATALOG_DESCRIPTOR);
+  assert.deepEqual(payload.activities, {
+    mythicPlus: { expansionId: 11, zoneId: 51, dungeonIds: [12993, 12825] },
+    raid: {
+      expansionId: 11,
+      primaryZoneId: 50,
+      difficultyId: 4,
+      zones: [
+        { zoneId: 50, name: 'Sporefall', bossIds: [3159] },
+        { zoneId: 46, name: 'The Voidspire', bossIds: [3012] }
+      ],
+      bossIds: [3159, 3012]
+    }
+  });
+  assert.deepEqual(Object.keys(payload.counts).sort(), [
+    'attempted', 'emitted', 'skipped', 'specs', 'specsWithAnyRecommendation'
+  ]);
+  assert.deepEqual(payload.counts, {
+    specs: 40,
+    attempted: 160,
+    emitted: 2,
+    specsWithAnyRecommendation: 1,
+    skipped: 158
+  });
+  assert.deepEqual(new Set(payload.skipped.map((entry) => entry.code)), new Set([
+    'NO_USABLE_LOGS', 'NO_COMPATIBLE_CURRENT_LOGS'
+  ]));
 
-    const mplusRequest = requests.find((request) => request.mode === 'mplus');
-    assert.equal(mplusRequest.params.get('keystoneLevel'), 'overall');
-    assert.equal(mplusRequest.params.get('minKeystoneLevel'), '15');
-
-    const entry = payload.recommendations[62].mplus.encounters[10658];
-    assert.equal(payload.modes.mplus.minimumKeystoneLevel, 15);
-    assert.equal(payload.modes.mplus.recommendationLabel, 'Best Overall (15+)');
-    assert.equal(entry.minimumKeystoneLevel, 15);
-    assert.equal(entry.label, 'Arcane Mage — Pit of Saron Best Overall (15+)');
-    assert.equal(entry.selectionBasis, 'most-common-top-100-per-key-15-plus');
-    assert.equal(payload.recommendations[62].raid.encounters[3176].importString, 'RAID');
-    assert.equal(payload.recommendations[9999], undefined);
-  } finally {
-    globalThis.fetch = originalFetch;
-  }
+  const mplusRequest = requests.find((request) => request.mode === 'mplus');
+  assert.equal(mplusRequest.params.get('keystoneLevel'), 'overall');
+  assert.equal(mplusRequest.params.get('bestOverallMinKeystoneLevel'), '15');
+  assert.equal(mplusRequest.params.get('minKeystoneLevel'), '15');
+  const raidRequest = requests.find((request) => request.mode === 'raid');
+  assert.equal(raidRequest.params.get('difficulty'), '4');
+  assert.equal(raidRequest.params.get('exactSelection'), 'true');
+  assert.equal(payload.recommendations[62].mplus.encounters[12993].importString, VALID_IMPORT);
+  assert.equal(payload.recommendations[62].raid.encounters[3159].difficultyId, 4);
 });
 
+test('buildAddonData rejects static fallback activity identity', async () => {
+  const { catalog, options } = makeFixture();
+  options.mythicPlus.fallback = true;
+  await withOptionsFetch(options, async () => {
+    await assert.rejects(buildAddonData({
+      baseUrl: 'https://example.test', delayMs: 0, catalog, loadBuildPayload: async () => null
+    }), /fallback Mythic\+ activity/i);
+  });
+});
 
-test('buildAddonData falls back to the 12.1 Devourer spec id', async () => {
-  const originalFetch = globalThis.fetch;
-
-  globalThis.fetch = async (url) => {
-    assert.equal(String(url), 'https://example.test/api/options');
-    return {
-      ok: true,
-      json: async () => ({
-        defaultRegion: 'all',
-        classes: [{
-          className: 'Demon Hunter',
-          specs: [{ specName: 'Devourer', role: 'DPS', metrics: ['dps'] }]
-        }],
-        mythicPlus: {
-          dungeons: [{ id: 12813, name: 'Murder Row' }]
-        },
-        raid: {
-          bosses: [],
-          difficulties: [{ id: 4, name: 'Heroic' }]
-        }
-      })
-    };
-  };
-
-  try {
-    const payload = await buildAddonData({
+test('buildAddonData rejects a per-build catalog descriptor mismatch', async () => {
+  const { catalog, options } = makeFixture();
+  await withOptionsFetch(options, async () => {
+    await assert.rejects(buildAddonData({
       baseUrl: 'https://example.test',
-      generatedAt: '2026-08-21T00:00:00.000Z',
       delayMs: 0,
       concurrency: 1,
-      loadBuildPayload: async () => ({
-        cache: { servedDayKey: '2026-08-21', capturedAt: '2026-08-21T01:00:00.000Z' },
-        summary: {
-          totalLogs: 5,
-          distinctBuilds: 2,
-          selectionBasis: 'most-common-top-100-per-key-15-plus',
-          mostCommon: {
-            blizzardExportString: 'DEVOURER',
-            count: 2,
-            adoptionRate: 0.4,
-            averageAmount: 1000,
-            bestAmount: 1200
-          }
-        }
+      catalog,
+      loadBuildPayload: async (request) => recommendationPayload(request, {
+        ...options.talentCatalog,
+        contentHash: 'wrong-hash'
       })
-    });
+    }), /catalog descriptor.*mismatch/i);
+  });
+});
 
-    assert.equal(payload.counts.recommendations, 1);
-    assert.equal(payload.counts.skipped, 0);
-    assert.equal(payload.recommendations[1480].specName, 'Devourer');
-    assert.equal(payload.recommendations[1480].mplus.encounters[12813].importString, 'DEVOURER');
+test('buildAddonData fails closed on an unsafe missing recommendation', async () => {
+  const { catalog, options } = makeFixture();
+  await withOptionsFetch(options, async () => {
+    await assert.rejects(buildAddonData({
+      baseUrl: 'https://example.test',
+      delayMs: 0,
+      concurrency: 1,
+      catalog,
+      loadBuildPayload: async () => ({
+        talentCatalog: structuredClone(options.talentCatalog),
+        cache: { stale: true },
+        summary: { totalLogs: 0, mostCommon: null }
+      })
+    }), /unsafe addon data gap|CACHE_STALE/i);
+  });
+});
+
+for (const [name, mutate, expectedError] of [
+  ['a stale recommendation payload', (payload) => { payload.cache.stale = true; }, /fresh cache|CACHE_STALE/i],
+  ['a recommendation payload without cache evidence', (payload) => { delete payload.cache; }, /fresh cache|incomplete/i]
+]) {
+  test(`buildAddonData rejects ${name}`, async () => {
+    const { catalog, options } = makeFixture();
+    await withOptionsFetch(options, async () => {
+      await assert.rejects(buildAddonData({
+        baseUrl: 'https://example.test',
+        delayMs: 0,
+        concurrency: 1,
+        catalog,
+        onlySpec: 'Mage:Arcane',
+        loadBuildPayload: async (request) => {
+          const payload = recommendationPayload(request, options.talentCatalog);
+          mutate(payload);
+          return payload;
+        }
+      }), expectedError);
+    });
+  });
+}
+
+test('buildAddonData rejects safe-gap claims without an explicit numeric zero total', async () => {
+  const { catalog, options } = makeFixture();
+  await withOptionsFetch(options, async () => {
+    await assert.rejects(buildAddonData({
+      baseUrl: 'https://example.test',
+      delayMs: 0,
+      concurrency: 1,
+      catalog,
+      onlySpec: 'Mage:Arcane',
+      loadBuildPayload: async () => {
+        const payload = safeGapPayload('NO_USABLE_LOGS', options.talentCatalog);
+        delete payload.summary.totalLogs;
+        return payload;
+      }
+    }), /unsafe addon data gap|totalLogs|incomplete/i);
+  });
+});
+
+test('buildAddonData rejects raid selection fallback even when it claims a safe gap', async () => {
+  const { catalog, options } = makeFixture();
+  await withOptionsFetch(options, async () => {
+    await assert.rejects(buildAddonData({
+      baseUrl: 'https://example.test',
+      delayMs: 0,
+      concurrency: 1,
+      catalog,
+      onlySpec: 'Mage:Arcane',
+      loadBuildPayload: async (request) => ({
+        ...safeGapPayload('NO_USABLE_LOGS', options.talentCatalog),
+        ...(request.mode === 'raid' ? { fallback: { requestedBossId: request.encounter.id, resolvedBossId: 9999 } } : {})
+      })
+    }), /SELECTION_FALLBACK|selection fallback/i);
+  });
+});
+
+test('buildAddonData rejects two specialization payloads whose spec IDs are swapped', async () => {
+  const { catalog, options } = makeFixture();
+  await withOptionsFetch(options, async () => {
+    await assert.rejects(buildAddonData({
+      baseUrl: 'https://example.test',
+      delayMs: 0,
+      concurrency: 1,
+      catalog,
+      limit: 2,
+      loadBuildPayload: async (request) => {
+        const payload = recommendationPayload(request, options.talentCatalog);
+        payload.summary.mostCommon.talentTree.specId = request.job.key === 'Mage:Arcane' ? 1001 : 62;
+        return payload;
+      }
+    }), /spec.*does not match.*Mage:Arcane|specialization.*mismatch/i);
+  });
+});
+
+test('writeAddonData validates the final Lua contract before atomically replacing output', async () => {
+  const { catalog, options } = makeFixture();
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'qwt-local-builder-'));
+  const outputPath = path.join(directory, 'QuickWoWTalentsData.lua');
+  const original = 'existing addon data\r\n';
+  await fs.writeFile(outputPath, original);
+  const requests = [];
+
+  try {
+    await withOptionsFetch(options, async () => {
+      await assert.rejects(writeAddonData(outputPath, {
+        baseUrl: 'https://example.test',
+        generatedAt: '2026-08-25T02:00:00.000Z',
+        delayMs: 0,
+        concurrency: 8,
+        catalog,
+        loadBuildPayload: createMatrixLoader(options.talentCatalog, requests, 'NOT_A_VALID_IMPORT')
+      }), /import string|base64|incompatible/i);
+    });
+    assert.equal(await fs.readFile(outputPath, 'utf8'), original);
+    assert.deepEqual(await fs.readdir(directory), ['QuickWoWTalentsData.lua']);
   } finally {
-    globalThis.fetch = originalFetch;
+    await fs.rm(directory, { recursive: true, force: true });
   }
 });

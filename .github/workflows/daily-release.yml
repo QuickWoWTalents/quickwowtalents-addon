@@ -2,20 +2,15 @@ name: Daily addon release
 
 on:
   schedule:
-    # GitHub cron is UTC. This runs after the public QWT daily cache should be warm.
-    - cron: '30 15 * * *'
+    # GitHub cron is UTC. This runs after the production warm and monitor window.
+    - cron: '30 17 * * *'
   workflow_dispatch:
     inputs:
       dry_run:
-        description: 'Run a fast validation without committing, tagging, or publishing a release.'
+        description: 'Run every production release gate without committing, tagging, pushing, or publishing.'
         required: true
         default: true
         type: boolean
-      dry_run_limit:
-        description: 'Number of specs to generate in dry-run mode.'
-        required: false
-        default: '1'
-        type: string
       version:
         description: 'Optional explicit semver version for non-dry-run releases, e.g. 1.1.0. Defaults to next patch.'
         required: false
@@ -28,157 +23,302 @@ concurrency:
   group: daily-addon-release
   cancel-in-progress: false
 
+env:
+  QWT_TALENT_CATALOG_PATH: ${{ github.workspace }}/tmp/release-inputs/talent-catalog.json.gz
+  QWT_ADDON_OPTIONS_PATH: ${{ github.workspace }}/tmp/release-inputs/options.json
+  QWT_RELEASE_INPUT_MANIFEST_PATH: ${{ github.workspace }}/tmp/release-inputs/snapshot-manifest.json
+  QWT_ADDON_DATA_URL: https://quickwowtalents.com/api/addon-data
+  QWT_OPTIONS_URL: https://quickwowtalents.com/api/options
+
 jobs:
   release:
-    name: Generate addon data and publish release
+    name: Validate current data and publish a verified release
     runs-on: ubuntu-latest
     timeout-minutes: 90
 
     steps:
-      - name: Check out repo
+      - name: Check out addon repository
+        id: checkout_addon
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up Node
+        id: setup_node
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: Configure git author
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+      - name: Install dependencies
+        id: install_dependencies
+        run: npm ci
 
-      - name: Generate bundled addon data
+      - name: Verify addon checkout
+        id: verify_addon_checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          ADDON_STATUS="$(git status --porcelain --untracked-files=all)"
+          if [ -n "$ADDON_STATUS" ]; then
+            echo 'Addon checkout must be clean before release inputs are acquired.' >&2
+            exit 1
+          fi
+          BASE_HEAD="$(git rev-parse HEAD)"
+          if [[ ! "$BASE_HEAD" =~ ^([0-9a-f]{40}|[0-9a-f]{64})$ ]]; then
+            echo 'Addon checkout HEAD is not a valid Git object ID.' >&2
+            exit 1
+          fi
+          echo "head=$BASE_HEAD" >> "$GITHUB_OUTPUT"
+
+      - name: Acquire production addon inputs
+        id: acquire_inputs
         env:
           QWT_ADDON_DATA_TIMEOUT_MS: '45000'
           QWT_ADDON_DATA_RETRIES: '6'
           QWT_ADDON_DATA_RETRY_DELAY_MS: '300000'
-          QWT_ADDON_DELAY_MS: '100'
-          QWT_ADDON_CONCURRENCY: '8'
-          QWT_FETCH_TIMEOUT_MS: '30000'
-          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true' }}
-          DRY_RUN_LIMIT: ${{ github.event.inputs.dry_run_limit }}
         run: |
-          if [ "$DRY_RUN" = "true" ]; then
-            LIMIT="${DRY_RUN_LIMIT:-1}"
-            echo "Running dry-run data generation for $LIMIT spec(s); no release will be published."
-            npm run build:data:strict -- --limit "$LIMIT" --output /tmp/QuickWoWTalentsData.lua
-          else
-            npm run build:data:download
-          fi
+          set -euo pipefail
+          npm run build:data:download -- \
+            --url "$QWT_ADDON_DATA_URL" \
+            --options-url "$QWT_OPTIONS_URL" \
+            --options-output "$QWT_ADDON_OPTIONS_PATH" \
+            --catalog-output "$QWT_TALENT_CATALOG_PATH" \
+            --snapshot-manifest-output "$QWT_RELEASE_INPUT_MANIFEST_PATH" \
+            --output "$GITHUB_WORKSPACE/QuickWoWTalentsData.lua"
+
+      - name: Validate downloaded addon data
+        id: validate_data
+        run: |
+          set -euo pipefail
+          npm run validate:data -- \
+            --addon "$GITHUB_WORKSPACE/QuickWoWTalentsData.lua" \
+            --options "$QWT_ADDON_OPTIONS_PATH" \
+            --catalog "$QWT_TALENT_CATALOG_PATH" \
+            --snapshot-manifest "$QWT_RELEASE_INPUT_MANIFEST_PATH" \
+            --require-catalog-download
+
+      - name: Verify scripts and run tests
+        id: verify_code
+        run: |
+          set -euo pipefail
+          node --check scripts/build-data.mjs
+          node --check scripts/catalog-download-contract.mjs
+          node --check scripts/download-addon-data.mjs
+          node --check scripts/package-addon.mjs
+          node --check scripts/prepare-release.mjs
+          node --check scripts/release-input-snapshot.mjs
+          node --check scripts/validate-addon-contract.mjs
+          node --check scripts/verify-release-readiness.mjs
+          npm test
 
       - name: Decide whether to continue release
         id: release_gate
         env:
-          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true' }}
-          MANUAL_FULL_RELEASE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run != 'true' }}
+          BASE_HEAD: ${{ steps.verify_addon_checkout.outputs.head }}
+          EVENT_NAME: ${{ github.event_name }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == true }}
         run: |
-          if [ "$DRY_RUN" = "true" ]; then
-            echo "continue=true" >> "$GITHUB_OUTPUT"
-            echo "reason=dry-run" >> "$GITHUB_OUTPUT"
-            echo "Dry-run validation always continues through checks and packaging."
-            exit 0
+          set -euo pipefail
+          case "$EVENT_NAME:$DRY_RUN" in
+            workflow_dispatch:true)
+              echo 'continue=true' >> "$GITHUB_OUTPUT"
+              echo 'publish=false' >> "$GITHUB_OUTPUT"
+              echo 'reason=dry-run' >> "$GITHUB_OUTPUT"
+              echo 'Dry-run requested; packaging and readiness will run without publication.'
+              exit 0
+              ;;
+            workflow_dispatch:false)
+              RELEASE_KIND='manual-full-release'
+              ;;
+            schedule:false)
+              RELEASE_KIND='scheduled-release'
+              ;;
+            *)
+              echo 'Release event and dry-run inputs are not an allowed combination.' >&2
+              exit 1
+              ;;
+          esac
+
+          if [ "$GITHUB_REF" != 'refs/heads/main' ]; then
+            echo 'Publishing is allowed only from refs/heads/main.' >&2
+            exit 1
           fi
 
-          if [ "$MANUAL_FULL_RELEASE" = "true" ]; then
-            echo "continue=true" >> "$GITHUB_OUTPUT"
-            echo "reason=manual-full-release" >> "$GITHUB_OUTPUT"
-            echo "Manual full release requested; continuing even if bundled data is unchanged."
-            exit 0
+          CURRENT_HEAD="$(git rev-parse HEAD)"
+          if [ "$CURRENT_HEAD" != "$BASE_HEAD" ]; then
+            echo 'Addon checkout base HEAD changed during validation.' >&2
+            exit 1
+          fi
+          REMOTE_MAIN_RECORD="$(git ls-remote --exit-code origin refs/heads/main)"
+          read -r REMOTE_MAIN_HEAD REMOTE_MAIN_REF <<< "$REMOTE_MAIN_RECORD"
+          if [ "$REMOTE_MAIN_REF" != 'refs/heads/main' ] || \
+             [[ ! "$REMOTE_MAIN_HEAD" =~ ^([0-9a-f]{40}|[0-9a-f]{64})$ ]]; then
+            echo 'Fresh origin/main lookup did not return one valid main ref.' >&2
+            exit 1
+          fi
+          if [ "$BASE_HEAD" != "$REMOTE_MAIN_HEAD" ]; then
+            echo 'Addon checkout base HEAD does not match fresh remote main.' >&2
+            exit 1
           fi
 
-          if git diff --quiet -- QuickWoWTalentsData.lua; then
-            echo "continue=false" >> "$GITHUB_OUTPUT"
-            echo "reason=data-unchanged" >> "$GITHUB_OUTPUT"
-            echo "Bundled addon data is unchanged; skipping version bump and release."
+          if [ "$RELEASE_KIND" = 'manual-full-release' ]; then
+            echo 'continue=true' >> "$GITHUB_OUTPUT"
+            echo 'publish=true' >> "$GITHUB_OUTPUT"
+            echo 'reason=manual-full-release' >> "$GITHUB_OUTPUT"
+            echo 'Manual full release requested; continuing even if bundled data is unchanged.'
+          elif git diff --quiet HEAD -- QuickWoWTalentsData.lua; then
+            echo 'continue=false' >> "$GITHUB_OUTPUT"
+            echo 'publish=false' >> "$GITHUB_OUTPUT"
+            echo 'reason=data-unchanged' >> "$GITHUB_OUTPUT"
+            echo 'Validated bundled addon data is unchanged; skipping versioning and release.'
           else
-            echo "continue=true" >> "$GITHUB_OUTPUT"
-            echo "reason=data-changed" >> "$GITHUB_OUTPUT"
-            echo "Bundled addon data changed; continuing release."
+            DIFF_STATUS="$?"
+            if [ "$DIFF_STATUS" -ne 1 ]; then
+              echo 'Could not compare validated addon data with committed HEAD.' >&2
+              exit "$DIFF_STATUS"
+            fi
+            echo 'continue=true' >> "$GITHUB_OUTPUT"
+            echo 'publish=true' >> "$GITHUB_OUTPUT"
+            echo 'reason=data-changed' >> "$GITHUB_OUTPUT"
+            echo 'Validated bundled addon data changed; continuing release.'
           fi
 
       - name: Prepare next addon version
-        if: ${{ steps.release_gate.outputs.continue == 'true' && (github.event_name == 'schedule' || github.event.inputs.dry_run != 'true') }}
+        id: prepare_version
+        if: ${{ steps.release_gate.outputs.publish == 'true' }}
         env:
           RELEASE_VERSION: ${{ github.event.inputs.version }}
         run: |
+          set -euo pipefail
           if [ -n "$RELEASE_VERSION" ]; then
             npm run release:prepare -- --version "$RELEASE_VERSION"
           else
             npm run release:prepare
           fi
 
-      - name: Verify scripts and tests
-        run: |
-          node --check scripts/build-data.mjs
-          node --check scripts/download-addon-data.mjs
-          node --check scripts/package-addon.mjs
-          node --check scripts/prepare-release.mjs
-          node --check scripts/verify-release-readiness.mjs
-          npm test
-
-      - name: Package addon zip
-        if: ${{ steps.release_gate.outputs.continue == 'true' }}
-        run: npm run package
-
-      - name: Verify release readiness
-        if: ${{ steps.release_gate.outputs.continue == 'true' }}
-        run: npm run release:verify
-
       - name: Resolve release version
+        id: resolve_version
         if: ${{ steps.release_gate.outputs.continue == 'true' }}
-        id: version
         run: |
+          set -euo pipefail
           VERSION="$(node -p "JSON.parse(require('fs').readFileSync('package.json', 'utf8')).version")"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo 'package.json version must be plain semver.' >&2
+            exit 1
+          fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
           echo "zip=dist/QuickWoWTalents-$VERSION.zip" >> "$GITHUB_OUTPUT"
 
       - name: Fail if tag already exists
-        if: ${{ steps.release_gate.outputs.continue == 'true' && (github.event_name == 'schedule' || github.event.inputs.dry_run != 'true') }}
+        id: protect_tag
+        if: ${{ steps.release_gate.outputs.publish == 'true' }}
+        env:
+          RELEASE_TAG: ${{ steps.resolve_version.outputs.tag }}
         run: |
-          if git rev-parse "${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
-            echo "Tag ${{ steps.version.outputs.tag }} already exists; refusing to overwrite a release." >&2
+          set -euo pipefail
+          LOCAL_TAG="$(git tag --list "$RELEASE_TAG")"
+          if [ -n "$LOCAL_TAG" ]; then
+            echo "Tag $RELEASE_TAG already exists; refusing to overwrite a release." >&2
+            exit 1
+          fi
+          REMOTE_TAG="$(git ls-remote --tags origin "refs/tags/$RELEASE_TAG")"
+          if [ -n "$REMOTE_TAG" ]; then
+            echo "Tag $RELEASE_TAG already exists; refusing to overwrite a release." >&2
             exit 1
           fi
 
-      - name: Commit generated release files
-        if: ${{ steps.release_gate.outputs.continue == 'true' && (github.event_name == 'schedule' || github.event.inputs.dry_run != 'true') }}
+      - name: Package addon zip
+        id: package_addon
+        if: ${{ steps.release_gate.outputs.continue == 'true' }}
+        run: npm run package
+
+      - name: Verify source and package readiness
+        id: readiness
+        if: ${{ steps.release_gate.outputs.continue == 'true' }}
         run: |
-          git add package.json QuickWoWTalents.toc QuickWoWTalentsData.lua CHANGELOG.md CURSEFORGE_CHANGELOG.md
-          git commit -m "Daily addon data release ${{ steps.version.outputs.tag }}"
-          git tag "${{ steps.version.outputs.tag }}"
+          set -euo pipefail
+          READINESS_RESULT="$RUNNER_TEMP/qwt-release-readiness.json"
+          npm run --silent release:verify -- \
+            --options "$QWT_ADDON_OPTIONS_PATH" \
+            --catalog "$QWT_TALENT_CATALOG_PATH" \
+            --snapshot-manifest "$QWT_RELEASE_INPUT_MANIFEST_PATH" \
+            --require-catalog-download \
+            > "$READINESS_RESULT"
+          node --input-type=module - "$READINESS_RESULT" "$GITHUB_OUTPUT" <<'NODE'
+          import fs from 'node:fs';
 
-      - name: Push release commit and tag
-        if: ${{ steps.release_gate.outputs.continue == 'true' && (github.event_name == 'schedule' || github.event.inputs.dry_run != 'true') }}
-        run: git push origin HEAD:main "${{ steps.version.outputs.tag }}"
+          const [resultPath, outputPath] = process.argv.slice(2);
+          const result = JSON.parse(fs.readFileSync(resultPath, 'utf8'));
+          if (result.ok !== true || !/^[0-9a-f]{64}$/.test(result.zipSha256 ?? '')) {
+            throw new Error('Release readiness did not return a valid zipSha256.');
+          }
+          fs.appendFileSync(outputPath, `zip_sha256=${result.zipSha256}\n`);
+          console.log(`Release readiness verified for ${result.version}.`);
+          NODE
 
-      - name: Create GitHub release
-        if: ${{ steps.release_gate.outputs.continue == 'true' && (github.event_name == 'schedule' || github.event.inputs.dry_run != 'true') }}
+      - name: Configure git author
+        id: configure_git
+        if: ${{ steps.release_gate.outputs.publish == 'true' }}
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+      - name: Commit and tag verified release
+        id: commit_release
+        if: ${{ steps.release_gate.outputs.publish == 'true' }}
         env:
-          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.resolve_version.outputs.tag }}
         run: |
+          set -euo pipefail
+          git add package.json QuickWoWTalents.toc QuickWoWTalentsData.lua CHANGELOG.md CURSEFORGE_CHANGELOG.md
+          git commit -m "Daily addon data release $RELEASE_TAG"
+          git tag "$RELEASE_TAG"
+
+      - name: Publish verified release
+        id: publish_release
+        if: ${{ steps.release_gate.outputs.publish == 'true' }}
+        env:
+          EXPECTED_SHA256: ${{ steps.readiness.outputs.zip_sha256 }}
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.resolve_version.outputs.tag }}
+          RELEASE_VERSION: ${{ steps.resolve_version.outputs.version }}
+          RELEASE_ZIP: ${{ steps.resolve_version.outputs.zip }}
+        run: |
+          set -euo pipefail
           if [ -s CURSEFORGE_CHANGELOG.md ]; then
-            cp CURSEFORGE_CHANGELOG.md /tmp/release-notes.md
+            cp CURSEFORGE_CHANGELOG.md "$RUNNER_TEMP/release-notes.md"
           else
-            awk '
+            awk -v heading="## $RELEASE_VERSION - " '
               /^## / {
                 if (seen) exit
-                if (index($0, "## ${{ steps.version.outputs.version }} - ") == 1) seen=1
+                if (index($0, heading) == 1) seen=1
               }
               seen { print }
-            ' CHANGELOG.md > /tmp/release-notes.md
+            ' CHANGELOG.md > "$RUNNER_TEMP/release-notes.md"
           fi
 
-          if [ ! -s /tmp/release-notes.md ]; then
+          if [ ! -s "$RUNNER_TEMP/release-notes.md" ]; then
             printf '%s\n\n%s\n' \
               'Automated daily Quick WoW Talents addon data refresh.' \
               'Bundled data is downloaded from the product-side quickwowtalents.com addon data artifact, then packaged as a static offline addon zip.' \
-              > /tmp/release-notes.md
+              > "$RUNNER_TEMP/release-notes.md"
           fi
 
-          gh release create "${{ steps.version.outputs.tag }}" "${{ steps.version.outputs.zip }}" \
-            --title "QuickWoWTalents ${{ steps.version.outputs.tag }}" \
-            --notes-file /tmp/release-notes.md
+          ACTUAL_SHA256="$(node --input-type=module -e \
+            'import { createHash } from "node:crypto"; import { readFileSync } from "node:fs"; process.stdout.write(createHash("sha256").update(readFileSync(process.argv[1])).digest("hex"));' \
+            "$RELEASE_ZIP")"
+          if [ "$ACTUAL_SHA256" != "$EXPECTED_SHA256" ]; then
+            echo 'Final release archive digest no longer matches the readiness result.' >&2
+            exit 1
+          fi
+          gh auth setup-git
+          git push --atomic origin \
+            "HEAD:refs/heads/main" \
+            "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
+          gh release create "$RELEASE_TAG" "$RELEASE_ZIP" \
+            --verify-tag \
+            --title "QuickWoWTalents $RELEASE_TAG" \
+            --notes-file "$RUNNER_TEMP/release-notes.md"

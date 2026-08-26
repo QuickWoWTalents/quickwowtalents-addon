@@ -17,6 +17,7 @@
     "build:data": "node scripts/build-data.mjs",
     "build:data:download": "node scripts/download-addon-data.mjs",
     "build:data:strict": "node scripts/build-data.mjs --strict",
+    "validate:data": "node scripts/validate-addon-contract.mjs",
     "package": "node scripts/package-addon.mjs",
     "release:prepare": "node scripts/prepare-release.mjs",
     "release:verify": "node scripts/verify-release-readiness.mjs",
@@ -24,5 +25,10 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "fengari": "0.1.5",
+    "yaml": "2.9.0",
+    "yauzl": "3.4.0"
   }
 }
