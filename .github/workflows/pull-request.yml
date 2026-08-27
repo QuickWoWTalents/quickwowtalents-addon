@@ -91,6 +91,7 @@ jobs:
           node --check scripts/prepare-release.mjs
           node --check scripts/release-input-snapshot.mjs
           node --check scripts/validate-addon-contract.mjs
+          node --check scripts/verify-github-release-asset.mjs
           node --check scripts/verify-release-readiness.mjs
           npm test
 

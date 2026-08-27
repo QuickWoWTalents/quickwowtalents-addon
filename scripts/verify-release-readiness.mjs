@@ -20,9 +20,12 @@ const REQUIRED_ZIP_FILES = [
 ];
 const OPTIONAL_ZIP_DIRECTORY = `${ADDON_NAME}/`;
 const MAX_ZIP_ENTRY_BYTES = 16 * 1024 * 1024;
+const MAX_ZIP_ARCHIVE_BYTES = 64 * 1024 * 1024;
+
+export class AddonArchiveValidationError extends Error {}
 
 function fail(message) {
-  throw new Error(message);
+  throw new AddonArchiveValidationError(message);
 }
 
 function readCliPath(args, env, flag, environmentName) {
@@ -139,8 +142,7 @@ async function inspectZipSnapshot(zipBytes, version) {
         fail(`Package ZIP member ${JSON.stringify(entry.fileName)} must be a regular file, not ${kind}.`);
       }
       entries.push(entry.fileName);
-      if (entry.fileName === `${ADDON_NAME}/QuickWoWTalents.toc`
-        || entry.fileName === `${ADDON_NAME}/QuickWoWTalentsData.lua`) {
+      if (REQUIRED_ZIP_FILES.includes(entry.fileName)) {
         capturedFiles.set(entry.fileName, await readZipEntry(zipFile, entry));
       }
     }
@@ -162,7 +164,45 @@ async function inspectZipSnapshot(zipBytes, version) {
     fail(`packaged QuickWoWTalents.toc version ${packagedVersion} does not match package.json version ${version}.`);
   }
   assertTocInterface(tocText, 'packaged QuickWoWTalents.toc');
-  return capturedFiles.get(`${ADDON_NAME}/QuickWoWTalentsData.lua`);
+  return capturedFiles;
+}
+
+async function readReleaseVersion(repoRoot) {
+  const pkg = JSON.parse(await fs.readFile(path.join(repoRoot, 'package.json'), 'utf8'));
+  const rawVersion = String(pkg.version ?? '');
+  const version = assertReleaseVersion(rawVersion);
+  if (version !== rawVersion) fail('package.json version must be plain semver.');
+  return version;
+}
+
+export async function verifyAddonArchiveMatchesSource({ repoRoot = REPO_ROOT, archivePath } = {}) {
+  if (typeof archivePath !== 'string' || !archivePath) {
+    fail('Addon archive verification requires archivePath.');
+  }
+  const resolvedRepoRoot = path.resolve(repoRoot);
+  const resolvedArchivePath = path.resolve(archivePath);
+  const archiveStat = await fs.stat(resolvedArchivePath);
+  if (!archiveStat.isFile() || archiveStat.size <= 0 || archiveStat.size > MAX_ZIP_ARCHIVE_BYTES) {
+    fail('Addon archive must be a non-empty bounded regular file.');
+  }
+
+  const version = await readReleaseVersion(resolvedRepoRoot);
+  const zipBytes = await fs.readFile(resolvedArchivePath);
+  const capturedFiles = await inspectZipSnapshot(zipBytes, version);
+  for (const archiveName of REQUIRED_ZIP_FILES) {
+    const sourceName = archiveName.slice(`${ADDON_NAME}/`.length);
+    const sourceBytes = await fs.readFile(path.join(resolvedRepoRoot, sourceName));
+    if (!sourceBytes.equals(capturedFiles.get(archiveName))) {
+      fail(`packaged ${sourceName} does not match source ${sourceName}.`);
+    }
+  }
+
+  return {
+    ok: true,
+    version,
+    zipSha256: createHash('sha256').update(zipBytes).digest('hex'),
+    size: zipBytes.byteLength,
+  };
 }
 
 function validateDataContract(label, addonBytes, options, catalog) {
@@ -269,8 +309,18 @@ export async function verifyReleaseReadiness({
     if (!Buffer.isBuffer(snapshot)) fail('Package archive snapshot reader must return a Buffer.');
     const zipBytes = Buffer.from(snapshot);
     zipSha256 = createHash('sha256').update(zipBytes).digest('hex');
-    const zipDataBytes = await inspectZipSnapshot(zipBytes, version);
+    const zipFiles = await inspectZipSnapshot(zipBytes, version);
+    const zipTocBytes = zipFiles.get(`${ADDON_NAME}/QuickWoWTalents.toc`);
+    const zipAddonBytes = zipFiles.get(`${ADDON_NAME}/QuickWoWTalents.lua`);
+    const zipDataBytes = zipFiles.get(`${ADDON_NAME}/QuickWoWTalentsData.lua`);
     validateDataContract('zip', zipDataBytes, options, catalog);
+    if (!Buffer.from(tocText).equals(zipTocBytes)) {
+      fail('packaged QuickWoWTalents.toc does not match source QuickWoWTalents.toc.');
+    }
+    const sourceAddonBytes = await fs.readFile(path.join(repoRoot, 'QuickWoWTalents.lua'));
+    if (!sourceAddonBytes.equals(zipAddonBytes)) {
+      fail('packaged QuickWoWTalents.lua does not match source QuickWoWTalents.lua.');
+    }
     if (!sourceDataBytes.equals(zipDataBytes)) {
       fail('packaged QuickWoWTalentsData.lua does not match source QuickWoWTalentsData.lua.');
     }
@@ -280,6 +330,8 @@ export async function verifyReleaseReadiness({
       'zip-toc-version',
       'zip-toc-interface',
       'zip-data-contract',
+      'source-zip-toc-match',
+      'source-zip-addon-match',
       'source-zip-data-match',
     );
   }

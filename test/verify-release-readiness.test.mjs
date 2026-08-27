@@ -273,6 +273,8 @@ test('verifyReleaseReadiness accepts independently valid matching source and pac
       'zip-toc-version',
       'zip-toc-interface',
       'zip-data-contract',
+      'source-zip-toc-match',
+      'source-zip-addon-match',
       'source-zip-data-match',
     ],
   });
