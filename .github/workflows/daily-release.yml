@@ -4,6 +4,9 @@ on:
   schedule:
     # GitHub cron is UTC.
     - cron: '30 17 * * *'
+    - cron: '37 20 * * *'
+  repository_dispatch:
+    types: [daily-release-fallback]
   workflow_dispatch:
     inputs:
       dry_run:
@@ -109,6 +112,7 @@ jobs:
           node --check scripts/prepare-release.mjs
           node --check scripts/release-input-snapshot.mjs
           node --check scripts/validate-addon-contract.mjs
+          node --check scripts/verify-github-release-asset.mjs
           node --check scripts/verify-release-readiness.mjs
           npm test
 
@@ -124,6 +128,7 @@ jobs:
             workflow_dispatch:true)
               echo 'continue=true' >> "$GITHUB_OUTPUT"
               echo 'publish=false' >> "$GITHUB_OUTPUT"
+              echo 'repair=false' >> "$GITHUB_OUTPUT"
               echo 'reason=dry-run' >> "$GITHUB_OUTPUT"
               echo 'Dry-run requested; packaging and readiness will run without publication.'
               exit 0
@@ -131,7 +136,7 @@ jobs:
             workflow_dispatch:false)
               RELEASE_KIND='manual-full-release'
               ;;
-            schedule:false)
+            schedule:false|repository_dispatch:false)
               RELEASE_KIND='scheduled-release'
               ;;
             *)
@@ -165,13 +170,15 @@ jobs:
           if [ "$RELEASE_KIND" = 'manual-full-release' ]; then
             echo 'continue=true' >> "$GITHUB_OUTPUT"
             echo 'publish=true' >> "$GITHUB_OUTPUT"
+            echo 'repair=false' >> "$GITHUB_OUTPUT"
             echo 'reason=manual-full-release' >> "$GITHUB_OUTPUT"
             echo 'Manual full release requested; continuing even if bundled data is unchanged.'
           elif git diff --quiet HEAD -- QuickWoWTalentsData.lua; then
-            echo 'continue=false' >> "$GITHUB_OUTPUT"
+            echo 'continue=true' >> "$GITHUB_OUTPUT"
             echo 'publish=false' >> "$GITHUB_OUTPUT"
-            echo 'reason=data-unchanged' >> "$GITHUB_OUTPUT"
-            echo 'Validated bundled addon data is unchanged; skipping versioning and release.'
+            echo 'repair=true' >> "$GITHUB_OUTPUT"
+            echo 'reason=data-unchanged-release-check' >> "$GITHUB_OUTPUT"
+            echo 'Validated bundled addon data is unchanged; verifying the existing tagged release and asset.'
           else
             DIFF_STATUS="$?"
             if [ "$DIFF_STATUS" -ne 1 ]; then
@@ -180,6 +187,7 @@ jobs:
             fi
             echo 'continue=true' >> "$GITHUB_OUTPUT"
             echo 'publish=true' >> "$GITHUB_OUTPUT"
+            echo 'repair=false' >> "$GITHUB_OUTPUT"
             echo 'reason=data-changed' >> "$GITHUB_OUTPUT"
             echo 'Validated bundled addon data changed; continuing release.'
           fi
@@ -279,10 +287,11 @@ jobs:
 
       - name: Publish verified release
         id: publish_release
-        if: ${{ steps.release_gate.outputs.publish == 'true' }}
+        if: ${{ steps.release_gate.outputs.publish == 'true' || steps.release_gate.outputs.repair == 'true' }}
         env:
           EXPECTED_SHA256: ${{ steps.readiness.outputs.zip_sha256 }}
           GH_TOKEN: ${{ github.token }}
+          REPAIR_EXISTING: ${{ steps.release_gate.outputs.repair }}
           RELEASE_TAG: ${{ steps.resolve_version.outputs.tag }}
           RELEASE_VERSION: ${{ steps.resolve_version.outputs.version }}
           RELEASE_ZIP: ${{ steps.resolve_version.outputs.zip }}
@@ -315,10 +324,63 @@ jobs:
             exit 1
           fi
           gh auth setup-git
-          git push --atomic origin \
-            "HEAD:refs/heads/main" \
-            "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
-          gh release create "$RELEASE_TAG" "$RELEASE_ZIP" \
-            --verify-tag \
-            --title "QuickWoWTalents $RELEASE_TAG" \
-            --notes-file "$RUNNER_TEMP/release-notes.md"
+          if [ "$REPAIR_EXISTING" != 'true' ]; then
+            git push --atomic origin \
+              "HEAD:refs/heads/main" \
+              "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
+            gh release create "$RELEASE_TAG" "$RELEASE_ZIP" \
+              --verify-tag \
+              --title "QuickWoWTalents $RELEASE_TAG" \
+              --notes-file "$RUNNER_TEMP/release-notes.md"
+            exit 0
+          fi
+
+          RELEASE_ASSET_NAME="${RELEASE_ZIP##*/}"
+          RELEASE_JSON="$RUNNER_TEMP/existing-release.json"
+          EXISTING_RELEASE_DIR="$RUNNER_TEMP/existing-release"
+          EXISTING_RELEASE_ZIP="$EXISTING_RELEASE_DIR/$RELEASE_ASSET_NAME"
+          if gh release view "$RELEASE_TAG" --json assets,isDraft,isPrerelease > "$RELEASE_JSON" 2>/dev/null; then
+            RELEASE_ASSESSMENT="$(node scripts/verify-github-release-asset.mjs \
+              --metadata "$RELEASE_JSON" "$RELEASE_ASSET_NAME")"
+            if [ "$RELEASE_ASSESSMENT" = 'repair' ]; then
+              REPAIR_ACTION='repair'
+            elif [ "$RELEASE_ASSESSMENT" = 'verify' ]; then
+              mkdir -p "$EXISTING_RELEASE_DIR"
+              gh release download "$RELEASE_TAG" \
+                --pattern "$RELEASE_ASSET_NAME" \
+                --dir "$EXISTING_RELEASE_DIR"
+              RELEASE_VERIFIED="$(node scripts/verify-github-release-asset.mjs \
+                "$RELEASE_JSON" "$RELEASE_ASSET_NAME" "$EXISTING_RELEASE_ZIP" "$GITHUB_WORKSPACE")"
+              if [ "$RELEASE_VERIFIED" = 'true' ]; then
+                echo "Verified existing release $RELEASE_TAG and asset $RELEASE_ASSET_NAME."
+                exit 0
+              fi
+              REPAIR_ACTION='repair'
+            else
+              echo 'Existing release assessment returned an unexpected result.' >&2
+              exit 1
+            fi
+          else
+            REPAIR_ACTION='create'
+          fi
+
+          if ! REMOTE_TAG_RECORD="$(git ls-remote --exit-code --tags origin "refs/tags/$RELEASE_TAG")"; then
+            echo "Cannot repair $RELEASE_TAG because its remote tag is missing." >&2
+            exit 1
+          fi
+          read -r REMOTE_TAG_HEAD REMOTE_TAG_REF <<< "$REMOTE_TAG_RECORD"
+          CURRENT_HEAD="$(git rev-parse HEAD)"
+          if [ "$REMOTE_TAG_REF" != "refs/tags/$RELEASE_TAG" ] || [ "$REMOTE_TAG_HEAD" != "$CURRENT_HEAD" ]; then
+            echo "Cannot repair $RELEASE_TAG because its remote tag does not identify current main." >&2
+            exit 1
+          fi
+
+          if [ "$REPAIR_ACTION" = 'repair' ]; then
+            gh release upload "$RELEASE_TAG" "$RELEASE_ZIP" --clobber
+            gh release edit "$RELEASE_TAG" --draft=false --prerelease=false
+          else
+            gh release create "$RELEASE_TAG" "$RELEASE_ZIP" \
+              --verify-tag \
+              --title "QuickWoWTalents $RELEASE_TAG" \
+              --notes-file "$RUNNER_TEMP/release-notes.md"
+          fi
