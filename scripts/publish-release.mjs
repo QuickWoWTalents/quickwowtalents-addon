@@ -193,10 +193,12 @@ async function removeTaggedWorktree({ repoRoot, sourceRoot }) {
   }
 }
 
-async function verifyExpectedDigest(archivePath, expectedSha256) {
+async function createValidatedArchiveSnapshot({ archivePath, destinationPath, expectedSha256 }) {
   const bytes = await fs.readFile(archivePath);
   const actual = createHash('sha256').update(bytes).digest('hex');
   if (actual !== expectedSha256) fail('Release archive digest changed after readiness verification.');
+  await fs.writeFile(destinationPath, bytes, { flag: 'wx', mode: 0o600 });
+  return destinationPath;
 }
 
 function assertReleaseShape(release) {
@@ -256,6 +258,7 @@ async function downloadAndVerify({
   repoRoot,
   sourceRoot,
   tag,
+  expectedSha256,
 }) {
   const expectedDraft = release.isDraft;
   if (assessGithubReleaseMetadata(release, { assetName, expectedDraft }) !== 'verify') {
@@ -276,13 +279,16 @@ async function downloadAndVerify({
     maximumBytes: MAX_ARCHIVE_BYTES,
     label: 'Downloaded release archive',
   });
-  return verifyGithubReleaseAsset({
+  const verified = await verifyGithubReleaseAsset({
     release,
     assetName,
     archivePath: downloadedArchive,
     repoRoot: sourceRoot,
     expectedDraft,
   });
+  if (!verified) return false;
+  const downloadedBytes = await fs.readFile(downloadedArchive);
+  return createHash('sha256').update(downloadedBytes).digest('hex') === expectedSha256;
 }
 
 async function createDraft({ archivePath, notesPath, repoRoot, tag }) {
@@ -387,10 +393,15 @@ export async function publishRelease({ args, repoRoot = process.cwd() }) {
   try {
     await addTaggedWorktree({ repoRoot: resolvedRepoRoot, sourceRoot, tag: options.tag });
     await verifyAddonArchiveMatchesSource({ repoRoot: sourceRoot, archivePath });
-    await verifyExpectedDigest(archivePath, options.expectedSha256);
-    const context = {
+    const validatedArchivePath = await createValidatedArchiveSnapshot({
       archivePath,
+      destinationPath: path.join(operationRoot, path.basename(archivePath)),
+      expectedSha256: options.expectedSha256,
+    });
+    const context = {
+      archivePath: validatedArchivePath,
       assetName: path.basename(archivePath),
+      expectedSha256: options.expectedSha256,
       notesPath,
       operationRoot,
       repoRoot: resolvedRepoRoot,

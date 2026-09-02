@@ -65,7 +65,12 @@ function assetFromFile(file) {
   };
 }
 
-if (args[0] === 'auth' && args[1] === 'setup-git') process.exit(0);
+if (args[0] === 'auth' && args[1] === 'setup-git') {
+  if (process.env.MUTATE_ARCHIVE_AFTER_AUTH && process.env.ARCHIVE_REPLACEMENT) {
+    fs.copyFileSync(process.env.ARCHIVE_REPLACEMENT, process.env.MUTATE_ARCHIVE_AFTER_AUTH);
+  }
+  process.exit(0);
+}
 
 if (args[0] === 'api') {
   if (state.release === null) {
@@ -109,6 +114,9 @@ if (args[1] === 'create') {
       content: bytes.toString('base64'),
     };
   }
+  if (process.env.REPLACE_CREATED_ASSET_WITH) {
+    state.release.assets[0] = assetFromFile(process.env.REPLACE_CREATED_ASSET_WITH);
+  }
   persist();
   if (process.env.MUTATE_SOURCE_AFTER_CREATE) {
     fs.writeFileSync(process.env.MUTATE_SOURCE_AFTER_CREATE, 'changed after draft creation\\n');
@@ -147,7 +155,7 @@ if (args[1] === 'delete-asset') {
 
 if (args[1] === 'upload') {
   const archivePath = args[3];
-  const replacement = assetFromFile(archivePath);
+  const replacement = assetFromFile(process.env.REPLACE_UPLOADED_ASSET_WITH ?? archivePath);
   state.release.assets = state.release.assets.filter((asset) => asset.name !== replacement.name);
   state.release.assets.push(replacement);
   persist();
@@ -171,6 +179,7 @@ async function createFixture({ pushReleaseRefs = false } = {}) {
   const workPath = path.join(root, 'work');
   const stagingPath = path.join(root, 'staging', 'QuickWoWTalents');
   const artifactDir = path.join(root, 'release artifacts');
+  const alternateArtifactDir = path.join(root, 'alternate release artifacts');
   const binDir = path.join(root, 'bin');
   const commandLog = path.join(root, 'commands.jsonl');
   const statePath = path.join(root, 'github-state.json');
@@ -179,6 +188,7 @@ async function createFixture({ pushReleaseRefs = false } = {}) {
     fs.mkdir(workPath),
     fs.mkdir(stagingPath, { recursive: true }),
     fs.mkdir(artifactDir),
+    fs.mkdir(alternateArtifactDir),
     fs.mkdir(binDir),
   ]);
   await git(root, ['init', '--bare', remotePath]);
@@ -222,6 +232,12 @@ async function createFixture({ pushReleaseRefs = false } = {}) {
     cwd: path.dirname(stagingPath),
   });
   const archiveBytes = await fs.readFile(archivePath);
+  const alternateArchivePath = path.join(alternateArtifactDir, ASSET_NAME);
+  await execFileAsync('zip', ['-0', '-X', '-q', '-r', alternateArchivePath, 'QuickWoWTalents'], {
+    cwd: path.dirname(stagingPath),
+  });
+  const alternateArchiveBytes = await fs.readFile(alternateArchivePath);
+  assert.notEqual(sha256(alternateArchiveBytes), sha256(archiveBytes));
   for (const executable of ['git', 'gh']) {
     const executablePath = path.join(binDir, executable);
     await fs.writeFile(executablePath, BOUNDARY_SCRIPT, 'utf8');
@@ -231,6 +247,8 @@ async function createFixture({ pushReleaseRefs = false } = {}) {
   return {
     archiveBytes,
     archivePath,
+    alternateArchiveBytes,
+    alternateArchivePath,
     binDir,
     commandLog,
     notesPath,
@@ -328,8 +346,10 @@ test('publish mode checks the digest before authenticated mutation and publishes
     ]);
     const ghCommands = commands.filter((command) => command.tool === 'gh');
     const create = ghCommands.find((command) => command.args[1] === 'create');
+    assert.notEqual(create?.args[3], fixture.archivePath);
+    assert.equal(path.basename(create?.args[3] ?? ''), ASSET_NAME);
     assert.deepEqual(create?.args, [
-      'release', 'create', TAG, fixture.archivePath,
+      'release', 'create', TAG, create.args[3],
       '--verify-tag', '--draft', '--title', `QuickWoWTalents ${TAG}`,
       '--notes-file', fixture.notesPath,
     ]);
@@ -364,6 +384,41 @@ test('a wrong digest stops immediately before every authenticated mutation', asy
     assert.equal(result.stdout, '');
     assert.deepEqual((await readCommands(fixture)).filter(isMutation), []);
     assert.equal((await readState(fixture)).release, null);
+  } finally {
+    await fs.rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('publish uses the digest-validated artifact when the caller archive changes after authentication', async () => {
+  const fixture = await createFixture();
+  try {
+    const expectedDigest = sha256(fixture.archiveBytes);
+    const result = await runPublisher(fixture, {
+      env: {
+        ARCHIVE_REPLACEMENT: fixture.alternateArchivePath,
+        MUTATE_ARCHIVE_AFTER_AUTH: fixture.archivePath,
+      },
+    });
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(sha256(await fs.readFile(fixture.archivePath)), sha256(fixture.alternateArchiveBytes));
+    assert.equal((await readState(fixture)).release.assets[0].digest, `sha256:${expectedDigest}`);
+  } finally {
+    await fs.rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('publish leaves a semantically valid digest-substituted upload as a draft', async () => {
+  const fixture = await createFixture();
+  try {
+    const result = await runPublisher(fixture, {
+      env: { REPLACE_CREATED_ASSET_WITH: fixture.alternateArchivePath },
+    });
+    assert.notEqual(result.code, 0);
+    const state = await readState(fixture);
+    assert.equal(state.release.isDraft, true);
+    assert.equal(state.release.assets[0].digest, `sha256:${sha256(fixture.alternateArchiveBytes)}`);
+    assert.equal((await readCommands(fixture)).some((command) => command.tool === 'gh'
+      && command.args[1] === 'edit' && command.args.includes('--draft=false')), false);
   } finally {
     await fs.rm(fixture.root, { recursive: true, force: true });
   }
@@ -426,7 +481,11 @@ test('reconcile repairs a missing release, an interrupted draft, and a confirmed
           && command.args[1] === 'upload' && command.args.includes('--clobber'));
         const publishIndex = commands.findLastIndex((command) => command.tool === 'gh'
           && command.args[1] === 'edit' && command.args.includes('--draft=false'));
-        assert.ok(draftIndex < uploadIndex && uploadIndex < publishIndex);
+        const verifiedDownloadIndex = commands.findIndex((command, index) => index > uploadIndex
+          && command.tool === 'gh' && command.args[1] === 'download');
+        assert.ok(draftIndex < uploadIndex
+          && uploadIndex < verifiedDownloadIndex
+          && verifiedDownloadIndex < publishIndex);
       }
       const finalState = await readState(fixture);
       assert.equal(finalState.release.isDraft, false);
@@ -435,6 +494,30 @@ test('reconcile repairs a missing release, an interrupted draft, and a confirmed
     } finally {
       await fs.rm(fixture.root, { recursive: true, force: true });
     }
+  }
+});
+
+test('reconcile re-downloads a repaired asset and leaves it draft when its digest changed', async () => {
+  const fixture = await createFixture({ pushReleaseRefs: true });
+  try {
+    await writeRelease(fixture, { isDraft: false, bytes: Buffer.from('not a zip') });
+    const result = await runPublisher(fixture, {
+      mode: 'reconcile',
+      env: { REPLACE_UPLOADED_ASSET_WITH: fixture.alternateArchivePath },
+    });
+    assert.notEqual(result.code, 0);
+
+    const commands = await readCommands(fixture);
+    const uploadIndex = commands.findIndex((command) => command.tool === 'gh'
+      && command.args[1] === 'upload');
+    const downloadIndex = commands.findIndex((command, index) => index > uploadIndex
+      && command.tool === 'gh' && command.args[1] === 'download');
+    assert.ok(uploadIndex !== -1 && uploadIndex < downloadIndex);
+    assert.equal(commands.some((command) => command.tool === 'gh'
+      && command.args[1] === 'edit' && command.args.includes('--draft=false')), false);
+    assert.equal((await readState(fixture)).release.isDraft, true);
+  } finally {
+    await fs.rm(fixture.root, { recursive: true, force: true });
   }
 });
 
