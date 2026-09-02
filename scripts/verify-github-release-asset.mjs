@@ -12,14 +12,12 @@ import {
 const MAX_RELEASE_JSON_BYTES = 1024 * 1024;
 const MAX_RELEASE_ASSET_BYTES = 64 * 1024 * 1024;
 
-export function assessGithubReleaseMetadata(release, { assetName }) {
-  if (release?.isDraft !== false || release?.isPrerelease !== false) return 'repair';
+export function assessGithubReleaseMetadata(release, { assetName, expectedDraft = false }) {
+  if (release?.isDraft !== expectedDraft || release?.isPrerelease !== false) return 'repair';
   if (typeof assetName !== 'string' || !assetName) return 'repair';
-  const matchingAssets = Array.isArray(release?.assets)
-    ? release.assets.filter((asset) => asset?.name === assetName)
-    : [];
-  if (matchingAssets.length !== 1) return 'repair';
-  const [asset] = matchingAssets;
+  if (!Array.isArray(release?.assets) || release.assets.length !== 1) return 'repair';
+  const [asset] = release.assets;
+  if (asset?.name !== assetName) return 'repair';
   if (asset.state !== 'uploaded'
     || !Number.isSafeInteger(asset.size)
     || asset.size <= 0
@@ -30,9 +28,15 @@ export function assessGithubReleaseMetadata(release, { assetName }) {
   return 'verify';
 }
 
-export async function verifyGithubReleaseAsset({ release, assetName, archivePath, repoRoot }) {
-  if (assessGithubReleaseMetadata(release, { assetName }) !== 'verify') return false;
-  const [asset] = release.assets.filter((candidate) => candidate?.name === assetName);
+export async function verifyGithubReleaseAsset({
+  release,
+  assetName,
+  archivePath,
+  repoRoot,
+  expectedDraft = false
+}) {
+  if (assessGithubReleaseMetadata(release, { assetName, expectedDraft }) !== 'verify') return false;
+  const [asset] = release.assets;
 
   const archiveStat = await fs.stat(archivePath);
   if (!archiveStat.isFile() || archiveStat.size !== asset.size) {

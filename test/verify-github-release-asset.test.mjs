@@ -65,6 +65,10 @@ test('release verification requires exact public metadata and semantic addon con
       { ...fixture.release, assets: [{ ...fixture.release.assets[0], state: 'new' }] },
       { ...fixture.release, assets: [{ ...fixture.release.assets[0], size: 0 }] },
       { ...fixture.release, assets: [{ ...fixture.release.assets[0], name: 'wrong.zip' }] },
+      { ...fixture.release, assets: [
+        fixture.release.assets[0],
+        { ...fixture.release.assets[0], name: 'unexpected.zip' }
+      ] },
       { ...fixture.release, assets: [...fixture.release.assets, fixture.release.assets[0]] }
     ]) {
       assert.equal(assessGithubReleaseMetadata(release, { assetName: ASSET_NAME }), 'repair');
@@ -92,6 +96,31 @@ test('release verification requires exact public metadata and semantic addon con
 
     await fs.writeFile(path.join(fixture.repoRoot, 'QuickWoWTalents.lua'), 'QuickWoWTalents = { changed = true }\n', 'utf8');
     assert.equal(await verifyGithubReleaseAsset({ release: fixture.release, ...args }), false);
+  } finally {
+    await fs.rm(fixture.repoRoot, { recursive: true, force: true });
+  }
+});
+
+test('release verification accepts an intentionally draft release only when draft verification is requested', async () => {
+  const fixture = await createFixture();
+  try {
+    const draft = { ...fixture.release, isDraft: true };
+    const args = {
+      assetName: ASSET_NAME,
+      archivePath: fixture.zipPath,
+      repoRoot: fixture.repoRoot,
+      expectedDraft: true
+    };
+    assert.equal(assessGithubReleaseMetadata(draft, {
+      assetName: ASSET_NAME,
+      expectedDraft: true
+    }), 'verify');
+    assert.equal(await verifyGithubReleaseAsset({ release: draft, ...args }), true);
+    assert.equal(await verifyGithubReleaseAsset({ release: fixture.release, ...args }), false);
+    assert.equal(await verifyGithubReleaseAsset({
+      release: { ...draft, isPrerelease: true },
+      ...args
+    }), false);
   } finally {
     await fs.rm(fixture.repoRoot, { recursive: true, force: true });
   }
