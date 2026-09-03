@@ -13,9 +13,9 @@ const execFileAsync = promisify(execFile);
 const REPO_ROOT = fileURLToPath(new URL('..', import.meta.url));
 const DAILY_WORKFLOW_URL = new URL('../.github/workflows/daily-release.yml', import.meta.url);
 const PR_WORKFLOW_URL = new URL('../.github/workflows/pull-request.yml', import.meta.url);
-const PUBLISH_CONDITION = "${{ steps.release_gate.outputs.publish == 'true' }}";
-const PUBLISH_OR_REPAIR_CONDITION = "${{ steps.release_gate.outputs.publish == 'true' || steps.release_gate.outputs.repair == 'true' }}";
-const CONTINUE_CONDITION = "${{ steps.release_gate.outputs.continue == 'true' }}";
+const PUBLISH_CONDITION = "${{ steps.release_gate.outputs.mode == 'publish' }}";
+const ACTIVE_CONDITION = "${{ steps.release_gate.outputs.mode != 'no-op' }}";
+const PUBLICATION_CONDITION = "${{ steps.release_gate.outputs.mode == 'publish' || steps.release_gate.outputs.mode == 'reconcile' }}";
 
 const DAILY_STEP_IDS = [
   'checkout_addon',
@@ -23,7 +23,6 @@ const DAILY_STEP_IDS = [
   'install_dependencies',
   'verify_addon_checkout',
   'acquire_inputs',
-  'validate_data',
   'verify_code',
   'release_gate',
   'prepare_version',
@@ -33,6 +32,7 @@ const DAILY_STEP_IDS = [
   'readiness',
   'configure_git',
   'commit_release',
+  'verify_release_tree',
   'publish_release',
 ];
 
@@ -106,14 +106,20 @@ async function createReleaseRepository() {
   await git(workPath, ['init']);
   await git(workPath, ['config', 'user.name', 'Release Gate Test']);
   await git(workPath, ['config', 'user.email', 'release-gate@example.test']);
+  await fs.writeFile(path.join(workPath, 'package.json'), '{"version":"1.2.3"}\n', 'utf8');
   await fs.writeFile(path.join(workPath, 'QuickWoWTalentsData.lua'), 'original\n', 'utf8');
-  await git(workPath, ['add', 'QuickWoWTalentsData.lua']);
+  await git(workPath, ['add', 'package.json', 'QuickWoWTalentsData.lua']);
   await git(workPath, ['commit', '-m', 'Initial data']);
   await git(workPath, ['branch', '-M', 'main']);
   await git(workPath, ['remote', 'add', 'origin', remotePath]);
   await git(workPath, ['push', '-u', 'origin', 'main']);
   const baseHead = (await git(workPath, ['rev-parse', 'HEAD'])).stdout.trim();
   return { root, remotePath, workPath, baseHead };
+}
+
+async function tagCurrentRelease(fixture) {
+  await git(fixture.workPath, ['tag', 'v1.2.3']);
+  await git(fixture.workPath, ['push', 'origin', 'refs/tags/v1.2.3:refs/tags/v1.2.3']);
 }
 
 async function advanceRemoteMain(fixture) {
@@ -142,7 +148,7 @@ async function runReleaseGate(fixture, overrides = {}) {
     `github-output-${Date.now()}-${Math.random().toString(16).slice(2)}`,
   );
   await fs.writeFile(outputPath, '', 'utf8');
-  const eventName = overrides.EVENT_NAME ?? 'schedule';
+  const eventName = overrides.EVENT_NAME ?? 'repository_dispatch';
   const dryRun = overrides.DRY_RUN ?? 'false';
   const env = {
     ...process.env,
@@ -182,17 +188,16 @@ test('workflow files parse as unique-key YAML documents with exact triggers and 
   assert.deepEqual(prWorkflow.document.errors, []);
   assert.deepEqual(Object.keys(dailyWorkflow.value.on).sort(), [
     'repository_dispatch',
-    'schedule',
     'workflow_dispatch',
-  ]);
-  assert.deepEqual(dailyWorkflow.value.on.schedule, [
-    { cron: '30 17 * * *' },
-    { cron: '37 20 * * *' },
   ]);
   assert.deepEqual(dailyWorkflow.value.on.repository_dispatch, {
     types: ['daily-release-fallback'],
   });
   assert.deepEqual(dailyWorkflow.value.permissions, { contents: 'write' });
+  assert.deepEqual(dailyWorkflow.value.concurrency, {
+    group: 'daily-addon-release',
+    'cancel-in-progress': false,
+  });
   assert.equal(dailyWorkflow.value.on.workflow_dispatch.inputs.dry_run.type, 'boolean');
   assert.equal(dailyWorkflow.value.on.workflow_dispatch.inputs.dry_run.default, true);
   assert.deepEqual(prWorkflow.value.on, { pull_request: null });
@@ -207,14 +212,10 @@ test('workflows expose unique stable step ids in the complete release order', ()
   assert.ok([...dailyWorkflow.steps, ...prWorkflow.steps].every((step) => step['continue-on-error'] !== true));
 });
 
-for (const [name, workflow] of [
-  ['pull request', prWorkflow],
-  ['daily release', dailyWorkflow],
-]) {
-  test(`${name} acquires one production snapshot from the public endpoint contract`, () => {
+for (const [name, workflow] of [['pull request', prWorkflow], ['daily release', dailyWorkflow]]) {
+  test(`${name} acquires one production snapshot for final readiness`, () => {
     const addonCheckout = requireStep(workflow, 'checkout_addon');
     const acquire = requireStep(workflow, 'acquire_inputs');
-    const validate = requireStep(workflow, 'validate_data');
     const readiness = requireStep(workflow, 'readiness');
 
     assert.equal(addonCheckout.uses, 'actions/checkout@v4');
@@ -231,16 +232,25 @@ for (const [name, workflow] of [
     assert.match(acquire.run, /--catalog-output "\$QWT_TALENT_CATALOG_PATH"/);
     assert.match(acquire.run, /--snapshot-manifest-output "\$QWT_RELEASE_INPUT_MANIFEST_PATH"/);
     assert.doesNotMatch(acquire.run, /(?:^|\s)--catalog(?:\s|$)/m);
-    assert.match(validate.run, /--options "\$QWT_ADDON_OPTIONS_PATH"/);
-    assert.match(validate.run, /--catalog "\$QWT_TALENT_CATALOG_PATH"/);
-    assert.match(validate.run, /--snapshot-manifest "\$QWT_RELEASE_INPUT_MANIFEST_PATH"/);
-    assert.match(validate.run, /--require-catalog-download/);
     assert.match(readiness.run, /--options "\$QWT_ADDON_OPTIONS_PATH"/);
     assert.match(readiness.run, /--catalog "\$QWT_TALENT_CATALOG_PATH"/);
     assert.match(readiness.run, /--snapshot-manifest "\$QWT_RELEASE_INPUT_MANIFEST_PATH"/);
     assert.match(readiness.run, /--require-catalog-download/);
   });
 }
+
+test('daily acquisition and code gates fit the bounded orchestration contract', () => {
+  const job = dailyWorkflow.value.jobs.release;
+  const acquire = requireStep(dailyWorkflow, 'acquire_inputs');
+  const verify = requireStep(dailyWorkflow, 'verify_code');
+
+  assert.equal(job['timeout-minutes'], 20);
+  assert.equal(acquire.env.QWT_ADDON_DATA_RETRIES, '2');
+  assert.equal(acquire.env.QWT_ADDON_DATA_RETRY_DELAY_MS, '30000');
+  assert.equal(verify.run, 'npm test');
+  assert.equal(stepIds(dailyWorkflow).includes('validate_data'), false);
+  assert.doesNotMatch(dailyWorkflow.source, /\bnode --check\b/);
+});
 
 test('all tracked text uses portable paths and approved public identifiers', async () => {
   const entries = await trackedTextFiles();
@@ -332,19 +342,20 @@ test('public build generation is self-contained and uses the public endpoint', a
   assert.match(builder, /https:\/\/quickwowtalents\.com/);
 });
 
-test('daily conditions keep all gates before versioning and publication exact', () => {
+test('daily conditions package active modes but mutate only new releases', () => {
   const unconditionalIds = [
     'checkout_addon', 'setup_node', 'install_dependencies',
-    'verify_addon_checkout', 'acquire_inputs',
-    'validate_data', 'verify_code', 'release_gate',
+    'verify_addon_checkout', 'acquire_inputs', 'verify_code', 'release_gate',
   ];
   for (const id of unconditionalIds) assert.equal(requireStep(dailyWorkflow, id).if, undefined);
   for (const id of ['prepare_version', 'protect_tag', 'configure_git', 'commit_release']) {
     assert.equal(requireStep(dailyWorkflow, id).if, PUBLISH_CONDITION);
   }
-  assert.equal(requireStep(dailyWorkflow, 'publish_release').if, PUBLISH_OR_REPAIR_CONDITION);
   for (const id of ['resolve_version', 'package_addon', 'readiness']) {
-    assert.equal(requireStep(dailyWorkflow, id).if, CONTINUE_CONDITION);
+    assert.equal(requireStep(dailyWorkflow, id).if, ACTIVE_CONDITION);
+  }
+  for (const id of ['verify_release_tree', 'publish_release']) {
+    assert.equal(requireStep(dailyWorkflow, id).if, PUBLICATION_CONDITION);
   }
   assert.equal(requireStep(dailyWorkflow, 'setup_node').with['node-version'], '22');
   assert.equal(requireStep(dailyWorkflow, 'install_dependencies').run, 'npm ci');
@@ -379,33 +390,28 @@ test('release decision is bound to event type, main ref, checkout base, and fres
 test('tag protection checks local and remote fully qualified tags before packaging', () => {
   const tagGuard = requireStep(dailyWorkflow, 'protect_tag');
   assert.match(tagGuard.run, /^set -euo pipefail/m);
-  assert.match(tagGuard.run, /git tag --list "\$RELEASE_TAG"/);
-  assert.match(tagGuard.run, /git ls-remote --tags origin "refs\/tags\/\$RELEASE_TAG"/);
+  assert.match(tagGuard.run, /git show-ref --verify --quiet "refs\/tags\/\$RELEASE_TAG"/);
+  assert.match(tagGuard.run, /git ls-remote --refs origin "refs\/tags\/\$RELEASE_TAG"/);
   assert.match(tagGuard.run, /already exists; refusing to overwrite a release/);
   assert.ok(stepIds(dailyWorkflow).indexOf('protect_tag') < stepIds(dailyWorkflow).indexOf('package_addon'));
 });
 
-test('release decision emits the expected manual, scheduled, and dry-run output matrix', async () => {
+test('release decision emits one mode for manual, fallback, and dry-run behavior', async () => {
   const cases = [
     {
       name: 'non-main manual dry-run',
       env: { EVENT_NAME: 'workflow_dispatch', DRY_RUN: 'true', GITHUB_REF: 'refs/heads/feature' },
-      want: { continue: 'true', publish: 'false', repair: 'false', reason: 'dry-run' },
+      want: { mode: 'dry-run' },
     },
     {
       name: 'main manual full release',
       env: { EVENT_NAME: 'workflow_dispatch', DRY_RUN: 'false', GITHUB_REF: 'refs/heads/main' },
-      want: { continue: 'true', publish: 'true', repair: 'false', reason: 'manual-full-release' },
+      want: { mode: 'publish' },
     },
     {
-      name: 'main unchanged schedule',
-      env: { EVENT_NAME: 'schedule', DRY_RUN: 'false', GITHUB_REF: 'refs/heads/main' },
-      want: { continue: 'true', publish: 'false', repair: 'true', reason: 'data-unchanged-release-check' },
-    },
-    {
-      name: 'main unchanged external fallback',
+      name: 'main unchanged external fallback without a current release tag',
       env: { EVENT_NAME: 'repository_dispatch', DRY_RUN: 'false', GITHUB_REF: 'refs/heads/main' },
-      want: { continue: 'true', publish: 'false', repair: 'true', reason: 'data-unchanged-release-check' },
+      want: { mode: 'no-op' },
     },
   ];
 
@@ -421,10 +427,39 @@ test('release decision emits the expected manual, scheduled, and dry-run output 
   }
 });
 
+test('unchanged fallback reconciles only when the package-version tag identifies HEAD', async () => {
+  const fixture = await createReleaseRepository();
+  try {
+    await tagCurrentRelease(fixture);
+    const result = await runReleaseGate(fixture);
+    assert.equal(result.error, null, result.stderr);
+    assert.deepEqual(result.outputs, { mode: 'reconcile' });
+  } finally {
+    await fs.rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('unchanged fallback no-ops after an untagged code-only main advance', async () => {
+  const fixture = await createReleaseRepository();
+  try {
+    await tagCurrentRelease(fixture);
+    await fs.writeFile(path.join(fixture.workPath, 'code.txt'), 'code-only change\n', 'utf8');
+    await git(fixture.workPath, ['add', 'code.txt']);
+    await git(fixture.workPath, ['commit', '-m', 'Advance code only']);
+    await git(fixture.workPath, ['push', 'origin', 'HEAD:main']);
+    fixture.baseHead = (await git(fixture.workPath, ['rev-parse', 'HEAD'])).stdout.trim();
+
+    const result = await runReleaseGate(fixture);
+    assert.equal(result.error, null, result.stderr);
+    assert.deepEqual(result.outputs, { mode: 'no-op' });
+  } finally {
+    await fs.rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
 test('release decision rejects every publishing event outside current main', async () => {
   for (const env of [
     { EVENT_NAME: 'workflow_dispatch', DRY_RUN: 'false', GITHUB_REF: 'refs/heads/feature' },
-    { EVENT_NAME: 'schedule', DRY_RUN: 'false', GITHUB_REF: 'refs/heads/feature' },
     { EVENT_NAME: 'repository_dispatch', DRY_RUN: 'false', GITHUB_REF: 'refs/heads/feature' },
     { EVENT_NAME: 'pull_request', DRY_RUN: 'false', GITHUB_REF: 'refs/heads/main' },
   ]) {
@@ -456,26 +491,20 @@ test('release decision rejects a main checkout behind freshly queried remote mai
   }
 });
 
-test('scheduled and external fallback runs reject an unrelated main advance', async () => {
-  for (const eventName of ['schedule', 'repository_dispatch']) {
-    const fixture = await createReleaseRepository();
-    try {
-      await advanceRemoteMain(fixture);
-      const result = await runReleaseGate(fixture, {
-        EVENT_NAME: eventName,
-        DRY_RUN: 'false',
-        GITHUB_REF: 'refs/heads/main',
-      });
-      assert.ok(result.error, `${eventName} must not treat an arbitrary main advance as a release`);
-      assert.match(result.stderr, /remote main|origin\/main|base HEAD/i);
-      assert.deepEqual(result.outputs, {});
-    } finally {
-      await fs.rm(fixture.root, { recursive: true, force: true });
-    }
+test('external fallback rejects an unrelated main advance', async () => {
+  const fixture = await createReleaseRepository();
+  try {
+    await advanceRemoteMain(fixture);
+    const result = await runReleaseGate(fixture);
+    assert.ok(result.error);
+    assert.match(result.stderr, /remote main|origin\/main|base HEAD/i);
+    assert.deepEqual(result.outputs, {});
+  } finally {
+    await fs.rm(fixture.root, { recursive: true, force: true });
   }
 });
 
-test('scheduled comparison detects staged and unstaged data relative to HEAD and rejects git errors', async () => {
+test('fallback comparison publishes staged or unstaged data changes and rejects git errors', async () => {
   for (const state of ['unstaged', 'staged']) {
     const fixture = await createReleaseRepository();
     try {
@@ -483,9 +512,7 @@ test('scheduled comparison detects staged and unstaged data relative to HEAD and
       if (state === 'staged') await git(fixture.workPath, ['add', 'QuickWoWTalentsData.lua']);
       const result = await runReleaseGate(fixture);
       assert.equal(result.error, null, result.stderr);
-      assert.deepEqual(result.outputs, {
-        continue: 'true', publish: 'true', repair: 'false', reason: 'data-changed',
-      });
+      assert.deepEqual(result.outputs, { mode: 'publish' });
     } finally {
       await fs.rm(fixture.root, { recursive: true, force: true });
     }
@@ -506,7 +533,30 @@ test('scheduled comparison detects staged and unstaged data relative to HEAD and
   assert.match(requireStep(dailyWorkflow, 'release_gate').run, /git diff --quiet HEAD -- QuickWoWTalentsData\.lua/);
 });
 
-test('publication authenticates only at the end and atomically pushes fully qualified refs', () => {
+test('release commit is allowlisted and followed by a clean-tree source handoff', () => {
+  const commit = requireStep(dailyWorkflow, 'commit_release');
+  const verifyTree = requireStep(dailyWorkflow, 'verify_release_tree');
+  const expectedFiles = [
+    'package.json',
+    'QuickWoWTalents.toc',
+    'QuickWoWTalentsData.lua',
+    'CHANGELOG.md',
+    'CURSEFORGE_CHANGELOG.md',
+  ];
+
+  assert.match(commit.run, new RegExp(`git add ${expectedFiles.join(' ')}`));
+  assert.match(commit.run, /git commit -m "Daily addon data release \$RELEASE_TAG"/);
+  assert.match(commit.run, /git tag "\$RELEASE_TAG"/);
+  assert.equal(verifyTree.env.BASE_HEAD, '${{ steps.verify_addon_checkout.outputs.head }}');
+  assert.match(verifyTree.run, /git ls-remote --exit-code origin refs\/heads\/main/);
+  assert.match(verifyTree.run, /BASE_HEAD.*REMOTE_MAIN_HEAD|REMOTE_MAIN_HEAD.*BASE_HEAD/s);
+  assert.match(verifyTree.run, /git status --porcelain --untracked-files=all/);
+  assert.match(verifyTree.run, /head=.*GITHUB_OUTPUT|GITHUB_OUTPUT.*head/s);
+  assert.ok(stepIds(dailyWorkflow).indexOf('commit_release') < stepIds(dailyWorkflow).indexOf('verify_release_tree'));
+  assert.ok(stepIds(dailyWorkflow).indexOf('verify_release_tree') < stepIds(dailyWorkflow).indexOf('publish_release'));
+});
+
+test('publisher script is the only remote publication entry point with exact verified inputs', () => {
   const publish = requireStep(dailyWorkflow, 'publish_release');
   const tokenSteps = dailyWorkflow.steps.filter((step) => (
     Object.values(step.env ?? {}).includes('${{ github.token }}')
@@ -514,110 +564,18 @@ test('publication authenticates only at the end and atomically pushes fully qual
   assert.deepEqual(tokenSteps.map((step) => step.id), ['publish_release']);
   assert.equal(dailyWorkflow.value.env.GH_TOKEN, undefined);
   assert.equal(publish.env.GH_TOKEN, '${{ github.token }}');
-  assert.equal(publish.env.REPAIR_EXISTING, '${{ steps.release_gate.outputs.repair }}');
-  assert.match(publish.run, /gh auth setup-git/);
-  assert.match(publish.run, /git push --atomic origin/);
-  assert.match(publish.run, /"HEAD:refs\/heads\/main"/);
-  assert.match(publish.run, /"refs\/tags\/\$RELEASE_TAG:refs\/tags\/\$RELEASE_TAG"/);
-  assert.match(publish.run, /gh release create "\$RELEASE_TAG" "\$RELEASE_ZIP"/);
-  assert.match(publish.run, /--verify-tag/);
-  assert.match(publish.run, /gh release view "\$RELEASE_TAG" --json assets,isDraft,isPrerelease/);
-  assert.match(publish.run, /verify-github-release-asset\.mjs[\s\\]*--metadata.*RELEASE_ASSET_NAME/s);
-  assert.match(publish.run, /verify-github-release-asset\.mjs.*RELEASE_ASSET_NAME.*EXISTING_RELEASE_ZIP.*GITHUB_WORKSPACE/s);
-  assert.match(publish.run, /gh release download "\$RELEASE_TAG".*RELEASE_ASSET_NAME/s);
-  assert.doesNotMatch(publish.run, /if\s+!?\s*gh release download/);
-  assert.match(publish.run, /gh release upload "\$RELEASE_TAG" "\$RELEASE_ZIP" --clobber/);
-  assert.match(publish.run, /gh release edit "\$RELEASE_TAG" --draft=false --prerelease=false/);
-  assert.match(publish.run, /REMOTE_TAG_HEAD.*CURRENT_HEAD|CURRENT_HEAD.*REMOTE_TAG_HEAD/s);
-
-  const authIndex = publish.run.indexOf('gh auth setup-git');
-  const pushIndex = publish.run.indexOf('git push --atomic');
-  const releaseIndex = publish.run.indexOf('gh release create');
-  assert.equal([...publish.run.matchAll(/\bgit push\b/g)].length, 1);
-  assert.equal([...publish.run.matchAll(/\bgh release create\b/g)].length, 2);
-  assert.ok(authIndex !== -1 && authIndex < pushIndex);
-  assert.ok(pushIndex < releaseIndex);
-  for (const step of dailyWorkflow.steps) {
-    if (step.id === 'publish_release') continue;
-    assert.doesNotMatch(
-      JSON.stringify(step),
-      /github\.token|GH_TOKEN|gh auth setup-git|\bgit push\b|\bgh release create\b/,
-    );
-  }
-});
-
-test('an existing-release download outage aborts before destructive repair', async () => {
-  const publish = requireStep(dailyWorkflow, 'publish_release');
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'qwt-release-download-failure-'));
-  try {
-    const binDir = path.join(root, 'bin');
-    const runnerTemp = path.join(root, 'runner-temp');
-    const releaseZip = path.join(root, 'QuickWoWTalents-1.2.3.zip');
-    const callLog = path.join(root, 'gh-calls.log');
-    const uploadSentinel = path.join(root, 'upload-called');
-    await fs.mkdir(binDir);
-    await fs.mkdir(runnerTemp);
-    await fs.writeFile(path.join(root, 'CURSEFORGE_CHANGELOG.md'), 'Release notes.\n', 'utf8');
-    await fs.writeFile(releaseZip, 'zip', 'utf8');
-    const ghPath = path.join(binDir, 'gh');
-    await fs.writeFile(ghPath, [
-      '#!/bin/sh',
-      'set -eu',
-      'printf \'%s\\n\' "$*" >> "$GH_CALL_LOG"',
-      'if [ "${1:-} ${2:-}" = \'auth setup-git\' ]; then exit 0; fi',
-      'if [ "${1:-} ${2:-}" = \'release view\' ]; then',
-      '  printf \'%s\\n\' \'{"isDraft":false,"isPrerelease":false,"assets":[{"name":"QuickWoWTalents-1.2.3.zip","state":"uploaded","size":3,"digest":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}]}\'',
-      '  exit 0',
-      'fi',
-      'if [ "${1:-} ${2:-}" = \'release download\' ]; then exit 42; fi',
-      'if [ "${1:-} ${2:-}" = \'release upload\' ]; then : > "$UPLOAD_SENTINEL"; exit 0; fi',
-      'exit 99',
-      ''
-    ].join('\n'), 'utf8');
-    await fs.chmod(ghPath, 0o755);
-
-    await assert.rejects(
-      execFileAsync('bash', ['-c', publish.run], {
-        cwd: REPO_ROOT,
-        encoding: 'utf8',
-        env: {
-          ...process.env,
-          PATH: `${binDir}:${process.env.PATH}`,
-          EXPECTED_SHA256: sha256('zip'),
-          GH_CALL_LOG: callLog,
-          GITHUB_WORKSPACE: root,
-          REPAIR_EXISTING: 'true',
-          RELEASE_TAG: 'v1.2.3',
-          RELEASE_VERSION: '1.2.3',
-          RELEASE_ZIP: releaseZip,
-          RUNNER_TEMP: runnerTemp,
-          UPLOAD_SENTINEL: uploadSentinel
-        }
-      }),
-      (error) => error?.code === 42
-    );
-
-    const calls = await fs.readFile(callLog, 'utf8');
-    assert.match(calls, /release download/);
-    assert.doesNotMatch(calls, /release upload/);
-    await assert.rejects(fs.access(uploadSentinel), { code: 'ENOENT' });
-  } finally {
-    await fs.rm(root, { recursive: true, force: true });
-  }
-});
-
-test('digest comparison guards both publication and repair without later archive mutation', () => {
-  const publish = requireStep(dailyWorkflow, 'publish_release');
-  const digestAssignment = publish.run.indexOf('ACTUAL_SHA256=');
-  const digestComparison = publish.run.indexOf('if [ "$ACTUAL_SHA256" != "$EXPECTED_SHA256" ]');
-  const digestGuardEnd = publish.run.indexOf('\nfi', digestComparison);
-  const authIndex = publish.run.indexOf('gh auth setup-git');
-  assert.ok(digestAssignment !== -1 && digestAssignment < digestComparison);
-  assert.ok(digestComparison < digestGuardEnd && digestGuardEnd < authIndex);
-
-  const afterDigest = publish.run.slice(digestGuardEnd + '\nfi'.length).trim();
-  assert.doesNotMatch(afterDigest, /\b(?:cp|mv|zip|ditto|node .*write|npm run package)\b/);
-  assert.match(afterDigest, /if \[ "\$REPAIR_EXISTING" != 'true' \]; then[\s\S]*git push --atomic[\s\S]*gh release create/);
-  assert.match(afterDigest, /gh release upload "\$RELEASE_TAG" "\$RELEASE_ZIP" --clobber/);
+  assert.equal(publish.env.PUBLISH_MODE, '${{ steps.release_gate.outputs.mode }}');
+  assert.equal(publish.env.EXPECTED_SHA256, '${{ steps.readiness.outputs.zip_sha256 }}');
+  assert.equal(publish.env.SOURCE_COMMIT, '${{ steps.verify_release_tree.outputs.head }}');
+  assert.equal([...dailyWorkflow.source.matchAll(/npm run release:publish/g)].length, 1);
+  assert.match(publish.run, /^npm run release:publish -- \\/m);
+  assert.match(publish.run, /--mode "\$PUBLISH_MODE"/);
+  assert.match(publish.run, /--tag "\$RELEASE_TAG"/);
+  assert.match(publish.run, /--archive "\$RELEASE_ZIP"/);
+  assert.match(publish.run, /--expected-sha256 "\$EXPECTED_SHA256"/);
+  assert.match(publish.run, /--notes-file CURSEFORGE_CHANGELOG\.md/);
+  assert.match(publish.run, /--source-commit "\$SOURCE_COMMIT"/);
+  assert.doesNotMatch(dailyWorkflow.source, /\bgh auth setup-git\b|\bgit push\b|\bgh release (?:create|view|download|upload|edit)\b/);
+  assert.doesNotMatch(dailyWorkflow.source, /node scripts\/publish-release\.mjs/);
   assert.equal(dailyWorkflow.steps.at(-1).id, 'publish_release');
 });
