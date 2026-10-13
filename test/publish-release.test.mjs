@@ -196,7 +196,7 @@ async function createFixture({ pushReleaseRefs = false } = {}) {
   await git(workPath, ['config', 'user.name', 'Release Test']);
   await git(workPath, ['config', 'user.email', 'release@example.test']);
 
-  const toc = '## Interface: 120100\n## Version: 1.2.3\nQuickWoWTalents.lua\nQuickWoWTalentsData.lua\n';
+  const toc = '## Interface: 120105\n## Version: 1.2.3\nQuickWoWTalents.lua\nQuickWoWTalentsData.lua\n';
   const addon = 'QuickWoWTalents = {}\n';
   const data = 'QuickWoWTalentsData = {}\n';
   await Promise.all([

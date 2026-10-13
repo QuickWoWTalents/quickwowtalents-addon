@@ -21,9 +21,9 @@ const CATALOG_DESCRIPTOR = {
   source: 'raidbots',
   environment: 'live',
   generatedAt: '2026-08-20T20:24:24.981Z',
-  wowBuild: '12.1.0.69404',
+  wowBuild: '12.1.5.70391',
   contentHash: 'release-readiness-catalog-hash',
-  clientInterface: 120100,
+  clientInterface: 120105,
   specCount: 40,
 };
 
@@ -92,7 +92,7 @@ function makeAddonData(catalog) {
     schemaVersion: 3,
     source: 'https://quickwowtalents.com',
     generatedAt: '2026-08-25T12:00:00.000Z',
-    clientInterface: 120100,
+    clientInterface: 120105,
     talentCatalog: structuredClone(CATALOG_DESCRIPTOR),
     activities: {
       mythicPlus: { expansionId: 11, zoneId: 51, dungeonIds: [12993, 12825] },
@@ -187,7 +187,7 @@ async function writeFixture({
   scopedChangelog = 'QuickWoWTalents 1.2.3 - 2026-05-25\n\n- Updated bundled recommendation data from quickwowtalents.com.\n',
   packageMeta = 'manual-changelog:\n  filename: CURSEFORGE_CHANGELOG.md\n  markup-type: plain\n',
   zipTocVersion = '1.2.3',
-  tocInterface = '120100, 120007, 120005',
+  tocInterface = '120105, 120007, 120005',
   zipTocInterface = tocInterface,
   includeZip = true,
   mutateSourceData = () => {},
@@ -530,14 +530,14 @@ test('verifyReleaseReadiness rejects zipped TOC version drift', async () => {
   await assert.rejects(verifyReleaseReadiness(fixture), /packaged QuickWoWTalents\.toc version 1\.2\.2 does not match package\.json version 1\.2\.3/);
 });
 
-test('verifyReleaseReadiness rejects releases missing the current retail interface', async () => {
-  const fixture = await writeFixture({ tocInterface: '120005, 120001' });
-  await assert.rejects(verifyReleaseReadiness(fixture), /QuickWoWTalents\.toc must include interface 120100/);
+test('verifyReleaseReadiness rejects releases with only previous retail interfaces', async () => {
+  const fixture = await writeFixture({ tocInterface: '120100, 120005, 120001', includeZip: false });
+  await assert.rejects(verifyReleaseReadiness(fixture), /QuickWoWTalents\.toc must include interface 120105/);
 });
 
-test('verifyReleaseReadiness rejects packaged releases missing the current retail interface', async () => {
-  const fixture = await writeFixture({ zipTocInterface: '120005, 120001' });
-  await assert.rejects(verifyReleaseReadiness(fixture), /packaged QuickWoWTalents\.toc must include interface 120100/);
+test('verifyReleaseReadiness rejects packaged releases with only previous retail interfaces', async () => {
+  const fixture = await writeFixture({ zipTocInterface: '120100, 120005, 120001' });
+  await assert.rejects(verifyReleaseReadiness(fixture), /packaged QuickWoWTalents\.toc must include interface 120105/);
 });
 
 test('verifyReleaseReadiness rejects a stale source catalog hash before checking for the zip', async () => {

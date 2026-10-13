@@ -12,7 +12,7 @@ import { loadVerifiedReleaseInputSnapshot } from './release-input-snapshot.mjs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
 const ADDON_NAME = 'QuickWoWTalents';
-const REQUIRED_RETAIL_INTERFACE = '120100';
+const REQUIRED_RETAIL_INTERFACE = '120105';
 const REQUIRED_ZIP_FILES = [
   `${ADDON_NAME}/QuickWoWTalents.toc`,
   `${ADDON_NAME}/QuickWoWTalents.lua`,

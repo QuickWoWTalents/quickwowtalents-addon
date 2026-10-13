@@ -31,10 +31,10 @@ const VALID_IMPORT = 'C4DAAAAAAAAAAAAAAAAAAAAAA0DsB';
 const CATALOG_DESCRIPTOR = {
   source: 'raidbots',
   environment: 'live',
-  generatedAt: '2026-08-20T20:24:24.981Z',
-  wowBuild: '12.1.0.69404',
-  contentHash: 'ede9afa9b5123625aa8cb14d6941e755',
-  clientInterface: 120100,
+  generatedAt: '2026-10-13T19:13:28.686Z',
+  wowBuild: '12.1.5.70391',
+  contentHash: 'synthetic-12-1-5-catalog-hash',
+  clientInterface: 120105,
   specCount: 40
 };
 
@@ -159,7 +159,7 @@ function makeData(catalog) {
     schemaVersion: 3,
     source: 'https://quickwowtalents.com',
     generatedAt: '2026-08-25T12:00:00.000Z',
-    clientInterface: 120100,
+    clientInterface: 120105,
     talentCatalog: structuredClone(CATALOG_DESCRIPTOR),
     activities: {
       mythicPlus: {
@@ -318,11 +318,23 @@ test('rejects schema 2 before accepting addon data', () => {
   assert.throws(() => validateFixture(fixture), /schema 3/i);
 });
 
-test('rejects a wrong top-level client interface', () => {
-  const fixture = makeFixture();
-  fixture.data.clientInterface = 120000;
+for (const [name, clientInterface] of [['previous-patch', 120100], ['wrong', 120000]]) {
+  test(`rejects a ${name} top-level client interface`, () => {
+    const fixture = makeFixture();
+    fixture.data.clientInterface = clientInterface;
 
-  assert.throws(() => validateFixture(fixture), /client interface 120100/i);
+    assert.throws(() => validateFixture(fixture), /client interface 120105/i);
+  });
+}
+
+test('rejects a 12.1.0 catalog behind a current-interface artifact', () => {
+  const fixture = makeFixture();
+  fixture.catalog.wowBuild = '12.1.0.69404';
+  fixture.options.talentCatalog.wowBuild = fixture.catalog.wowBuild;
+  fixture.options.talentCatalog.clientInterface = 120100;
+  fixture.data.talentCatalog = structuredClone(fixture.options.talentCatalog);
+
+  assert.throws(() => validateFixture(fixture), /derive client interface 120105/i);
 });
 
 test('rejects a catalog that is not independently a WoW 12.1 catalog', () => {
@@ -551,8 +563,12 @@ test('loads the same normalized catalog from JSON and gzip without hashing file 
   }
 });
 
-test('validates a tracked real current Arcane import from the committed fixture', () => {
-  assert.deepEqual(currentArcaneFixture.talentCatalog, CATALOG_DESCRIPTOR);
+test('validates the tracked real 12.1.0 Arcane import without relabeling its provenance', () => {
+  assert.deepEqual(currentArcaneFixture.talentCatalog, {
+    source: 'raidbots', environment: 'live', generatedAt: '2026-08-20T20:24:24.981Z',
+    wowBuild: '12.1.0.69404', contentHash: 'ede9afa9b5123625aa8cb14d6941e755',
+    clientInterface: 120100, specCount: 40
+  });
   assert.equal(currentArcaneFixture.specKey, 'Mage:Arcane');
   assert.equal(
     validateImportStringForSpec(currentArcaneFixture.importString, currentArcaneFixture.specRecord),

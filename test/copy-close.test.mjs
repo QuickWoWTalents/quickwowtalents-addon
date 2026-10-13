@@ -17,13 +17,13 @@ async function readAddonLua() {
 
 test('actual Lua runtime exposes the compatible encounter recommendation', async () => {
   const harness = await createAddonHarness({
-    data: makeRuntimeData({ catalogWowBuild: '12.1.0.70000' })
+    data: makeRuntimeData({ catalogWowBuild: '12.1.5.70000' })
   });
 
-  assert.equal(harness.string('QuickWoWTalentsData.talentCatalog.wowBuild'), '12.1.0.70000');
-  assert.equal(harness.string('(select(1, GetBuildInfo())) .. "." .. (select(2, GetBuildInfo()))'), '12.1.0.99999');
-  assert.equal(harness.number('QuickWoWTalentsData.clientInterface'), 120100);
-  assert.equal(harness.number('select(4, GetBuildInfo())'), 120100);
+  assert.equal(harness.string('QuickWoWTalentsData.talentCatalog.wowBuild'), '12.1.5.70000');
+  assert.equal(harness.string('(select(1, GetBuildInfo())) .. "." .. (select(2, GetBuildInfo()))'), '12.1.5.99999');
+  assert.equal(harness.number('QuickWoWTalentsData.clientInterface'), 120105);
+  assert.equal(harness.number('select(4, GetBuildInfo())'), 120105);
   harness.slash();
 
   assert.equal(harness.boolean('TEST.mainFrame ~= nil and TEST.mainFrame:IsShown()'), true);
@@ -33,6 +33,7 @@ test('actual Lua runtime exposes the compatible encounter recommendation', async
 
 for (const [name, data] of [
   ['schema mismatch', makeRuntimeData({ schemaVersion: 2 })],
+  ['previous-patch interface mismatch', makeRuntimeData({ clientInterface: 120100 })],
   ['interface mismatch', makeRuntimeData({ clientInterface: 120000 })]
 ]) {
   test(`actual Lua runtime blocks manual UI entry on ${name}`, async () => {

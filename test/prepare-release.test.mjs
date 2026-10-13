@@ -91,7 +91,7 @@ test('preparing and packaging a release cannot make stale addon data ready', asy
 
   await Promise.all([
     fs.writeFile(packagePath, `${JSON.stringify({ name: 'quickwowtalents-addon', version: '0.2.8' }, null, 2)}\n`, 'utf8'),
-    fs.writeFile(tocPath, '## Interface: 120100\n## Version: 0.2.8\nQuickWoWTalentsData.lua\nQuickWoWTalents.lua\n', 'utf8'),
+    fs.writeFile(tocPath, '## Interface: 120105\n## Version: 0.2.8\nQuickWoWTalentsData.lua\nQuickWoWTalents.lua\n', 'utf8'),
     fs.writeFile(path.join(repoRoot, 'QuickWoWTalents.lua'), '-- addon\n', 'utf8'),
     fs.writeFile(dataPath, staleData, 'utf8'),
     fs.writeFile(changelogPath, '# Changelog\n\n## Unreleased\n\n- Prepared metadata only.\n\n## 0.2.8\n\nPrevious release.\n', 'utf8'),
