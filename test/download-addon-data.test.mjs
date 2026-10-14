@@ -22,9 +22,9 @@ const OPTIONS_URL = 'https://quickwowtalents.com/api/options';
 const ADDON_URL = 'https://quickwowtalents.com/api/addon-data';
 const VALID_IMPORT = 'C4DAAAAAAAAAAAAAAAAAAAAAA0DsB';
 const CATALOG_DESCRIPTOR = {
-  source: 'raidbots', environment: 'live', generatedAt: '2026-08-20T20:24:24.981Z',
-  wowBuild: '12.1.0.69404', contentHash: 'ede9afa9b5123625aa8cb14d6941e755',
-  clientInterface: 120100, specCount: 40
+  source: 'raidbots', environment: 'live', generatedAt: '2026-10-13T19:13:28.686Z',
+  wowBuild: '12.1.5.70391', contentHash: 'synthetic-12-1-5-catalog-hash',
+  clientInterface: 120105, specCount: 40
 };
 const BASE_SPEC = {
   specId: 62, className: 'Mage', specName: 'Arcane', fullNodeOrder: [1001, 1002, 1003, 1004],
@@ -71,7 +71,7 @@ function makeFixture({ generatedAt = '2026-08-25T12:00:00.000Z' } = {}) {
     }
   }
   const data = {
-    schemaVersion: 3, source: 'https://quickwowtalents.com', generatedAt, clientInterface: 120100,
+    schemaVersion: 3, source: 'https://quickwowtalents.com', generatedAt, clientInterface: 120105,
     talentCatalog: structuredClone(CATALOG_DESCRIPTOR),
     activities: {
       mythicPlus: { expansionId: 11, zoneId: 51, dungeonIds: [12993] },
@@ -198,7 +198,7 @@ function digestRecord(bytes) {
 async function writeReadinessScaffolding(directory) {
   await Promise.all([
     fs.writeFile(path.join(directory, 'package.json'), JSON.stringify({ version: '1.2.3' })),
-    fs.writeFile(path.join(directory, 'QuickWoWTalents.toc'), '## Interface: 120100\n## Version: 1.2.3\n'),
+    fs.writeFile(path.join(directory, 'QuickWoWTalents.toc'), '## Interface: 120105\n## Version: 1.2.3\n'),
     fs.writeFile(path.join(directory, '.pkgmeta'), 'manual-changelog:\n  filename: CURSEFORGE_CHANGELOG.md\n  markup-type: plain\n'),
     fs.writeFile(path.join(directory, 'CHANGELOG.md'), '# Changelog\n\n## 1.2.3 - 2026-08-25\n\n- Current.\n'),
     fs.writeFile(path.join(directory, 'CURSEFORGE_CHANGELOG.md'), 'QuickWoWTalents 1.2.3 - 2026-08-25\n\n- Current.\n'),

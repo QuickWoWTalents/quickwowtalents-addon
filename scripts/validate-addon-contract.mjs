@@ -15,7 +15,7 @@ import { getParsedLuaKeyKind, parseAddonLua } from './parse-addon-lua.mjs';
 import { loadVerifiedReleaseInputSnapshot } from './release-input-snapshot.mjs';
 
 const EXPECTED_SCHEMA_VERSION = 3;
-const EXPECTED_CLIENT_INTERFACE = 120100;
+const EXPECTED_CLIENT_INTERFACE = 120105;
 const EXPECTED_SPEC_COUNT = 40;
 const EXPECTED_HEROIC_DIFFICULTY_ID = 4;
 const EXPECTED_EXPORT_VERSION = 2;

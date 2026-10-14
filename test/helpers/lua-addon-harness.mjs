@@ -12,8 +12,8 @@ export const TEST_IMPORT_STRING = 'TEST_IMPORT_STRING';
 
 export function makeRuntimeData({
   schemaVersion = 3,
-  clientInterface = 120100,
-  catalogWowBuild = '12.1.0.99999'
+  clientInterface = 120105,
+  catalogWowBuild = '12.1.5.99999'
 } = {}) {
   return {
     schemaVersion,
@@ -87,7 +87,7 @@ DEFAULT_CHAT_FRAME = {
 }
 
 function GetBuildInfo()
-  return "12.1.0", "99999", "Aug 25 2026", TEST.interface
+  return "12.1.5", "99999", "Oct 13 2026", TEST.interface
 end
 
 function InCombatLockdown()
@@ -200,7 +200,7 @@ end
 
 export async function createAddonHarness({
   data = makeRuntimeData(),
-  clientInterface = 120100
+  clientInterface = 120105
 } = {}) {
   const state = lauxlib.luaL_newstate();
   lualib.luaL_openlibs(state);

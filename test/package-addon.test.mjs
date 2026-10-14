@@ -14,7 +14,7 @@ async function writePackageFixture({ version = '1.2.3', omitFile = null } = {}) 
     'utf8',
   );
   for (const [fileName, contents] of [
-    ['QuickWoWTalents.toc', '## Interface: 120100\n## Version: 1.2.3\n'],
+    ['QuickWoWTalents.toc', '## Interface: 120105\n## Version: 1.2.3\n'],
     ['QuickWoWTalentsData.lua', 'QuickWoWTalentsData = {}\n'],
     ['QuickWoWTalents.lua', '-- addon\n'],
   ]) {

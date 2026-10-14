@@ -2,6 +2,8 @@
 
 Offline World of Warcraft addon for [Quick WoW Talents](https://quickwowtalents.com) import strings.
 
+The current retail compatibility target is **WoW 12.1.5** (Interface `120105`). Each release requires recommendation data validated against the matching live talent catalog.
+
 The addon bundles current recommended talent import strings from Quick WoW Talents and shows the best match for your current specialization in-game. It does **not** call Warcraft Logs, Quick WoW Talents, or any external service from inside WoW.
 
 ## What it does

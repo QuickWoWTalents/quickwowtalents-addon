@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added compatibility with WoW 12.1.5 (Interface 120105).
+
 ## 1.0.128 - 2026-10-14
 
 - Updated bundled recommendation data from quickwowtalents.com.

@@ -6,12 +6,28 @@ import test from 'node:test';
 
 import { buildAddonData, luaString, renderLuaData, toLua, writeAddonData } from '../scripts/build-data.mjs';
 
-const currentArcaneFixture = JSON.parse(await fs.readFile(
-  new URL('./fixtures/current-arcane-normalized-spec.json', import.meta.url),
-  'utf8'
-));
-const CATALOG_DESCRIPTOR = currentArcaneFixture.talentCatalog;
-const VALID_IMPORT = currentArcaneFixture.importString;
+// Synthetic 12.1.5 matrix; the tracked real 12.1.0 fixture retains its provenance
+// and is covered separately by validate-addon-contract.test.mjs.
+const CATALOG_DESCRIPTOR = {
+  source: 'raidbots', environment: 'live', generatedAt: '2026-10-13T21:16:13.000Z',
+  wowBuild: '12.1.5.70391', contentHash: 'synthetic-12-1-5-catalog-hash',
+  clientInterface: 120105, specCount: 40
+};
+const VALID_IMPORT = 'C4DAAAAAAAAAAAAAAAAAAAAAA0DsB';
+const ARCANE_SPEC = {
+  specId: 62, className: 'Mage', specName: 'Arcane', fullNodeOrder: [1001, 1002, 1003, 1004],
+  nodes: {
+    1001: { id: 1001, type: 'single', maxRanks: 1, freeNode: true, entries: [{ id: 5011, maxRanks: 1 }] },
+    1002: { id: 1002, type: 'single', maxRanks: 2, freeNode: false, entries: [{ id: 5012, maxRanks: 2 }] },
+    1003: { id: 1003, type: 'choice', maxRanks: 1, freeNode: false, entries: [{ id: 5013, maxRanks: 1 }, { id: 5014, maxRanks: 1 }] },
+    1004: { id: 1004, type: 'single', maxRanks: 1, freeNode: false, entries: [{ id: 5015, maxRanks: 1 }] }
+  },
+  talents: {
+    5011: { id: 5011, nodeId: 1001 }, 5012: { id: 5012, nodeId: 1002 },
+    5013: { id: 5013, nodeId: 1003 }, 5014: { id: 5014, nodeId: 1003 },
+    5015: { id: 5015, nodeId: 1004 }
+  }
+};
 
 function makeFixture() {
   const catalog = {
@@ -21,7 +37,7 @@ function makeFixture() {
     wowBuild: CATALOG_DESCRIPTOR.wowBuild,
     contentHash: CATALOG_DESCRIPTOR.contentHash,
     specs: {
-      'Mage:Arcane': structuredClone(currentArcaneFixture.specRecord)
+      'Mage:Arcane': structuredClone(ARCANE_SPEC)
     }
   };
   const classes = [{
@@ -166,7 +182,7 @@ test('buildAddonData emits the schema-3 matrix identity and exact request semant
   }));
 
   assert.equal(payload.schemaVersion, 3);
-  assert.equal(payload.clientInterface, 120100);
+  assert.equal(payload.clientInterface, 120105);
   assert.deepEqual(payload.talentCatalog, CATALOG_DESCRIPTOR);
   assert.deepEqual(payload.activities, {
     mythicPlus: { expansionId: 11, zoneId: 51, dungeonIds: [12993, 12825] },
