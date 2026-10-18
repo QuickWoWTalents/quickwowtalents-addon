@@ -5,6 +5,7 @@ NS.TalentImport = Import
 local TIMEOUT_SECONDS = 30
 local SHARED_BARS_POLL_SECONDS = 0.1
 local NATIVE_POLL_SECONDS = 0.1
+local CLEANUP_POLL_SECONDS = 0.1
 local operation
 local eventFrame
 local lastStatus = { phase = "idle", message = "No import attempted." }
@@ -224,6 +225,15 @@ local function WaitForSharedBars(op)
   C_Timer.After(SHARED_BARS_POLL_SECONDS, function()
     op.sharedPollScheduled = false
     if operation == op and op.phase == "sharing" then Defer(op, true) end
+  end)
+end
+
+local function WaitForCleanup(op)
+  if operation ~= op or op.cleanupPollScheduled then return end
+  op.cleanupPollScheduled = true
+  C_Timer.After(CLEANUP_POLL_SECONDS, function()
+    op.cleanupPollScheduled = false
+    if operation == op and op.phase == "deleting" then Defer(op, true) end
   end)
 end
 
@@ -484,10 +494,10 @@ Evaluate = function(op, polling)
       Finish(op, false, "WoW could not apply the talents. Remaining loadouts were kept; copy the import string.")
       return
     end
-    -- With Talents visible, Blizzard may already have applied this newly
-    -- created loadout. Adopt only a settled, fully verified result; never send
-    -- a second switch merely because our own delegate was not the initiator.
-    if not op.reusing and C_ClassTalents.GetLastSelectedSavedConfigID(op.specID) == op.newID
+    -- Blizzard may already have applied a newly created loadout, or the
+    -- selected saved loadout may already match. Adopt only a settled, fully
+    -- verified result without asking Blizzard to apply the same build again.
+    if C_ClassTalents.GetLastSelectedSavedConfigID(op.specID) == op.newID
       and Applied(op) then
       op.phase = "selecting"
       Defer(op)
@@ -561,7 +571,7 @@ Evaluate = function(op, polling)
     if not info then
       -- Cached metadata may outlive deletion. The matching event and absence
       -- from all this character's spec lists are the completion signals.
-      if not op.deletedEventReceived then return end
+      if not op.deletedEventReceived then WaitForCleanup(op); return end
       op.cleanupIndex = op.cleanupIndex + 1
       op.remainingCount = #op.cleanup - op.cleanupIndex + 1
       op.oldID = op.cleanup[op.cleanupIndex] and op.cleanup[op.cleanupIndex].id or nil
@@ -571,6 +581,10 @@ Evaluate = function(op, polling)
       Defer(op)
     elseif not Saved(info) or info.name ~= previous.name or specs[previous.id] ~= previous.specID then
       Finish(op, false, "QWT applied. An earlier loadout changed during cleanup; remaining loadouts were kept.")
+    else
+      -- The deletion event and inventory readback can settle separately. Poll
+      -- until both agree or the operation deadline expires; never delete twice.
+      WaitForCleanup(op)
     end
   end
 end
