@@ -1,0 +1,6456 @@
+{
+  "source": "raidbots",
+  "environment": "live",
+  "generatedAt": "2026-10-14T02:43:18.418Z",
+  "wowBuild": "12.1.5.70391",
+  "contentHash": "f02a0a3a2a62e92685f29b00835a249f",
+  "eligibilityRules": {
+    "version": "complete-loadout-v1",
+    "fingerprint": "43f21446bf5645154e9e5792f7f1bd836e4432e1de8e2ad20be007f45879e4d1",
+    "specCount": 40,
+    "verifiedSpecCount": 40,
+    "complete": true
+  },
+  "specs": {
+    "Death Knight:Blood": {
+      "className": "Death Knight",
+      "specName": "Blood",
+      "specId": 250,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Death Knight:Blood",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:250",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 250,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Death Knight:Blood",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99822,
+            "selectorTalentId": 123326,
+            "subtreeId": 33,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 95032,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95034,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95035,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95036,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95043,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95049,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95057,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95058,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95061,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95068,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109733,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109734,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109735,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              95062
+            ]
+          },
+          {
+            "selectorNodeId": 99822,
+            "selectorTalentId": 123325,
+            "subtreeId": 31,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 95033,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95040,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95045,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95046,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95048,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95053,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95055,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95056,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95064,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95065,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109736,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109737,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109738,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              95051
+            ]
+          }
+        ],
+        "fingerprint": "188c152f4b2af34a91cd1737b37cd5f8bf19e3a717fdac3fa7b30c17b0acb2d9"
+      }
+    },
+    "Death Knight:Frost": {
+      "className": "Death Knight",
+      "specName": "Frost",
+      "specId": 251,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Death Knight:Frost",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:251",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 251,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Death Knight:Frost",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99821,
+            "selectorTalentId": 123324,
+            "subtreeId": 33,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 95032,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95034,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95035,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95036,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95043,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95049,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95057,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95058,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95061,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95068,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109733,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109734,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109735,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              95062
+            ]
+          },
+          {
+            "selectorNodeId": 99821,
+            "selectorTalentId": 123323,
+            "subtreeId": 32,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 95037,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95041,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95042,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95044,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95047,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95054,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95059,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95060,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95063,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95067,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109739,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109740,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109741,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              95066
+            ]
+          }
+        ],
+        "fingerprint": "92cc62536a9a6aa15281367c2d353f5f29e771af8a7bdd0b5a9396b1bcf6d557"
+      }
+    },
+    "Death Knight:Unholy": {
+      "className": "Death Knight",
+      "specName": "Unholy",
+      "specId": 252,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Death Knight:Unholy",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:252",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 252,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Death Knight:Unholy",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99820,
+            "selectorTalentId": 123322,
+            "subtreeId": 32,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 95037,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95041,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95042,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95044,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95047,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95054,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95059,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95060,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95063,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95067,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109739,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109740,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109741,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              95066
+            ]
+          },
+          {
+            "selectorNodeId": 99820,
+            "selectorTalentId": 123321,
+            "subtreeId": 31,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 95033,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95040,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95045,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95046,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95048,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95053,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95055,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95056,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95064,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95065,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109736,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109737,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109738,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              95051
+            ]
+          }
+        ],
+        "fingerprint": "32878ad02e391fc0d4b6d1bd106e382f7f351da6f5e14d4f5df95477d1de55e5"
+      }
+    },
+    "Demon Hunter:Havoc": {
+      "className": "Demon Hunter",
+      "specName": "Havoc",
+      "specId": 577,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Demon Hunter:Havoc",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:577",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 577,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Demon Hunter:Havoc",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99824,
+            "selectorTalentId": 123330,
+            "subtreeId": 35,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94895,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94896,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94897,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94898,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94903,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94906,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94910,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94911,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94914,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94919,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109769,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109770,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109771,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94915
+            ]
+          },
+          {
+            "selectorNodeId": 99824,
+            "selectorTalentId": 123329,
+            "subtreeId": 34,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94899,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94901,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94902,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94904,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94905,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94909,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94912,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94913,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94916,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94918,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109772,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109773,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109774,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94917
+            ]
+          }
+        ],
+        "fingerprint": "b8064847e02cf90b4647f87be184c7f476a26bc58b655a24010ecb9d5d0e09db"
+      }
+    },
+    "Demon Hunter:Vengeance": {
+      "className": "Demon Hunter",
+      "specName": "Vengeance",
+      "specId": 581,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Demon Hunter:Vengeance",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:581",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 581,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Demon Hunter:Vengeance",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99823,
+            "selectorTalentId": 123328,
+            "subtreeId": 35,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94895,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94896,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94897,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94898,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94903,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94906,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94910,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94911,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94914,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94919,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109769,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109770,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109771,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94915
+            ]
+          },
+          {
+            "selectorNodeId": 99823,
+            "selectorTalentId": 134253,
+            "subtreeId": 124,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 109442,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109443,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109444,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109445,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109446,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109447,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109448,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109450,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109451,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109452,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109453,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109454,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109455,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              109449
+            ]
+          }
+        ],
+        "fingerprint": "035adb4e213803b3033ab611ada3f5a054a25e74f7671c3d120cee83be992c91"
+      }
+    },
+    "Demon Hunter:Devourer": {
+      "className": "Demon Hunter",
+      "specName": "Devourer",
+      "specId": 1480,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Demon Hunter:Devourer",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:1480",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 1480,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Demon Hunter:Devourer",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 108704,
+            "selectorTalentId": 134251,
+            "subtreeId": 124,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 109442,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109443,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109444,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109445,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109446,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109447,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109448,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109450,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109451,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109452,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109453,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109454,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109455,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              109449
+            ]
+          },
+          {
+            "selectorNodeId": 108704,
+            "selectorTalentId": 136623,
+            "subtreeId": 126,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 110104,
+                "ranks": 1
+              },
+              {
+                "nodeId": 110105,
+                "ranks": 1
+              },
+              {
+                "nodeId": 110106,
+                "ranks": 1
+              },
+              {
+                "nodeId": 110107,
+                "ranks": 1
+              },
+              {
+                "nodeId": 110108,
+                "ranks": 1
+              },
+              {
+                "nodeId": 110109,
+                "ranks": 1
+              },
+              {
+                "nodeId": 110110,
+                "ranks": 1
+              },
+              {
+                "nodeId": 110111,
+                "ranks": 1
+              },
+              {
+                "nodeId": 110113,
+                "ranks": 1
+              },
+              {
+                "nodeId": 110114,
+                "ranks": 1
+              },
+              {
+                "nodeId": 110115,
+                "ranks": 1
+              },
+              {
+                "nodeId": 110116,
+                "ranks": 1
+              },
+              {
+                "nodeId": 110117,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              110112
+            ]
+          }
+        ],
+        "fingerprint": "44333a7d679cad827b26d5cd32ed6c3d3885d8ed941e523b92515e016c9c8275"
+      }
+    },
+    "Druid:Balance": {
+      "className": "Druid",
+      "specName": "Balance",
+      "specId": 102,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Druid:Balance",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:102",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 102,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Druid:Balance",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99808,
+            "selectorTalentId": 123302,
+            "subtreeId": 24,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94585,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94586,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94587,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94588,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94590,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94594,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94596,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94597,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94598,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94607,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109718,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109719,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109720,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94608
+            ]
+          },
+          {
+            "selectorNodeId": 99808,
+            "selectorTalentId": 123300,
+            "subtreeId": 23,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94591,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94592,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94593,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94595,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94599,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94601,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94602,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94604,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94605,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94606,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109712,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109713,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109714,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94600
+            ]
+          }
+        ],
+        "fingerprint": "59f401b2472768172e1de15330bd52d52458d69827569a175713b39339a6b6ed"
+      }
+    },
+    "Druid:Feral": {
+      "className": "Druid",
+      "specName": "Feral",
+      "specId": 103,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Druid:Feral",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:103",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 103,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Druid:Feral",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99805,
+            "selectorTalentId": 123297,
+            "subtreeId": 21,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94610,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94611,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94612,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94613,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94614,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94615,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94616,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94618,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94619,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94620,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109721,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109722,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109723,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94609
+            ]
+          },
+          {
+            "selectorNodeId": 99805,
+            "selectorTalentId": 123296,
+            "subtreeId": 22,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94621,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94622,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94623,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94624,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94625,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94627,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94628,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94629,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94630,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94631,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109715,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109716,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109717,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94626
+            ]
+          }
+        ],
+        "fingerprint": "bab2adfcfe28378fceb1d7546f9670327fe46ce5b9e3f13fcf007834c96a249b"
+      }
+    },
+    "Druid:Guardian": {
+      "className": "Druid",
+      "specName": "Guardian",
+      "specId": 104,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Druid:Guardian",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:104",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 104,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Druid:Guardian",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99807,
+            "selectorTalentId": 123301,
+            "subtreeId": 21,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94610,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94611,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94612,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94613,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94614,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94615,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94616,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94618,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94619,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94620,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109721,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109722,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109723,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94609
+            ]
+          },
+          {
+            "selectorNodeId": 99807,
+            "selectorTalentId": 123295,
+            "subtreeId": 24,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94585,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94586,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94587,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94588,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94590,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94594,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94596,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94597,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94598,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94607,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109718,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109719,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109720,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94608
+            ]
+          }
+        ],
+        "fingerprint": "360dcc581237b4577c20b919e0ef1198a3ab6bd1fb3ce0b914381514af14f4a4"
+      }
+    },
+    "Druid:Restoration": {
+      "className": "Druid",
+      "specName": "Restoration",
+      "specId": 105,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Druid:Restoration",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:105",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 105,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Druid:Restoration",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99806,
+            "selectorTalentId": 123299,
+            "subtreeId": 23,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94591,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94592,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94593,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94595,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94599,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94601,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94602,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94604,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94605,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94606,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109712,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109713,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109714,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94600
+            ]
+          },
+          {
+            "selectorNodeId": 99806,
+            "selectorTalentId": 123298,
+            "subtreeId": 22,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94621,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94622,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94623,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94624,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94625,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94627,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94628,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94629,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94630,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94631,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109715,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109716,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109717,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94626
+            ]
+          }
+        ],
+        "fingerprint": "cc649e3f1213861d4305d595dfeb76051ab9ac2f65d99efcec3fe690933be29e"
+      }
+    },
+    "Evoker:Augmentation": {
+      "className": "Evoker",
+      "specName": "Augmentation",
+      "specId": 1473,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Evoker:Augmentation",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:1473",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 1473,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Evoker:Augmentation",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99825,
+            "selectorTalentId": 123334,
+            "subtreeId": 38,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94925,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94929,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94930,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94932,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94935,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94942,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94947,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94948,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94951,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94955,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109508,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109509,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109510,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94954
+            ]
+          },
+          {
+            "selectorNodeId": 99825,
+            "selectorTalentId": 123331,
+            "subtreeId": 36,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94921,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94928,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94933,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94934,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94936,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94941,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94943,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94944,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94952,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94953,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109793,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109794,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109795,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              98931
+            ]
+          }
+        ],
+        "fingerprint": "1affeb87319771ae0704e32582c25c8633e66547ed78884b602b9ca4be5226a7"
+      }
+    },
+    "Evoker:Devastation": {
+      "className": "Evoker",
+      "specName": "Devastation",
+      "specId": 1467,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Evoker:Devastation",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:1467",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 1467,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Evoker:Devastation",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99827,
+            "selectorTalentId": 123336,
+            "subtreeId": 37,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94920,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94922,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94923,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94931,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94937,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94945,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94946,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94949,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94956,
+                "ranks": 1
+              },
+              {
+                "nodeId": 99857,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109796,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109797,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109798,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94950
+            ]
+          },
+          {
+            "selectorNodeId": 99827,
+            "selectorTalentId": 123333,
+            "subtreeId": 36,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94921,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94928,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94933,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94934,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94936,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94941,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94943,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94944,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94952,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94953,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109793,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109794,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109795,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94939
+            ]
+          }
+        ],
+        "fingerprint": "6cf6f8ee1a3af4f8a0b205fe4445f1eba28c62ef825f10c34f802b18d880e11a"
+      }
+    },
+    "Evoker:Preservation": {
+      "className": "Evoker",
+      "specName": "Preservation",
+      "specId": 1468,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Evoker:Preservation",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:1468",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 1468,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Evoker:Preservation",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99826,
+            "selectorTalentId": 123335,
+            "subtreeId": 38,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94925,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94929,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94930,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94932,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94935,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94942,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94947,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94948,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94951,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94955,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109508,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109509,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109510,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94954
+            ]
+          },
+          {
+            "selectorNodeId": 99826,
+            "selectorTalentId": 123332,
+            "subtreeId": 37,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94920,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94922,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94923,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94931,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94937,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94945,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94946,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94949,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94956,
+                "ranks": 1
+              },
+              {
+                "nodeId": 99857,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109796,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109797,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109798,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94950
+            ]
+          }
+        ],
+        "fingerprint": "93524ac44f38da66ccec47e01efc32c86a8450aba2da97ad86d3dafc36146046"
+      }
+    },
+    "Hunter:Beast Mastery": {
+      "className": "Hunter",
+      "specName": "Beast Mastery",
+      "specId": 253,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Hunter:Beast Mastery",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:253",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 253,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Hunter:Beast Mastery",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99832,
+            "selectorTalentId": 123348,
+            "subtreeId": 44,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94957,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94959,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94960,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94961,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94968,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94974,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94982,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94983,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94986,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94993,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109799,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109800,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109801,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              109961
+            ]
+          },
+          {
+            "selectorNodeId": 99832,
+            "selectorTalentId": 123347,
+            "subtreeId": 43,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94962,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94966,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94967,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94969,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94972,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94979,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94984,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94985,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94988,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94992,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109802,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109803,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109804,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94991
+            ]
+          }
+        ],
+        "fingerprint": "a437f8839efddfa506fdb4a86bc2f9c8d0bf621b1aa4fa04d95e13c99842a604"
+      }
+    },
+    "Hunter:Marksmanship": {
+      "className": "Hunter",
+      "specName": "Marksmanship",
+      "specId": 254,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Hunter:Marksmanship",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:254",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 254,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Hunter:Marksmanship",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99831,
+            "selectorTalentId": 123346,
+            "subtreeId": 44,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94957,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94959,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94960,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94961,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94968,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94974,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94982,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94983,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94986,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94993,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109799,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109800,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109801,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94987
+            ]
+          },
+          {
+            "selectorNodeId": 99831,
+            "selectorTalentId": 123345,
+            "subtreeId": 42,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94958,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94965,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94970,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94971,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94973,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94978,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94980,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94981,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94989,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94990,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109805,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109807,
+                "ranks": 1
+              },
+              {
+                "nodeId": 110028,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94976
+            ]
+          }
+        ],
+        "fingerprint": "3e4ba4fa44af15def44d174c0f7d6ba12a7d3007274e36fd4ee87713679cb475"
+      }
+    },
+    "Hunter:Survival": {
+      "className": "Hunter",
+      "specName": "Survival",
+      "specId": 255,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Hunter:Survival",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:255",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 255,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Hunter:Survival",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99833,
+            "selectorTalentId": 123350,
+            "subtreeId": 43,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94962,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94966,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94967,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94969,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94972,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94979,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94984,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94985,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94988,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94992,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109802,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109803,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109804,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94991
+            ]
+          },
+          {
+            "selectorNodeId": 99833,
+            "selectorTalentId": 123349,
+            "subtreeId": 42,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94958,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94965,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94970,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94971,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94973,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94978,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94980,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94981,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94989,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94990,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109805,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109807,
+                "ranks": 1
+              },
+              {
+                "nodeId": 110028,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94976
+            ]
+          }
+        ],
+        "fingerprint": "5ca27872a298d6fdd7d0a2b6a9a2e3acda3317a1422a009d3f1157de37115959"
+      }
+    },
+    "Mage:Arcane": {
+      "className": "Mage",
+      "specName": "Arcane",
+      "specId": 62,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Mage:Arcane",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:62",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 62,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Mage:Arcane",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99830,
+            "selectorTalentId": 123344,
+            "subtreeId": 40,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94654,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94655,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94656,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94657,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94658,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94659,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94660,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94661,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94662,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94663,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109667,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109668,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109669,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94664
+            ]
+          },
+          {
+            "selectorNodeId": 99830,
+            "selectorTalentId": 123341,
+            "subtreeId": 39,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94643,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94644,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94645,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94646,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94648,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94649,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94650,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94651,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94652,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94653,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109673,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109674,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109675,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94647
+            ]
+          }
+        ],
+        "fingerprint": "d5c75f6df08a39aef30b9e45aaa281e69981a229c4a6f8b2ece6b51fd16bc8d5"
+      }
+    },
+    "Mage:Fire": {
+      "className": "Mage",
+      "specName": "Fire",
+      "specId": 63,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Mage:Fire",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:63",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 63,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Mage:Fire",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99829,
+            "selectorTalentId": 123343,
+            "subtreeId": 41,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94632,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94633,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94634,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94635,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94637,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94638,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94639,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94640,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94641,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94642,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109670,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109671,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109672,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              109956
+            ]
+          },
+          {
+            "selectorNodeId": 99829,
+            "selectorTalentId": 123340,
+            "subtreeId": 39,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94643,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94644,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94645,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94646,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94648,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94649,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94650,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94651,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94652,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94653,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109673,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109674,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109675,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94647
+            ]
+          }
+        ],
+        "fingerprint": "afdf7b5bcbe77eea0fbfbb52c8315d354a3497f56c96f129ebce1189189778ae"
+      }
+    },
+    "Mage:Frost": {
+      "className": "Mage",
+      "specName": "Frost",
+      "specId": 64,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Mage:Frost",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:64",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 64,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Mage:Frost",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99828,
+            "selectorTalentId": 123342,
+            "subtreeId": 41,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94632,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94633,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94634,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94635,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94637,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94638,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94639,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94640,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94641,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94642,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109670,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109671,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109672,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94636
+            ]
+          },
+          {
+            "selectorNodeId": 99828,
+            "selectorTalentId": 123339,
+            "subtreeId": 40,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94654,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94655,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94656,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94657,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94658,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94659,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94660,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94661,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94662,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94663,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109667,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109668,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109669,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94664
+            ]
+          }
+        ],
+        "fingerprint": "58e80a715efe799b1b7d4c3e6aac474412852ed91485ae409c8ab627eda3374b"
+      }
+    },
+    "Monk:Brewmaster": {
+      "className": "Monk",
+      "specName": "Brewmaster",
+      "specId": 268,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Monk:Brewmaster",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:268",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 268,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Monk:Brewmaster",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 101219,
+            "selectorTalentId": 125028,
+            "subtreeId": 66,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 101220,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101221,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101222,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101224,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101225,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101226,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101227,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101228,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101229,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101230,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109694,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109695,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109696,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              101223
+            ]
+          },
+          {
+            "selectorNodeId": 101219,
+            "selectorTalentId": 125027,
+            "subtreeId": 65,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 101244,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101245,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101246,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101247,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101249,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101250,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101251,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101252,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101253,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101254,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109697,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109698,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109699,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              101248
+            ]
+          }
+        ],
+        "fingerprint": "fdbba525f8dbd2bbd1ed071c5063e1d79f42246fc16c4f18e20f5a9f3647475d"
+      }
+    },
+    "Monk:Mistweaver": {
+      "className": "Monk",
+      "specName": "Mistweaver",
+      "specId": 270,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Monk:Mistweaver",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:270",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 270,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Monk:Mistweaver",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 101231,
+            "selectorTalentId": 125045,
+            "subtreeId": 64,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 101233,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101234,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101235,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101236,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101237,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101238,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101239,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101240,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101242,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109700,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109701,
+                "ranks": 1
+              },
+              {
+                "nodeId": 110211,
+                "ranks": 1
+              },
+              {
+                "nodeId": 110218,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              110067
+            ]
+          },
+          {
+            "selectorNodeId": 101231,
+            "selectorTalentId": 125044,
+            "subtreeId": 66,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 101220,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101221,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101222,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101224,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101225,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101226,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101227,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101228,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101229,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101230,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109694,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109695,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109696,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              101223
+            ]
+          }
+        ],
+        "fingerprint": "9ddb9a76d37c6e6f2f21568a2f9f2f305ed3e4c965bbf041b88f4abaf5ef4940"
+      }
+    },
+    "Monk:Windwalker": {
+      "className": "Monk",
+      "specName": "Windwalker",
+      "specId": 269,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Monk:Windwalker",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:269",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 269,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Monk:Windwalker",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 101232,
+            "selectorTalentId": 125047,
+            "subtreeId": 64,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 101234,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101235,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101236,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101237,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101238,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101239,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101242,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109700,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109701,
+                "ranks": 1
+              },
+              {
+                "nodeId": 110211,
+                "ranks": 1
+              },
+              {
+                "nodeId": 110218,
+                "ranks": 1
+              },
+              {
+                "nodeId": 110220,
+                "ranks": 1
+              },
+              {
+                "nodeId": 110221,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              101243
+            ]
+          },
+          {
+            "selectorNodeId": 101232,
+            "selectorTalentId": 125046,
+            "subtreeId": 65,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 101244,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101245,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101246,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101247,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101249,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101250,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101251,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101252,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101253,
+                "ranks": 1
+              },
+              {
+                "nodeId": 101254,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109697,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109698,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109699,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              101248
+            ]
+          }
+        ],
+        "fingerprint": "cbe90bfdcb72976f54d6673c0f860a59f0469e417e6630388d737b967dfef426"
+      }
+    },
+    "Paladin:Holy": {
+      "className": "Paladin",
+      "specName": "Holy",
+      "specId": 65,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Paladin:Holy",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:65",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 65,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Paladin:Holy",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99839,
+            "selectorTalentId": 123362,
+            "subtreeId": 50,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 95069,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95071,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95072,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95073,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95080,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95086,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95094,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95095,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95098,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95105,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109748,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109749,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109750,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              95099
+            ]
+          },
+          {
+            "selectorNodeId": 99839,
+            "selectorTalentId": 123359,
+            "subtreeId": 49,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 95228,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95229,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95230,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95231,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95232,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95233,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95235,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95236,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95237,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95238,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109742,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109743,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109744,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              110257
+            ]
+          }
+        ],
+        "fingerprint": "ba28721147192bbc3bea0b3ec148ee433fd8699962c989181c3cbe1f280d8811"
+      }
+    },
+    "Paladin:Protection": {
+      "className": "Paladin",
+      "specName": "Protection",
+      "specId": 66,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Paladin:Protection",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:66",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 66,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Paladin:Protection",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99838,
+            "selectorTalentId": 123361,
+            "subtreeId": 49,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 95228,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95229,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95230,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95231,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95232,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95233,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95235,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95236,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95237,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95238,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109742,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109743,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109744,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              95234
+            ]
+          },
+          {
+            "selectorNodeId": 99838,
+            "selectorTalentId": 123358,
+            "subtreeId": 48,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 95177,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95178,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95179,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95181,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95182,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95183,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95184,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95185,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95186,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95187,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109745,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109746,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109747,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              95180
+            ]
+          }
+        ],
+        "fingerprint": "69eb128a83f02c3b9cdf8487c24d93e25d907613b2916c7fc5c0c4b5a4d7a75e"
+      }
+    },
+    "Paladin:Retribution": {
+      "className": "Paladin",
+      "specName": "Retribution",
+      "specId": 70,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Paladin:Retribution",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:70",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 70,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Paladin:Retribution",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99837,
+            "selectorTalentId": 123360,
+            "subtreeId": 50,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 95069,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95071,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95072,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95073,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95080,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95086,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95094,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95095,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95098,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95105,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109748,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109749,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109750,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              95099
+            ]
+          },
+          {
+            "selectorNodeId": 99837,
+            "selectorTalentId": 123357,
+            "subtreeId": 48,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 95177,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95178,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95179,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95181,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95182,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95183,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95184,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95185,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95186,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95187,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109745,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109746,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109747,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              95180
+            ]
+          }
+        ],
+        "fingerprint": "eeafe2213ded5e094c1ea6cfce95ce813160ca292c0ddeb20230e1cc5481696c"
+      }
+    },
+    "Priest:Discipline": {
+      "className": "Priest",
+      "specName": "Discipline",
+      "specId": 256,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Priest:Discipline",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:256",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 256,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Priest:Discipline",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99801,
+            "selectorTalentId": 123290,
+            "subtreeId": 20,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94673,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94674,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94675,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94679,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94687,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94689,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94690,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94691,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94698,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94700,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109781,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109782,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109783,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94683
+            ]
+          },
+          {
+            "selectorNodeId": 99801,
+            "selectorTalentId": 123288,
+            "subtreeId": 18,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94668,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94669,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94670,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94692,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94693,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94694,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94695,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94696,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94703,
+                "ranks": 1
+              },
+              {
+                "nodeId": 100212,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109778,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109779,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109780,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              110008
+            ]
+          }
+        ],
+        "fingerprint": "41695514cb97bc467d80a0a07036b75dc02dfce0b513bc7fcdb4bc74f2048e1a"
+      }
+    },
+    "Priest:Holy": {
+      "className": "Priest",
+      "specName": "Holy",
+      "specId": 257,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Priest:Holy",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:257",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 257,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Priest:Holy",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99802,
+            "selectorTalentId": 123292,
+            "subtreeId": 20,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94673,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94674,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94675,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94679,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94687,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94689,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94690,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94691,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94698,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94700,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109781,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109782,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109783,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94683
+            ]
+          },
+          {
+            "selectorNodeId": 99802,
+            "selectorTalentId": 123291,
+            "subtreeId": 19,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94676,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94677,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94678,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94680,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94681,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94685,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94686,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94688,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94699,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94702,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109775,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109776,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109777,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              108724
+            ]
+          }
+        ],
+        "fingerprint": "f8b6e9392a354956adc5d77ff261fbfcc7d52866941149c056ffd8f09280b7a4"
+      }
+    },
+    "Priest:Shadow": {
+      "className": "Priest",
+      "specName": "Shadow",
+      "specId": 258,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Priest:Shadow",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:258",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 258,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Priest:Shadow",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99800,
+            "selectorTalentId": 123289,
+            "subtreeId": 19,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94676,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94677,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94678,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94680,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94681,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94685,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94686,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94688,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94699,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94702,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109775,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109776,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109777,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94697
+            ]
+          },
+          {
+            "selectorNodeId": 99800,
+            "selectorTalentId": 123287,
+            "subtreeId": 18,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94668,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94669,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94670,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94692,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94693,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94694,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94695,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94696,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94703,
+                "ranks": 1
+              },
+              {
+                "nodeId": 100212,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109778,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109779,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109780,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94684
+            ]
+          }
+        ],
+        "fingerprint": "23c787b5e0a94f1e7cc91e545fee61af28cff8c01d67220750e59bea7bb6689a"
+      }
+    },
+    "Rogue:Assassination": {
+      "className": "Rogue",
+      "specName": "Assassination",
+      "specId": 259,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Rogue:Assassination",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:259",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 259,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Rogue:Assassination",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99844,
+            "selectorTalentId": 123375,
+            "subtreeId": 53,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 95106,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95108,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95109,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95110,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95117,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95123,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95131,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95132,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95135,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95142,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109760,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109761,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109762,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              95136
+            ]
+          },
+          {
+            "selectorNodeId": 99844,
+            "selectorTalentId": 123371,
+            "subtreeId": 52,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 95107,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95114,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95119,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95120,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95122,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95127,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95129,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95130,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95138,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95139,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109766,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109767,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109768,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              95125
+            ]
+          }
+        ],
+        "fingerprint": "ad06542b3e0f6ed0d76a1134c5964c70aae13d02c42d22b3c69bd7fa89ded5d8"
+      }
+    },
+    "Rogue:Outlaw": {
+      "className": "Rogue",
+      "specName": "Outlaw",
+      "specId": 260,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Rogue:Outlaw",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:260",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 260,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Rogue:Outlaw",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99843,
+            "selectorTalentId": 123374,
+            "subtreeId": 52,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 95107,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95114,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95119,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95120,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95122,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95127,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95129,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95130,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95138,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95139,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109766,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109767,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109768,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              95125
+            ]
+          },
+          {
+            "selectorNodeId": 99843,
+            "selectorTalentId": 123372,
+            "subtreeId": 51,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 95111,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95115,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95116,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95118,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95121,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95128,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95133,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95134,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95137,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95141,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109763,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109764,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109765,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              95140
+            ]
+          }
+        ],
+        "fingerprint": "8b5e007f74a70b6f058d6ad91adf902e915f2d74b127aed3d6419e3e511995f3"
+      }
+    },
+    "Rogue:Subtlety": {
+      "className": "Rogue",
+      "specName": "Subtlety",
+      "specId": 261,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Rogue:Subtlety",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:261",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 261,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Rogue:Subtlety",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99842,
+            "selectorTalentId": 123373,
+            "subtreeId": 53,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 95106,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95108,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95109,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95110,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95117,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95123,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95131,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95132,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95135,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95142,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109760,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109761,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109762,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              95136
+            ]
+          },
+          {
+            "selectorNodeId": 99842,
+            "selectorTalentId": 123370,
+            "subtreeId": 51,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 95111,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95115,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95116,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95118,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95121,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95128,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95133,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95134,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95137,
+                "ranks": 1
+              },
+              {
+                "nodeId": 95141,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109763,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109764,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109765,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              95140
+            ]
+          }
+        ],
+        "fingerprint": "de722e1486da7aef196fbc2ca7573df81fee3ac9f889b7d1504b2261ba6ccb0a"
+      }
+    },
+    "Shaman:Elemental": {
+      "className": "Shaman",
+      "specName": "Elemental",
+      "specId": 262,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Shaman:Elemental",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:262",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 262,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Shaman:Elemental",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99845,
+            "selectorTalentId": 123377,
+            "subtreeId": 56,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94858,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94860,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94861,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94862,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94869,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94875,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94883,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94884,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94887,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94894,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109730,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109731,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109732,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94888
+            ]
+          },
+          {
+            "selectorNodeId": 99845,
+            "selectorTalentId": 123376,
+            "subtreeId": 55,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94863,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94867,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94868,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94870,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94873,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94880,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94885,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94886,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94889,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94893,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109727,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109728,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109729,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94892
+            ]
+          }
+        ],
+        "fingerprint": "425e25c16173d1ce4d91fcc0cb7c0adedc4b95422190eac8541d2f70392cad88"
+      }
+    },
+    "Shaman:Enhancement": {
+      "className": "Shaman",
+      "specName": "Enhancement",
+      "specId": 263,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Shaman:Enhancement",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:263",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 263,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Shaman:Enhancement",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99847,
+            "selectorTalentId": 123381,
+            "subtreeId": 55,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94863,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94867,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94868,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94870,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94873,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94880,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94885,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94886,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94889,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94893,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109727,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109728,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109729,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94892
+            ]
+          },
+          {
+            "selectorNodeId": 99847,
+            "selectorTalentId": 123379,
+            "subtreeId": 54,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94859,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94866,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94871,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94872,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94874,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94879,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94881,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94882,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94890,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94891,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109724,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109725,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109726,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94877
+            ]
+          }
+        ],
+        "fingerprint": "05b8aaf9198b4142b62b6c39d4a5ced12954bb7cccdcd600ad1de5259ddb1b6a"
+      }
+    },
+    "Shaman:Restoration": {
+      "className": "Shaman",
+      "specName": "Restoration",
+      "specId": 264,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Shaman:Restoration",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:264",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 264,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Shaman:Restoration",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99846,
+            "selectorTalentId": 123380,
+            "subtreeId": 56,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94858,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94860,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94861,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94862,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94869,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94875,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94883,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94884,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94887,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94894,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109730,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109731,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109732,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94888
+            ]
+          },
+          {
+            "selectorNodeId": 99846,
+            "selectorTalentId": 123378,
+            "subtreeId": 54,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94859,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94866,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94871,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94872,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94874,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94879,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94881,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94882,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94890,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94891,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109724,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109725,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109726,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94877
+            ]
+          }
+        ],
+        "fingerprint": "f59cbeb228956a30e36e8a7ef1b2af42c308eefec3f7c55d159822cefb5799e7"
+      }
+    },
+    "Warlock:Affliction": {
+      "className": "Warlock",
+      "specName": "Affliction",
+      "specId": 265,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Warlock:Affliction",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:265",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 265,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Warlock:Affliction",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99850,
+            "selectorTalentId": 123387,
+            "subtreeId": 58,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94822,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94829,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94834,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94835,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94837,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94842,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94844,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94845,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94853,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94854,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109834,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109835,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109836,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94840
+            ]
+          },
+          {
+            "selectorNodeId": 99850,
+            "selectorTalentId": 123384,
+            "subtreeId": 57,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94821,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94823,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94824,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94825,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94832,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94838,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94846,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94847,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94850,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94857,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109837,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109838,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109839,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94851
+            ]
+          }
+        ],
+        "fingerprint": "40234c5c4304886e717f36bcdb1a64617ac6e17263e202bb10d87e8c2ae2b0b7"
+      }
+    },
+    "Warlock:Demonology": {
+      "className": "Warlock",
+      "specName": "Demonology",
+      "specId": 266,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Warlock:Demonology",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:266",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 266,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Warlock:Demonology",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99849,
+            "selectorTalentId": 123386,
+            "subtreeId": 59,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94826,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94830,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94831,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94833,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94836,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94843,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94848,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94849,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94852,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94856,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109831,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109832,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109833,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94855
+            ]
+          },
+          {
+            "selectorNodeId": 99849,
+            "selectorTalentId": 123383,
+            "subtreeId": 57,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94821,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94823,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94824,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94825,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94832,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94838,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94846,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94847,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94850,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94857,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109837,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109838,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109839,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94851
+            ]
+          }
+        ],
+        "fingerprint": "d76c64c617de2751ccc9b9c5151f13f984f528bddb567eb20dc36130212cea1e"
+      }
+    },
+    "Warlock:Destruction": {
+      "className": "Warlock",
+      "specName": "Destruction",
+      "specId": 267,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Warlock:Destruction",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:267",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 267,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Warlock:Destruction",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99848,
+            "selectorTalentId": 123385,
+            "subtreeId": 59,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94826,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94830,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94831,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94833,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94836,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94843,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94848,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94849,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94852,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94856,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109831,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109832,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109833,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94855
+            ]
+          },
+          {
+            "selectorNodeId": 99848,
+            "selectorTalentId": 123382,
+            "subtreeId": 58,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94822,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94829,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94834,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94835,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94837,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94842,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94844,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94845,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94853,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94854,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109834,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109835,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109836,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94840
+            ]
+          }
+        ],
+        "fingerprint": "74e4be48ead739bde7038f79f1815c6df9626eb964830f5b65a3ac8aeeb9b7e1"
+      }
+    },
+    "Warrior:Arms": {
+      "className": "Warrior",
+      "specName": "Arms",
+      "specId": 71,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Warrior:Arms",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:71",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 71,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Warrior:Arms",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99853,
+            "selectorTalentId": 123393,
+            "subtreeId": 62,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94789,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94793,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94794,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94796,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94799,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94806,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94811,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94812,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94815,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94819,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109812,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109813,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109814,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94818
+            ]
+          },
+          {
+            "selectorNodeId": 99853,
+            "selectorTalentId": 123390,
+            "subtreeId": 60,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94784,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94786,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94787,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94788,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94795,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94801,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94809,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94810,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94813,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94820,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109815,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109816,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109817,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94814
+            ]
+          }
+        ],
+        "fingerprint": "11c5e8454f5d4bbb9cc9f597698333d0cd3c426efe94e8ec86f312f44de66160"
+      }
+    },
+    "Warrior:Fury": {
+      "className": "Warrior",
+      "specName": "Fury",
+      "specId": 72,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Warrior:Fury",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:72",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 72,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Warrior:Fury",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99852,
+            "selectorTalentId": 123392,
+            "subtreeId": 61,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94785,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94792,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94797,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94798,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94800,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94805,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94807,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94808,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94816,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94817,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109809,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109810,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109811,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94803
+            ]
+          },
+          {
+            "selectorNodeId": 99852,
+            "selectorTalentId": 123389,
+            "subtreeId": 60,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94784,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94786,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94787,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94788,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94795,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94801,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94809,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94810,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94813,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94820,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109815,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109816,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109817,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94814
+            ]
+          }
+        ],
+        "fingerprint": "7df31385ae27b5976c45a5eeaf85dc592163bf6d8aa1fce2b5e29d965d67f60f"
+      }
+    },
+    "Warrior:Protection": {
+      "className": "Warrior",
+      "specName": "Protection",
+      "specId": 73,
+      "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Warrior:Protection",
+      "eligibilityRules": {
+        "version": "complete-loadout-v1",
+        "id": "complete-loadout-v1:f02a0a3a2a62e92685f29b00835a249f:73",
+        "status": "verified",
+        "catalogIdentity": {
+          "source": "raidbots",
+          "environment": "live",
+          "wowBuild": "12.1.5.70391",
+          "contentHash": "f02a0a3a2a62e92685f29b00835a249f"
+        },
+        "specId": 73,
+        "sourceKey": "raidbots:f02a0a3a2a62e92685f29b00835a249f:Warrior:Protection",
+        "maxLevel": 90,
+        "provenance": {
+          "sourceUrl": "https://www.raidbots.com/static/data/f02a0a3a2a62e92685f29b00835a249f/talents.json",
+          "sourceSha256": "53bb1b612f140b666d66b75314db501bb1fa31923b66ad3f3cb02edbc5f3a07c",
+          "digestFormat": "utf8-source-sha256",
+          "rulesReference": "https://news.blizzard.com/en-us/article/24230699/level-up-your-talents-in-midnight",
+          "derivation": "paid pointLevels through level 90; active spec subtree nodes; free grants excluded",
+          "scope": "complete point allocation and hero activation; native client conditions are not certified"
+        },
+        "unknownReasons": [],
+        "pointBudgets": {
+          "class": 34,
+          "spec": 34,
+          "hero": 13
+        },
+        "heroSelections": [
+          {
+            "selectorNodeId": 99851,
+            "selectorTalentId": 123391,
+            "subtreeId": 62,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94789,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94793,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94794,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94796,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94799,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94806,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94811,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94812,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94815,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94819,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109812,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109813,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109814,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94818
+            ]
+          },
+          {
+            "selectorNodeId": 99851,
+            "selectorTalentId": 123388,
+            "subtreeId": 61,
+            "requiredPaidNodes": [
+              {
+                "nodeId": 94785,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94792,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94797,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94798,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94800,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94805,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94807,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94808,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94816,
+                "ranks": 1
+              },
+              {
+                "nodeId": 94817,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109809,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109810,
+                "ranks": 1
+              },
+              {
+                "nodeId": 109811,
+                "ranks": 1
+              }
+            ],
+            "grantedNodeIds": [
+              94803
+            ]
+          }
+        ],
+        "fingerprint": "67e3993f79510eba500b11553b5a1adbce48c2d88302d37a0f713cb78c445837"
+      }
+    }
+  }
+}

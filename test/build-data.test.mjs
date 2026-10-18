@@ -5,6 +5,7 @@ import path from 'node:path';
 import test from 'node:test';
 
 import { buildAddonData, luaString, renderLuaData, toLua, writeAddonData } from '../scripts/build-data.mjs';
+import { createCompletedWindowCatalog, createCompletedWindowEvidence } from './helpers/completed-window-fixture.mjs';
 
 // Synthetic 12.1.5 matrix; the tracked real 12.1.0 fixture retains its provenance
 // and is covered separately by validate-addon-contract.test.mjs.
@@ -103,6 +104,55 @@ function safeGapPayload(code, talentCatalog) {
     summary: { totalLogs: 0, mostCommon: null }
   };
 }
+
+function completedWindowBuilderFixture() {
+  const catalog = createCompletedWindowCatalog();
+  const { options } = makeFixture();
+  options.mythicPlus.keystoneLevels = [10, 15, 16];
+  options.talentCatalog = { source: catalog.source, environment: catalog.environment, generatedAt: catalog.generatedAt,
+    wowBuild: catalog.wowBuild, contentHash: catalog.contentHash, clientInterface: 120105, specCount: 40 };
+  options.classes = Object.values(catalog.specs).map((spec) => ({ className: spec.className,
+    specs: [{ specName: spec.specName, role: 'DPS', metrics: ['dps'] }] }));
+  const loader = async (request) => ({ ...safeGapPayload('NO_ELIGIBLE_LOGS_IN_WINDOW', options.talentCatalog),
+    summary: { totalLogs: 0, mostCommon: null, evidence: createCompletedWindowEvidence(catalog, request.job.key, request.mode) } });
+  return { catalog, options, loader };
+}
+
+test('local data builder validates and forwards completed-window evidence through atomic output validation', async () => {
+  const { catalog, options, loader } = completedWindowBuilderFixture();
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'qwt-window-builder-'));
+  const output = path.join(directory, 'addon.lua');
+  try {
+    const result = await withOptionsFetch(options, () => writeAddonData(output, {
+      baseUrl: 'https://example.test', delayMs: 0, catalog, loadBuildPayload: loader
+    }));
+    assert.equal(result.payload.counts.emitted, 0);
+    assert.equal(result.payload.counts.skipped, 160);
+    assert.deepEqual(result.payload.eligibilityRules, catalog.eligibilityRules);
+    assert.ok(result.payload.skipped.every((entry) => entry.evidence.publicationEligible && entry.evidence.exclusions.outsideWindow === 299));
+    assert.match(await fs.readFile(output, 'utf8'), /NO_ELIGIBLE_LOGS_IN_WINDOW/);
+  } finally { await fs.rm(directory, { recursive: true, force: true }); }
+});
+
+test('local data builder preserves its prior output when new-code evidence is missing or unsafe', async () => {
+  const { catalog, options, loader } = completedWindowBuilderFixture();
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'qwt-window-builder-reject-'));
+  const output = path.join(directory, 'addon.lua');
+  try {
+    await fs.writeFile(output, 'prior validated artifact');
+    for (const mutate of [
+      (payload) => { delete payload.summary.evidence; },
+      (payload) => { payload.summary.evidence.requestedKeyLevels = payload.summary.evidence.sampledKeyLevels = [15]; },
+      (payload) => { payload.summary.evidence.exclusions.incompleteLoadout = 1; payload.summary.evidence.scannedRows += 1; }
+    ]) {
+      await assert.rejects(withOptionsFetch(options, () => writeAddonData(output, {
+        baseUrl: 'https://example.test', delayMs: 0, catalog,
+        loadBuildPayload: async (request) => { const payload = await loader(request); mutate(payload); return payload; }
+      })), /completed-window evidence rejected/i);
+      assert.equal(await fs.readFile(output, 'utf8'), 'prior validated artifact');
+    }
+  } finally { await fs.rm(directory, { recursive: true, force: true }); }
+});
 
 function recommendationPayload(request, talentCatalog, importString = VALID_IMPORT) {
   return {

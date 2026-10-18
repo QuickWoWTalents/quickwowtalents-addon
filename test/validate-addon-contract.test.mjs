@@ -18,12 +18,16 @@ import {
   validateImportStringForSpec
 } from '../scripts/validate-addon-contract.mjs';
 import { loadVerifiedCatalogSnapshot } from '../scripts/catalog-download-contract.mjs';
+import { COMPLETED_WINDOW_POLICY_FINGERPRINT } from '../scripts/completed-window-evidence.mjs';
 
 const execFileAsync = promisify(execFile);
 const validatorPath = fileURLToPath(new URL('../scripts/validate-addon-contract.mjs', import.meta.url));
 const currentArcaneFixture = JSON.parse(await fs.readFile(
   new URL('./fixtures/current-arcane-normalized-spec.json', import.meta.url),
   'utf8'
+));
+const completedWindowCatalogRules = JSON.parse(await fs.readFile(
+  new URL('./fixtures/completed-window-catalog-rules.json', import.meta.url), 'utf8'
 ));
 
 const BLIZZARD_BASE64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
@@ -288,6 +292,134 @@ function validateFixture(fixture) {
     catalog: fixture.catalog
   });
 }
+
+function makeCompletedWindowFixture(mode = 'raid') {
+  const catalog = structuredClone(completedWindowCatalogRules);
+  for (const [key, spec] of Object.entries(catalog.specs)) {
+    catalog.specs[key] = { ...structuredClone(BASE_SPEC), ...spec };
+  }
+  const descriptor = { source: catalog.source, environment: catalog.environment, generatedAt: catalog.generatedAt,
+    wowBuild: catalog.wowBuild, contentHash: catalog.contentHash, clientInterface: 120105, specCount: 40 };
+  const options = { ...makeOptions(), talentCatalog: descriptor };
+  options.mythicPlus.keystoneLevels = [10, 15, 16];
+  const data = makeData(catalog);
+  data.talentCatalog = descriptor;
+  data.eligibilityRules = structuredClone(catalog.eligibilityRules);
+  const entry = data.skipped.find((item) => item.key === 'Mage:Arcane' && item.mode === mode);
+  entry.code = 'NO_ELIGIBLE_LOGS_IN_WINDOW';
+  entry.evidence = {
+    schemaVersion: 1, policyVersion: 'independent-support-v1', policyFingerprint: COMPLETED_WINDOW_POLICY_FINGERPRINT,
+    canonicalizationVersion: 'deterministic-grants-v1', emptyOutcomePolicy: 'completed-window-v1',
+    weightingPolicy: 'one-total-character-vote', selectionScope: mode === 'raid' ? 'exact-context' : 'selected-dungeon-overall',
+    eligibilityEnforced: true, eligibilityRulesFingerprints: [catalog.specs[entry.key].eligibilityRules.fingerprint],
+    acquisitionComplete: true, publicationEligible: true, stopReason: 'page_cap', truncated: true,
+    windowStart: '2026-10-04T19:35:39.366Z', windowEnd: '2026-10-18T19:35:39.366Z', captureAnchor: '2026-10-18T19:35:39.366Z',
+    sourceFetchedAtMin: '2026-10-18T19:37:35.346Z', sourceFetchedAtMax: '2026-10-18T19:37:39.422Z', sourceRevisions: ['source-revision'],
+    requestedKeyLevels: mode === 'raid' ? [] : [15, 16], sampledKeyLevels: mode === 'raid' ? [] : [15, 16],
+    missingKeyLevels: [], perKey: [], pagesFetched: 3,
+    eligibleLogs: 0, distinctCharacters: 0, distinctLoggedFights: 0, duplicateRows: 0, votingObservations: 0,
+    unknownCharacterLogs: 0, unknownFightLogs: 0, totalVotingWeight: 0, supersededCharacterLogs: 0, undatedLogs: 0,
+    winner: null, qualityStatus: 'no-eligible-build', oldestLogAt: null, newestLogAt: null,
+    scannedRows: 300, talentCompatibleRows: 299,
+    exclusions: { outsideWindow: 299, catalogIncompatible: 0, emptyTalents: 1, exportFailed: 0, incompleteLoadout: 0,
+      invalidLoadout: 0, invalidOutput: 0, missingTimestamp: 0, missingKeystoneLevel: 0, contextMismatch: 0 }
+  };
+  return { catalog, options, data, entry };
+}
+
+test('accepts independently proven completed-window gaps for exact raid and Overall15 while preserving old skip contracts', () => {
+  for (const mode of ['raid', 'mplus']) {
+    const fixture = makeCompletedWindowFixture(mode);
+    assert.equal(validateFixture(fixture).skipped, 119);
+    fixture.entry.evidence.stopReason = 'upstream_exhausted';
+    fixture.entry.evidence.truncated = false;
+    assert.equal(validateFixture(fixture).skipped, 119);
+  }
+});
+
+for (const [label, mutate] of [
+  ['missing evidence', (f) => { delete f.entry.evidence; }],
+  ['unknown policy', (f) => { f.entry.evidence.policyFingerprint = 'unknown'; }],
+  ['missing empty policy version', (f) => { delete f.entry.evidence.emptyOutcomePolicy; }],
+  ['missing eligibility enforcement', (f) => { delete f.entry.evidence.eligibilityEnforced; }],
+  ['unknown selected rules', (f) => { f.entry.evidence.eligibilityRulesFingerprints = ['unknown']; }],
+  ['another spec rules', (f) => { f.entry.evidence.eligibilityRulesFingerprints = [f.catalog.specs['Priest:Holy'].eligibilityRules.fingerprint]; }],
+  ['multiple rules', (f) => { f.entry.evidence.eligibilityRulesFingerprints.push('extra'); }],
+  ['missing artifact rules descriptor', (f) => { delete f.data.eligibilityRules; }],
+  ['unverified catalog rules', (f) => { f.catalog.specs['Mage:Arcane'].eligibilityRules.status = 'unknown'; }],
+  ['altered catalog rule body', (f) => { f.catalog.specs['Mage:Arcane'].eligibilityRules.pointBudgets.class += 1; }],
+  ['missing complete catalog descriptor', (f) => { delete f.catalog.eligibilityRules; }],
+  ['unreviewed catalog', (f) => { f.catalog.contentHash = f.options.talentCatalog.contentHash = f.data.talentCatalog.contentHash = 'unreviewed'; }],
+  ['incomplete acquisition', (f) => { f.entry.evidence.acquisitionComplete = false; }],
+  ['unpublishable sample', (f) => { f.entry.evidence.publicationEligible = false; }],
+  ['exhaustion contradicts truncation', (f) => { f.entry.evidence.stopReason = 'upstream_exhausted'; }],
+  ['missing fixed capture', (f) => { delete f.entry.evidence.captureAnchor; }],
+  ['invalid source timestamp', (f) => { f.entry.evidence.sourceFetchedAtMin = 'not-a-date'; }],
+  ['unzoned window', (f) => { f.entry.evidence.windowStart = '2026-10-04T19:35:39.366'; }],
+  ['reversed source bounds', (f) => { f.entry.evidence.sourceFetchedAtMin = '2026-10-19T00:00:00Z'; }],
+  ['multiple source revisions', (f) => { f.entry.evidence.sourceRevisions.push('second'); }],
+  ['empty source revision', (f) => { f.entry.evidence.sourceRevisions = ['']; }],
+  ['longer than reviewed window', (f) => { f.entry.evidence.windowStart = '2026-10-01T00:00:00Z'; }],
+  ['zero length window', (f) => { f.entry.evidence.windowStart = f.entry.evidence.windowEnd; }],
+  ['different capture anchor', (f) => { f.entry.evidence.captureAnchor = '2026-10-18T20:00:00Z'; }],
+  ['too many pages', (f) => { f.entry.evidence.pagesFetched = 4; }],
+  ['no pages', (f) => { f.entry.evidence.pagesFetched = 0; }],
+  ['unfinished exact page cap', (f) => { f.entry.evidence.pagesFetched = 1; }],
+  ['nonzero observations', (f) => { f.entry.evidence.eligibleLogs = 1; }],
+  ['nonzero character votes', (f) => { f.entry.evidence.totalVotingWeight = 1; }],
+  ['nonzero duplicate rows', (f) => { f.entry.evidence.duplicateRows = 1; }],
+  ['winner present', (f) => { f.entry.evidence.winner = { supportingLogs: 1 }; }],
+  ['missing explicit winner state', (f) => { delete f.entry.evidence.winner; }],
+  ['eligible timestamp present', (f) => { f.entry.evidence.newestLogAt = f.entry.evidence.windowEnd; }],
+  ['count mismatch', (f) => { f.entry.evidence.scannedRows += 1; }],
+  ['compatible row mismatch', (f) => { f.entry.evidence.talentCompatibleRows = 300; }],
+  ['no outside-window proof', (f) => { f.entry.evidence.exclusions.emptyTalents = 300; f.entry.evidence.exclusions.outsideWindow = 0; f.entry.evidence.talentCompatibleRows = 0; }],
+  ['unknown exclusion cause', (f) => { f.entry.evidence.exclusions.unexplained = 1; }],
+  ['unknown exclusion schema even at zero', (f) => { f.entry.evidence.exclusions.unexplained = 0; }],
+  ['missing exclusion counter', (f) => { delete f.entry.evidence.exclusions.incompleteLoadout; }]
+]) {
+  test(`rejects a completed-window skip with ${label}`, () => {
+    const fixture = makeCompletedWindowFixture();
+    mutate(fixture);
+    assert.throws(() => validateFixture(fixture), /completed-window evidence rejected/i);
+  });
+}
+
+for (const reason of ['request_budget', 'deadline', 'upstream_failure', 'target_reached', 'sampling']) {
+  test(`rejects completed-window skip interrupted or stopped by ${reason}`, () => {
+    const fixture = makeCompletedWindowFixture();
+    fixture.entry.evidence.stopReason = reason;
+    assert.throws(() => validateFixture(fixture), /acquisition is incomplete/i);
+  });
+}
+
+for (const name of ['exportFailed', 'incompleteLoadout', 'invalidLoadout', 'invalidOutput', 'missingTimestamp', 'missingKeystoneLevel', 'contextMismatch']) {
+  test(`rejects reconciled empty samples containing ${name}`, () => {
+    const fixture = makeCompletedWindowFixture();
+    fixture.entry.evidence.exclusions[name] = 1;
+    fixture.entry.evidence.scannedRows += 1;
+    assert.throws(() => validateFixture(fixture), /exclusion counts/i);
+  });
+}
+
+test('Overall completed-window skips require complete ordered key coverage within the page allowance', () => {
+  for (const mutate of [
+    (e) => { e.sampledKeyLevels = [15]; }, (e) => { e.missingKeyLevels = [16]; },
+    (e) => { e.requestedKeyLevels = e.sampledKeyLevels = []; }, (e) => { e.pagesFetched = 1; },
+    (e) => { e.pagesFetched = 7; }, (e) => { e.requestedKeyLevels = e.sampledKeyLevels = [16, 15]; },
+    (e) => { e.requestedKeyLevels = e.sampledKeyLevels = [15]; }, (e) => { e.selectionScope = 'exact-context'; }
+  ]) {
+    const fixture = makeCompletedWindowFixture('mplus');
+    mutate(fixture.entry.evidence);
+    assert.throws(() => validateFixture(fixture), /key coverage is incomplete/i);
+  }
+});
+
+test('new Overall skips fail closed when advertised key coverage is unavailable', () => {
+  const fixture = makeCompletedWindowFixture('mplus');
+  delete fixture.options.mythicPlus.keystoneLevels;
+  assert.throws(() => validateFixture(fixture), /key coverage is incomplete/i);
+});
 
 function setBits(importString, offset, width, value) {
   const values = [...importString].map((character) => BLIZZARD_BASE64.indexOf(character));

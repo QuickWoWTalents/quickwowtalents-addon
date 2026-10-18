@@ -258,6 +258,9 @@ test('all tracked text uses portable paths and approved public identifiers', asy
     'github.com',
     'quickwowtalents.com',
     'registry.npmjs.org',
+    // Pinned public provenance in the reviewed complete-loadout rules fixture.
+    'www.raidbots.com',
+    'news.blizzard.com',
   ]);
   const forbiddenIdentifierHashes = new Set([
     '2b2882e3ccb2cbebad0eca914f2503829579b44d8c67f6659e893b75885061ff',

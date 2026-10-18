@@ -5,6 +5,7 @@ import { isDeepStrictEqual } from 'node:util';
 
 import { replaceFileAtomically } from './download-addon-data.mjs';
 import { loadNormalizedCatalog, validateAddonContract } from './validate-addon-contract.mjs';
+import { COMPLETED_WINDOW_SKIP_CODE, inspectCompletedWindowCatalog, validateCompletedWindowEvidence } from './completed-window-evidence.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
@@ -13,7 +14,7 @@ const DEFAULT_OUTPUT = path.join(REPO_ROOT, 'QuickWoWTalentsData.lua');
 const SCHEMA_VERSION = 3;
 const HEROIC_RAID_DIFFICULTY_ID = 4;
 const MPLUS_BEST_OVERALL_MIN_KEYSTONE_LEVEL = 15;
-const SAFE_SKIP_CODES = new Set(['NO_USABLE_LOGS', 'NO_COMPATIBLE_CURRENT_LOGS']);
+const SAFE_SKIP_CODES = new Set(['NO_USABLE_LOGS', 'NO_COMPATIBLE_CURRENT_LOGS', COMPLETED_WINDOW_SKIP_CODE]);
 
 function getMplusBestOverallLabel() {
   return `Best Overall (${MPLUS_BEST_OVERALL_MIN_KEYSTONE_LEVEL}+)`;
@@ -318,7 +319,7 @@ function createSkippedEntry(request, code, reason) {
   };
 }
 
-function getSafeGap(request, buildPayload) {
+function getSafeGap(request, buildPayload, catalog, options) {
   const code = buildPayload?.empty?.reason;
   const confirmedEmpty = SAFE_SKIP_CODES.has(code)
     && buildPayload?.cache?.stale === false
@@ -328,6 +329,14 @@ function getSafeGap(request, buildPayload) {
     && buildPayload.summary.totalLogs === 0
     && !buildPayload?.summary?.mostCommon;
   if (!confirmedEmpty) return null;
+
+  if (code === COMPLETED_WINDOW_SKIP_CODE) {
+    validateCompletedWindowEvidence({ evidence: buildPayload.summary.evidence, mode: request.mode,
+      specRecord: catalog.specs[request.job.key], catalog, artifactEligibilityRules: inspectCompletedWindowCatalog(catalog),
+      expectedKeyLevels: options.mythicPlus.keystoneLevels });
+    return { ...createSkippedEntry(request, code, 'No eligible recent logs were found in the completed sampled leaderboard.'),
+      evidence: structuredClone(buildPayload.summary.evidence) };
+  }
 
   const reason = code === 'NO_COMPATIBLE_CURRENT_LOGS'
     ? 'Warcraft Logs runs were found, but all use talents outside the current talent catalog.'
@@ -461,7 +470,7 @@ async function buildAddonDataResult({
       if (request.mode === 'raid' && buildPayload.fallback) {
         throw new Error(`Unsafe addon data gap SELECTION_FALLBACK for ${request.job.key} raid ${request.encounter.id}.`);
       }
-      const safeGap = getSafeGap(request, buildPayload);
+      const safeGap = getSafeGap(request, buildPayload, resolvedCatalog, options);
       if (safeGap) {
         skippedByRequest[index] = safeGap;
         return;
@@ -520,6 +529,8 @@ async function buildAddonDataResult({
     generatedAt,
     clientInterface: options.talentCatalog.clientInterface,
     talentCatalog: options.talentCatalog,
+    ...(skipped.some((entry) => entry.code === COMPLETED_WINDOW_SKIP_CODE)
+      ? { eligibilityRules: inspectCompletedWindowCatalog(resolvedCatalog) } : {}),
     activities,
     modes: {
       mplus: {

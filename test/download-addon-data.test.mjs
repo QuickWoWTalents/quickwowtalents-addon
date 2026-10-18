@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import test from 'node:test';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
 
 import {
@@ -15,6 +15,7 @@ import {
   replaceFileAtomically
 } from '../scripts/download-addon-data.mjs';
 import { verifyReleaseReadiness } from '../scripts/verify-release-readiness.mjs';
+import { createCompletedWindowCatalog, createCompletedWindowEvidence } from './helpers/completed-window-fixture.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../scripts/download-addon-data.mjs', import.meta.url));
 const VALIDATOR = fileURLToPath(new URL('../scripts/validate-addon-contract.mjs', import.meta.url));
@@ -148,13 +149,12 @@ function addCatalogDownload(fixture, catalogBytes = gzipSync(JSON.stringify(fixt
   };
 }
 
-async function withRemoteDownloadFixture(run) {
+async function withRemoteDownloadFixture(run, fixture = makeFixture()) {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'qwt-addon-remote-download-'));
   const optionsOutputPath = path.join(directory, 'release-inputs', 'options.json');
   const catalogOutputPath = path.join(directory, 'release-inputs', 'talent-catalog.json.gz');
   const snapshotManifestOutputPath = path.join(directory, 'release-inputs', 'snapshot-manifest.json');
   const outputPath = path.join(directory, 'QuickWoWTalentsData.lua');
-  const fixture = makeFixture();
   const download = addCatalogDownload(fixture);
   try {
     return await run({
@@ -204,6 +204,59 @@ async function writeReadinessScaffolding(directory) {
     fs.writeFile(path.join(directory, 'CURSEFORGE_CHANGELOG.md'), 'QuickWoWTalents 1.2.3 - 2026-08-25\n\n- Current.\n'),
   ]);
 }
+
+function makeCompletedWindowDownloadFixture() {
+  const fixture = makeFixture();
+  fixture.catalog = createCompletedWindowCatalog();
+  fixture.catalog.specs['Mage:Arcane'] = { ...structuredClone(BASE_SPEC), ...fixture.catalog.specs['Mage:Arcane'] };
+  const descriptor = { source: fixture.catalog.source, environment: fixture.catalog.environment,
+    generatedAt: fixture.catalog.generatedAt, wowBuild: fixture.catalog.wowBuild, contentHash: fixture.catalog.contentHash,
+    clientInterface: 120105, specCount: 40 };
+  fixture.options.talentCatalog = descriptor;
+  fixture.options.mythicPlus.keystoneLevels = [10, 15, 16];
+  fixture.data.talentCatalog = descriptor;
+  fixture.data.eligibilityRules = structuredClone(fixture.catalog.eligibilityRules);
+  fixture.data.skipped = Object.keys(fixture.catalog.specs).flatMap((key) => ['mplus', 'raid']
+    .filter((mode) => !(key === 'Mage:Arcane' && mode === 'mplus'))
+    .map((mode) => ({ key, mode, encounterId: mode === 'mplus' ? 12993 : 3159,
+      code: 'NO_ELIGIBLE_LOGS_IN_WINDOW', reason: 'No eligible recent logs in the completed sample.',
+      evidence: createCompletedWindowEvidence(fixture.catalog, key, mode) })));
+  return fixture;
+}
+
+test('download and release readiness independently accept proven window gaps and reject missing proof', async () => {
+  await withRemoteDownloadFixture(async ({ directory, fixture, catalogBytes, catalogUrl,
+    optionsOutputPath, catalogOutputPath, snapshotManifestOutputPath, outputPath }) => {
+    const originalFetch = globalThis.fetch;
+    let addonText = renderAddonData(fixture.data);
+    const validText = addonText;
+    globalThis.fetch = async (url) => {
+      if (String(url) === OPTIONS_URL) return response(JSON.stringify(fixture.options));
+      if (String(url) === catalogUrl) return response(catalogBytes);
+      if (String(url) === ADDON_URL) return response(addonText);
+      throw new Error('Unexpected test URL.');
+    };
+    const readinessOptions = { repoRoot: directory, optionsPath: optionsOutputPath, catalogPath: catalogOutputPath,
+      snapshotManifestPath: snapshotManifestOutputPath, requireCatalogDownload: true, skipZip: true };
+    try {
+      await writeReadinessScaffolding(directory);
+      await downloadAddonData({ optionsOutputPath, catalogOutputPath, snapshotManifestOutputPath, outputPath });
+      assert.equal((await verifyReleaseReadiness(readinessOptions)).ok, true);
+      delete fixture.data.skipped[0].evidence;
+      addonText = renderAddonData(fixture.data);
+      await assert.rejects(downloadAddonData({ optionsOutputPath, catalogOutputPath, snapshotManifestOutputPath, outputPath }),
+        /completed-window evidence rejected/i);
+      assert.equal(await fs.readFile(outputPath, 'utf8'), validText);
+      // Even a self-consistent persisted snapshot cannot bypass the independent
+      // release gate by omitting the new skip's proof.
+      await fs.writeFile(outputPath, addonText);
+      const manifest = JSON.parse(await fs.readFile(snapshotManifestOutputPath, 'utf8'));
+      manifest.files.addon = digestRecord(addonText);
+      await fs.writeFile(snapshotManifestOutputPath, JSON.stringify(manifest));
+      await assert.rejects(verifyReleaseReadiness(readinessOptions), /completed-window evidence rejected/i);
+    } finally { globalThis.fetch = originalFetch; }
+  }, makeCompletedWindowDownloadFixture());
+});
 
 test('downloads and atomically persists the exact production catalog before addon validation', async () => {
   await withRemoteDownloadFixture(async ({
@@ -1110,10 +1163,20 @@ test('CLI persists the exact validated options snapshot for later readiness chec
   await withDownloadFixture(async ({ directory, catalogPath, outputPath, fixture }) => {
     const optionsText = JSON.stringify(fixture.options, null, 2);
     const optionsOutputPath = path.join(directory, 'release-inputs', 'options.json');
-    const optionsUrl = `data:application/json,${encodeURIComponent(optionsText)}`;
+    const optionsUrl = 'https://fixture.test/api/options';
     const addonText = renderAddonData(fixture.data);
-    const addonUrl = `data:text/plain,${encodeURIComponent(addonText)}`;
-    const result = spawnSync(process.execPath, [SCRIPT, '--url', addonUrl, '--options-url', optionsUrl,
+    const addonUrl = 'https://fixture.test/api/addon-data';
+    // Keep CLI arguments below Windows' process limit; the responses still pass
+    // through the real downloader, validator and snapshot writer in the child.
+    const responsesPath = path.join(directory, 'cli-responses.json');
+    const preloadPath = path.join(directory, 'cli-fetch-fixture.mjs');
+    await fs.writeFile(responsesPath, JSON.stringify({ [optionsUrl]: optionsText, [addonUrl]: addonText }));
+    await fs.writeFile(preloadPath, [
+      "import fs from 'node:fs/promises';",
+      "const responses = JSON.parse(await fs.readFile(new URL('./cli-responses.json', import.meta.url), 'utf8'));",
+      "globalThis.fetch = async (url) => { if (!Object.hasOwn(responses, String(url))) throw new Error('Unexpected fixture URL'); return new Response(responses[String(url)]); };"
+    ].join('\n'));
+    const result = spawnSync(process.execPath, ['--import', pathToFileURL(preloadPath).href, SCRIPT, '--url', addonUrl, '--options-url', optionsUrl,
       '--options-output', optionsOutputPath, '--catalog', catalogPath, '--output', outputPath], { encoding: 'utf8' });
     assert.equal(result.status, 0, result.stderr);
     assert.equal(await fs.readFile(outputPath, 'utf8'), addonText);
