@@ -62,18 +62,20 @@ test('schema 3 never falls back to a legacy Mythic+ recommendation', async () =>
   assert.doesNotMatch(source, /mplusBestOverall/);
 });
 
-test('copy UI presents the import string as a clear two-step Windows flow', async () => {
+test('copy fallback remains alongside the primary one-button import flow', async () => {
   const source = await readAddonLua();
 
   assert.match(source, /selectButton:SetScript\("OnClick", function\(\) SelectImportText\(true\) end\)/);
   assert.match(source, /local function SelectImportText\(closeOnNextCopy\)/);
   assert.match(source, /if closeOnNextCopy then\s+UI\.closeOnNextCopy = true/s);
-  assert.match(source, /selectButton:SetText\("1\. Select Import String"\)/);
-  assert.match(source, /local hint = frame:CreateFontString\(nil, "OVERLAY", "GameFontNormal"\)/);
-  assert.match(source, /UI\.hint:SetText\("2\. Press Ctrl\+C to copy"\)/);
-  assert.match(source, /UI\.hint:SetText\("2\. Import string selected — press Ctrl\+C now"\)/);
+  const harness = await createAddonHarness();
+  harness.slash();
+  assert.equal(harness.string('QuickWoWTalentsCopyButton:GetText()'), 'Copy Build');
+  assert.equal(harness.string('QuickWoWTalentsImportButton:GetText()'), 'Add & Use Build');
+  assert.match(source, /UI\.hint:SetText\("Add and apply this build, replacing any pending talent edits\."\)/);
+  assert.match(source, /UI\.hint:SetText\("Import string selected — press Ctrl\+C now"\)/);
   assert.match(source, /UI\.hint:SetTextColor\(0\.2, 1, 0\.2\)/);
-  assert.match(source, /copyNote:SetText\("WoW requires this keyboard shortcut; the window closes after copying\."\)/);
+  assert.match(source, /Shared action bars/);
   assert.match(source, /importBox:SetScript\("OnMouseUp", function\(\) SelectImportText\(true\) end\)/);
 
   const visibleText = [...source.matchAll(/:SetText\("([^"]*)"\)/g)]

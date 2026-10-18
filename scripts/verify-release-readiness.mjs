@@ -6,6 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import yauzl from 'yauzl';
 
 import { assertReleaseVersion } from './prepare-release.mjs';
+import { getAddonPackageFiles } from './package-addon.mjs';
 import { loadCatalogForOptions, validateAddonContract } from './validate-addon-contract.mjs';
 import { loadVerifiedReleaseInputSnapshot } from './release-input-snapshot.mjs';
 
@@ -63,7 +64,7 @@ function assertTocInterface(tocText, sourceName) {
 }
 
 function assertPkgmetaScopedChangelog(packageMeta) {
-  if (!/manual-changelog:\n\s+filename:\s*CURSEFORGE_CHANGELOG\.md\n\s+markup-type:\s*plain/m.test(packageMeta)) {
+  if (!/manual-changelog:\r?\n\s+filename:\s*CURSEFORGE_CHANGELOG\.md\r?\n\s+markup-type:\s*plain/m.test(packageMeta)) {
     fail('.pkgmeta must set manual-changelog.filename to CURSEFORGE_CHANGELOG.md with markup-type plain.');
   }
 }
@@ -115,7 +116,21 @@ async function readZipEntry(zipFile, entry) {
   return Buffer.concat(chunks, length);
 }
 
-async function inspectZipSnapshot(zipBytes, version) {
+function expectedZipFiles(sourceToc) {
+  try {
+    return getAddonPackageFiles(sourceToc).map((fileName) => `${ADDON_NAME}/${fileName}`);
+  } catch (error) {
+    fail(`Source TOC package file list is invalid: ${error.message}`);
+  }
+}
+
+async function inspectZipSnapshot(zipBytes, version, sourceToc) {
+  const expectedFiles = expectedZipFiles(sourceToc);
+  const allowedDirectories = new Set([OPTIONAL_ZIP_DIRECTORY]);
+  for (const fileName of expectedFiles) {
+    const directory = path.posix.dirname(fileName);
+    allowedDirectories.add(`${directory}/`);
+  }
   let zipFile;
   try {
     zipFile = await yauzl.fromBufferPromise(zipBytes, {
@@ -133,7 +148,7 @@ async function inspectZipSnapshot(zipBytes, version) {
     for await (const entry of zipFile.eachEntry()) {
       const kind = zipEntryKind(entry);
       if (kind === 'directory') {
-        if (entry.fileName !== OPTIONAL_ZIP_DIRECTORY) {
+        if (!allowedDirectories.has(entry.fileName)) {
           fail(`Package ZIP contains unexpected directory ${JSON.stringify(entry.fileName)}.`);
         }
         continue;
@@ -142,7 +157,7 @@ async function inspectZipSnapshot(zipBytes, version) {
         fail(`Package ZIP member ${JSON.stringify(entry.fileName)} must be a regular file, not ${kind}.`);
       }
       entries.push(entry.fileName);
-      if (REQUIRED_ZIP_FILES.includes(entry.fileName)) {
+      if (expectedFiles.includes(entry.fileName)) {
         capturedFiles.set(entry.fileName, await readZipEntry(zipFile, entry));
       }
     }
@@ -152,7 +167,7 @@ async function inspectZipSnapshot(zipBytes, version) {
   }
 
   entries.sort();
-  const expected = [...REQUIRED_ZIP_FILES].sort();
+  const expected = [...expectedFiles].sort();
   if (JSON.stringify(entries) !== JSON.stringify(expected)) {
     fail(`Package ZIP must contain exactly ${expected.join(', ')} as regular files; found ${JSON.stringify(entries)}.`);
   }
@@ -187,9 +202,10 @@ export async function verifyAddonArchiveMatchesSource({ repoRoot = REPO_ROOT, ar
   }
 
   const version = await readReleaseVersion(resolvedRepoRoot);
+  const sourceToc = await fs.readFile(path.join(resolvedRepoRoot, 'QuickWoWTalents.toc'), 'utf8');
   const zipBytes = await fs.readFile(resolvedArchivePath);
-  const capturedFiles = await inspectZipSnapshot(zipBytes, version);
-  for (const archiveName of REQUIRED_ZIP_FILES) {
+  const capturedFiles = await inspectZipSnapshot(zipBytes, version, sourceToc);
+  for (const archiveName of expectedZipFiles(sourceToc)) {
     const sourceName = archiveName.slice(`${ADDON_NAME}/`.length);
     const sourceBytes = await fs.readFile(path.join(resolvedRepoRoot, sourceName));
     if (!sourceBytes.equals(capturedFiles.get(archiveName))) {
@@ -309,7 +325,7 @@ export async function verifyReleaseReadiness({
     if (!Buffer.isBuffer(snapshot)) fail('Package archive snapshot reader must return a Buffer.');
     const zipBytes = Buffer.from(snapshot);
     zipSha256 = createHash('sha256').update(zipBytes).digest('hex');
-    const zipFiles = await inspectZipSnapshot(zipBytes, version);
+    const zipFiles = await inspectZipSnapshot(zipBytes, version, tocText);
     const zipTocBytes = zipFiles.get(`${ADDON_NAME}/QuickWoWTalents.toc`);
     const zipAddonBytes = zipFiles.get(`${ADDON_NAME}/QuickWoWTalents.lua`);
     const zipDataBytes = zipFiles.get(`${ADDON_NAME}/QuickWoWTalentsData.lua`);
@@ -323,6 +339,14 @@ export async function verifyReleaseReadiness({
     }
     if (!sourceDataBytes.equals(zipDataBytes)) {
       fail('packaged QuickWoWTalentsData.lua does not match source QuickWoWTalentsData.lua.');
+    }
+    for (const archiveName of expectedZipFiles(tocText)) {
+      if (REQUIRED_ZIP_FILES.includes(archiveName)) continue;
+      const sourceName = archiveName.slice(`${ADDON_NAME}/`.length);
+      const sourceBytes = await fs.readFile(path.join(repoRoot, sourceName));
+      if (!sourceBytes.equals(zipFiles.get(archiveName))) {
+        fail(`packaged ${sourceName} does not match source ${sourceName}.`);
+      }
     }
     checks.push(
       'zip-exists',

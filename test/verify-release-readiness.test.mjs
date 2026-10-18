@@ -12,7 +12,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 import { createGzip, gzipSync } from 'node:zlib';
 
-import { runReadinessCli, verifyReleaseReadiness } from '../scripts/verify-release-readiness.mjs';
+import { runReadinessCli, verifyAddonArchiveMatchesSource, verifyReleaseReadiness } from '../scripts/verify-release-readiness.mjs';
 
 const execFileAsync = promisify(execFile);
 const readinessPath = fileURLToPath(new URL('../scripts/verify-release-readiness.mjs', import.meta.url));
@@ -248,6 +248,118 @@ async function writeFixture({
 
   return { repoRoot, optionsPath, catalogPath, snapshotManifestPath };
 }
+
+async function writeModuleArchive(fixture, addonDir) {
+  const zipPath = path.join(fixture.repoRoot, 'dist', 'QuickWoWTalents-1.2.3.zip');
+  assert.equal(path.dirname(zipPath), path.join(fixture.repoRoot, 'dist'));
+  await fs.rm(zipPath, { force: true });
+  if (process.platform === 'win32') {
+    await execFileAsync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', `
+$ErrorActionPreference = 'Stop'
+Add-Type -AssemblyName System.IO.Compression
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$archive = [System.IO.Compression.ZipFile]::Open($env:QWT_ARCHIVE_DEST, [System.IO.Compression.ZipArchiveMode]::Create)
+try {
+  $sourcePrefix = $env:QWT_ARCHIVE_SOURCE.TrimEnd([System.IO.Path]::DirectorySeparatorChar) + [System.IO.Path]::DirectorySeparatorChar
+  foreach ($directory in [System.IO.Directory]::GetDirectories($env:QWT_ARCHIVE_SOURCE, '*', [System.IO.SearchOption]::AllDirectories)) {
+    $entryName = 'QuickWoWTalents/' + $directory.Substring($sourcePrefix.Length).Replace([System.IO.Path]::DirectorySeparatorChar, '/') + '/'
+    $archive.CreateEntry($entryName) | Out-Null
+  }
+  foreach ($file in [System.IO.Directory]::GetFiles($env:QWT_ARCHIVE_SOURCE, '*', [System.IO.SearchOption]::AllDirectories)) {
+    $entryName = 'QuickWoWTalents/' + $file.Substring($sourcePrefix.Length).Replace([System.IO.Path]::DirectorySeparatorChar, '/')
+    [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, $file, $entryName, [System.IO.Compression.CompressionLevel]::Optimal) | Out-Null
+  }
+} finally { $archive.Dispose() }
+`], { env: { ...process.env, QWT_ARCHIVE_SOURCE: addonDir, QWT_ARCHIVE_DEST: zipPath } });
+  } else {
+    await execFileAsync('zip', ['-qr', zipPath, 'QuickWoWTalents'], { cwd: path.dirname(addonDir) });
+  }
+  return zipPath;
+}
+
+test('archive verifiers include source TOC modules and enforce their bytes and exact members', async (t) => {
+  const fixture = await writeFixture({ includeZip: false });
+  t.after(async () => {
+    assert.equal(path.dirname(path.resolve(fixture.repoRoot)), path.resolve(os.tmpdir()));
+    assert.match(path.basename(fixture.repoRoot), /^qwt-addon-readiness-/);
+    await fs.rm(fixture.repoRoot, { recursive: true, force: true });
+  });
+  const moduleNames = ['QuickWoWTalentsTalentCodec.lua', 'QuickWoWTalentsTalentImport.lua'];
+  await fs.appendFile(path.join(fixture.repoRoot, 'QuickWoWTalents.toc'), `${moduleNames.join('\n')}\n`);
+  for (const name of moduleNames) await fs.writeFile(path.join(fixture.repoRoot, name), `-- ${name}\n`);
+  const addonDir = path.join(fixture.repoRoot, 'stage', 'QuickWoWTalents');
+  await fs.mkdir(addonDir, { recursive: true });
+  for (const name of ['QuickWoWTalents.toc', 'QuickWoWTalents.lua', 'QuickWoWTalentsData.lua', ...moduleNames]) {
+    await fs.copyFile(path.join(fixture.repoRoot, name), path.join(addonDir, name));
+  }
+  const archivePath = await writeModuleArchive(fixture, addonDir);
+  const verifyArchive = () => verifyAddonArchiveMatchesSource({ repoRoot: fixture.repoRoot, archivePath });
+  assert.equal((await verifyArchive()).ok, true);
+  assert.equal((await verifyReleaseReadiness(fixture)).ok, true);
+
+  const sourceModulePath = path.join(fixture.repoRoot, moduleNames[0]);
+  const originalModule = await fs.readFile(sourceModulePath);
+  await fs.appendFile(sourceModulePath, '-- source changed\n');
+  await assert.rejects(verifyArchive(), /packaged QuickWoWTalentsTalentCodec\.lua does not match source/);
+  await assert.rejects(verifyReleaseReadiness(fixture), /packaged QuickWoWTalentsTalentCodec\.lua does not match source/);
+  await fs.writeFile(sourceModulePath, originalModule);
+
+  // An archive cannot expand its own whitelist by declaring an extra module.
+  await fs.appendFile(path.join(addonDir, 'QuickWoWTalents.toc'), 'Undeclared.lua\n');
+  await fs.writeFile(path.join(addonDir, 'Undeclared.lua'), '-- not in the source TOC\n');
+  await writeModuleArchive(fixture, addonDir);
+  await assert.rejects(verifyArchive(), /must contain exactly/);
+  await assert.rejects(verifyReleaseReadiness(fixture), /must contain exactly/);
+
+  await fs.rm(path.join(addonDir, 'Undeclared.lua'));
+  await fs.copyFile(path.join(fixture.repoRoot, 'QuickWoWTalents.toc'), path.join(addonDir, 'QuickWoWTalents.toc'));
+  await fs.rm(path.join(addonDir, moduleNames[1]));
+  await writeModuleArchive(fixture, addonDir);
+  await assert.rejects(verifyArchive(), /must contain exactly/);
+  await assert.rejects(verifyReleaseReadiness(fixture), /must contain exactly/);
+
+  await fs.appendFile(path.join(fixture.repoRoot, 'QuickWoWTalents.toc'), '../outside.lua\n');
+  await assert.rejects(verifyArchive(), /Source TOC package file list is invalid/);
+});
+
+test('archive verifiers require the branded logo bytes and allow only its expected media directory', async (t) => {
+  const fixture = await writeFixture({ includeZip: false });
+  t.after(async () => {
+    assert.equal(path.dirname(path.resolve(fixture.repoRoot)), path.resolve(os.tmpdir()));
+    assert.match(path.basename(fixture.repoRoot), /^qwt-addon-readiness-/);
+    await fs.rm(fixture.repoRoot, { recursive: true, force: true });
+  });
+  const tocPath = path.join(fixture.repoRoot, 'QuickWoWTalents.toc');
+  await fs.appendFile(tocPath, '## IconTexture: Interface\\AddOns\\QuickWoWTalents\\Media\\Logo.tga\n');
+  const logo = Buffer.from([0, 0, 2, 0, 0, 0, 0, 0, 255, 128, 64, 0]);
+  await fs.mkdir(path.join(fixture.repoRoot, 'Media'));
+  await fs.writeFile(path.join(fixture.repoRoot, 'Media', 'Logo.tga'), logo);
+  const addonDir = path.join(fixture.repoRoot, 'stage', 'QuickWoWTalents');
+  await fs.mkdir(path.join(addonDir, 'Media'), { recursive: true });
+  for (const name of ['QuickWoWTalents.toc', 'QuickWoWTalents.lua', 'QuickWoWTalentsData.lua', 'Media/Logo.tga']) {
+    await fs.copyFile(path.join(fixture.repoRoot, name), path.join(addonDir, name));
+  }
+  const archivePath = await writeModuleArchive(fixture, addonDir);
+  const verifyArchive = () => verifyAddonArchiveMatchesSource({ repoRoot: fixture.repoRoot, archivePath });
+  assert.equal((await verifyArchive()).ok, true);
+  assert.equal((await verifyReleaseReadiness(fixture)).ok, true);
+
+  await fs.writeFile(path.join(addonDir, 'Media', 'Logo.tga'), 'wrong logo bytes');
+  await writeModuleArchive(fixture, addonDir);
+  await assert.rejects(verifyArchive(), /packaged Media\/Logo\.tga does not match source/);
+  await assert.rejects(verifyReleaseReadiness(fixture), /packaged Media\/Logo\.tga does not match source/);
+
+  await fs.unlink(path.join(addonDir, 'Media', 'Logo.tga'));
+  await writeModuleArchive(fixture, addonDir);
+  await assert.rejects(verifyArchive(), /must contain exactly/);
+  await assert.rejects(verifyReleaseReadiness(fixture), /must contain exactly/);
+
+  await fs.writeFile(path.join(addonDir, 'Media', 'Logo.tga'), logo);
+  await fs.mkdir(path.join(addonDir, 'Unrelated'));
+  await writeModuleArchive(fixture, addonDir);
+  await assert.rejects(verifyArchive(), /unexpected directory/);
+  await assert.rejects(verifyReleaseReadiness(fixture), /unexpected directory/);
+});
 
 test('verifyReleaseReadiness accepts independently valid matching source and packaged data', async () => {
   const fixture = await writeFixture();
