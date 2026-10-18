@@ -13,6 +13,7 @@ import {
 } from './catalog-download-contract.mjs';
 import { getParsedLuaKeyKind, parseAddonLua } from './parse-addon-lua.mjs';
 import { loadVerifiedReleaseInputSnapshot } from './release-input-snapshot.mjs';
+import { COMPLETED_WINDOW_SKIP_CODE, validateCompletedWindowEvidence } from './completed-window-evidence.mjs';
 
 const EXPECTED_SCHEMA_VERSION = 3;
 const EXPECTED_CLIENT_INTERFACE = 120105;
@@ -20,7 +21,7 @@ const EXPECTED_SPEC_COUNT = 40;
 const EXPECTED_HEROIC_DIFFICULTY_ID = 4;
 const EXPECTED_EXPORT_VERSION = 2;
 const BLIZZARD_BASE64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-const SAFE_SKIP_CODES = new Set(['NO_USABLE_LOGS', 'NO_COMPATIBLE_CURRENT_LOGS']);
+const SAFE_SKIP_CODES = new Set(['NO_USABLE_LOGS', 'NO_COMPATIBLE_CURRENT_LOGS', COMPLETED_WINDOW_SKIP_CODE]);
 const CATALOG_FIELDS = [
   'source',
   'environment',
@@ -552,7 +553,7 @@ function inspectRecommendations(value, activityIdentity, catalogInfo, coordinate
   return { emitted, specsWithAnyRecommendation: specsWithRecommendations.size };
 }
 
-function inspectSkipped(value, activityIdentity, catalogInfo, coordinates) {
+function inspectSkipped(value, activityIdentity, catalogInfo, coordinates, catalog, artifactEligibilityRules, expectedKeyLevels) {
   const skipped = requireArray(value, 'artifact skipped');
   const dungeonIds = new Set(activityIdentity.dungeonIds);
   const bossIds = new Set(activityIdentity.bossIds);
@@ -574,6 +575,11 @@ function inspectSkipped(value, activityIdentity, catalogInfo, coordinates) {
     const allowedIds = entry.mode === 'mplus' ? dungeonIds : bossIds;
     if (!allowedIds.has(encounterId)) {
       fail(`artifact skipped[${index}] encounter ${encounterId} is outside the declared activity matrix.`);
+    }
+    if (code === COMPLETED_WINDOW_SKIP_CODE) {
+      try {
+        validateCompletedWindowEvidence({ evidence: entry.evidence, mode: entry.mode, specRecord, catalog, artifactEligibilityRules, expectedKeyLevels });
+      } catch (error) { fail(`artifact skipped[${index}] ${error.message}`); }
     }
     addCoordinate(
       coordinates,
@@ -636,7 +642,8 @@ export function validateAddonContract({ addonText, options, catalog } = {}) {
     catalogInfo,
     coordinates
   );
-  const actualSkipped = inspectSkipped(root.skipped, activityIdentity, catalogInfo, coordinates);
+  const actualSkipped = inspectSkipped(root.skipped, activityIdentity, catalogInfo, coordinates, catalog, root.eligibilityRules,
+    optionsRoot.mythicPlus.keystoneLevels);
   if (recommendationCounts.emitted !== counts.emitted) {
     fail(`artifact counts.emitted is ${counts.emitted}, but ${recommendationCounts.emitted} recommendations exist.`);
   }
