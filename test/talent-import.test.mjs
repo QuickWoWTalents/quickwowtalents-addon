@@ -1167,3 +1167,118 @@ test('verification failure reports the reason and preserves loadouts without sav
     AssertPreserved(); assert(Count("load") == 0)
   `);
 });
+
+test('identical talents finish cleanup when deletion inventory settles after its exact event', () => {
+  runImportScenario(`
+    S.requestName = "QWT-Murder Row"; S.populated[10] = true; S.valid[10] = true
+    S.loadResult = 1; S.valid[1] = true; S.deleteDelayed = true
+    assert(Start()); CreateImported(); Flush()
+    assert(NS.TalentImport.GetStatus().phase == "deleting" and Count("delete") == 1)
+    Emit("TRAIT_CONFIG_DELETED", 10); Flush()
+    assert(NS.TalentImport.IsBusy() and S.configs[10])
+    S.configs[10] = nil
+    assert(Poll()); AssertComplete()
+    assert(S.deleteCounts[10] == 1)
+  `);
+});
+
+test('delayed deletion inventory advances to the next managed build without repeating either deletion', () => {
+  runImportScenario(`
+    AddManaged(15, "QWT-Murder Row")
+    S.loadResult = 1; S.valid[1] = true; S.deleteDelayed = true
+    assert(Start()); CreateImported(); Flush()
+    assert(Count("delete") == 1 and S.deleteCounts[10] == 1)
+    Emit("TRAIT_CONFIG_DELETED", 10); Flush(); S.configs[10] = nil
+    assert(Poll())
+    assert(Count("delete") == 2 and S.deleteCounts[15] == 1)
+    assert(NS.TalentImport.GetStatus().oldConfigID == 15)
+    Emit("TRAIT_CONFIG_DELETED", 15); Flush(); S.configs[15] = nil
+    assert(Poll())
+    assert(NS.TalentImport.GetStatus().success == true and not NS.TalentImport.IsBusy())
+    assert(Count("delete") == 2 and S.deleteCounts[10] == 1 and S.deleteCounts[15] == 1)
+    assert(S.configs[20] and S.selected == 20)
+    for _, id in ipairs({11,12,13,14}) do assert(S.configs[id]) end
+  `);
+});
+
+test('cleanup polling never treats inventory absence or an unrelated event as deletion proof', () => {
+  runImportScenario(`
+    AddManaged(15, "QWT-Murder Row")
+    S.loadResult = 1; S.valid[1] = true; S.deleteDelayed = true
+    assert(Start()); CreateImported(); Flush()
+    S.configs[10] = nil; Emit("TRAIT_CONFIG_DELETED", 15); Flush()
+    for i = 1, 3 do Poll() end
+    assert(NS.TalentImport.IsBusy() and Count("delete") == 1 and S.configs[15])
+    Timeout()
+    assert(NS.TalentImport.GetStatus().success == false and Count("delete") == 1)
+    assert(S.configs[15] and S.configs[20])
+  `);
+});
+
+for (const [label, change] of [
+  ['selection', 'S.selected = 11'],
+  ['staged talents', 'S.staged[1] = true'],
+  ['combat', 'S.combat = true'],
+]) {
+  test(`cleanup polling stops after changed ${label} without another deletion`, () => {
+    runImportScenario(`
+      AddManaged(15, "QWT-Murder Row")
+      S.loadResult = 1; S.valid[1] = true; S.deleteDelayed = true
+      assert(Start()); CreateImported(); Flush()
+      Emit("TRAIT_CONFIG_DELETED", 10); Flush()
+      S.configs[10] = nil; ${change}
+      assert(Poll())
+      assert(NS.TalentImport.GetStatus().success == false and not NS.TalentImport.IsBusy())
+      assert(Count("delete") == 1 and S.configs[15] and S.configs[20])
+      Timeout(); assert(Count("delete") == 1)
+    `);
+  });
+}
+
+test('an obsolete cleanup poll cannot mutate or change a completed operation', () => {
+  runImportScenario(`
+    S.loadResult = 1; S.valid[1] = true; S.deleteDelayed = true
+    assert(Start()); CreateImported(); Flush()
+    Emit("TRAIT_CONFIG_DELETED", 10); Flush()
+    local pending
+    for _, timer in ipairs(S.timers) do
+      if timer.delay > 0 and timer.delay < 30 then pending = timer.callback; break end
+    end
+    assert(pending)
+    S.configs[10] = nil; Emit("TRAIT_CONFIG_UPDATED", 20); Flush(); AssertComplete()
+    local callCount, statusCount = #S.calls, #S.statuses
+    pending(); Flush()
+    assert(#S.calls == callCount and #S.statuses == statusCount)
+    AssertComplete()
+  `);
+});
+
+test('already selected and fully applied same-name reuse cleans older builds without a native switch', () => {
+  runImportScenario(`
+    S.reusing = true; S.populated[10] = true; S.valid[10] = true; S.valid[1] = true
+    S.configs[10].usesSharedActionBars = true
+    AddManaged(15, "QWT-Murder Row")
+    assert(Start()); Flush()
+    assert(NS.TalentImport.GetStatus().success == true and not NS.TalentImport.IsBusy())
+    assert(Count("import") == 0 and Count("load") == 0 and Count("bars") == 0)
+    assert(Count("delete") == 1 and not S.configs[15] and S.configs[10] and S.selected == 10)
+  `);
+});
+
+for (const [label, setup] of [
+  ['incomplete', 'S.valid[1] = false'],
+  ['staged', 'S.valid[1] = true; S.staged[1] = true'],
+]) {
+  test(`${label} current talents still use the native switch for matching saved reuse`, () => {
+    runImportScenario(`
+      S.reusing = true; S.populated[10] = true; S.valid[10] = true
+      S.configs[10].usesSharedActionBars = true; ${setup}
+      assert(Start()); Flush()
+      assert(NS.TalentImport.IsBusy() and Count("load") == 1 and Count("import") == 0)
+      assert(Count("delete") == 0)
+      Applied()
+      assert(NS.TalentImport.GetStatus().success == true and not NS.TalentImport.IsBusy())
+      assert(Count("load") == 1); AssertPreserved()
+    `);
+  });
+}
