@@ -108,6 +108,76 @@ test('actual Lua auto-open flow exposes a compatible encounter recommendation', 
   assert.equal(harness.string('TEST.importBox:GetText()'), TEST_IMPORT_STRING);
 });
 
+test('visible preference persists, cancels pending checks and can re-enable the same dungeon', async () => {
+  const harness = await createAddonHarness();
+  harness.fire('PLAYER_ENTERING_WORLD');
+  harness.runTimers();
+  assert.equal(harness.boolean('QuickWoWTalentsAutoOpenCheckbox:GetChecked()'), true);
+  harness.clickAutoOpen(false);
+  harness.slash('hide');
+  harness.fire('PLAYER_ENTERING_WORLD');
+  harness.runTimers();
+  assert.equal(harness.boolean('QuickWoWTalentsDB.autoOpenEnabled'), false);
+  assert.equal(harness.boolean('TEST.mainFrame:IsShown()'), false);
+  harness.slash();
+  harness.clickAutoOpen(true);
+  harness.slash('hide');
+  harness.runTimers();
+  assert.equal(harness.boolean('TEST.mainFrame:IsShown()'), true);
+  assert.equal(harness.boolean('QuickWoWTalentsDB.autoOpenEnabled'), true);
+  harness.slash('auto off');
+  assert.equal(harness.boolean('QuickWoWTalentsAutoOpenCheckbox:GetChecked()'), false);
+});
+
+test('checkbox enables automatic opening without importing', async () => {
+  const harness = await createAddonHarness({ addonName: 'QuickWoWTalents', namespaceSource: `{
+    TalentImport = { IsBusy = function() return false end, Begin = function() TEST.importAttempted = true end }
+  }` });
+  harness.slash();
+  harness.clickAutoOpen(false);
+  assert.equal(harness.boolean('QuickWoWTalentsAutoOpenCheckbox:GetChecked()'), false);
+  harness.clickAutoOpen(true);
+  harness.slash('hide');
+  harness.fire('PLAYER_ENTERING_WORLD');
+  harness.runTimers();
+  assert.equal(harness.boolean('QuickWoWTalentsFrame:IsShown()'), true);
+  assert.equal(harness.boolean('QuickWoWTalentsDB.autoOpenEnabled'), true);
+  assert.equal(harness.boolean('TEST.importAttempted == nil'), true);
+});
+
+test('combat-delayed auto-open rechecks the current dungeon before opening', async () => {
+  const harness = await createAddonHarness();
+  harness.run('InCombatLockdown = function() return true end');
+  harness.fire('PLAYER_ENTERING_WORLD');
+  harness.runTimers();
+  assert.equal(harness.boolean('TEST.mainFrame == nil'), true);
+  harness.run(`InCombatLockdown = function() return false end
+    C_ChallengeMode.GetActiveChallengeMapID = function() return nil end
+    IsInInstance = function() return false, "none" end`);
+  harness.fire('PLAYER_REGEN_ENABLED');
+  assert.equal(harness.boolean('TEST.mainFrame == nil'), true);
+});
+
+test('dungeon events wait for a pending import and then use fresh current context', async () => {
+  const harness = await createAddonHarness({ namespaceSource: `{
+    TalentImport = {
+      IsBusy = function() return TEST.importBusy == true end,
+      Begin = function(request) TEST.importBusy = true; TEST.request = request; return true end
+    }
+  }` });
+  harness.slash();
+  harness.clickImport();
+  harness.slash('hide');
+  harness.fire('PLAYER_ENTERING_WORLD');
+  harness.runTimers();
+  assert.equal(harness.boolean('TEST.mainFrame:IsShown()'), false);
+  assert.equal(harness.string('TEST.request.name'), 'QWT-Altar of Fangs');
+  harness.run('TEST.importBusy = false; TEST.request.onStatus("Applied.", true, true)');
+  harness.runTimers();
+  assert.equal(harness.boolean('TEST.mainFrame:IsShown()'), true);
+  assert.equal(harness.string('TEST.importBox:GetText()'), TEST_IMPORT_STRING);
+});
+
 test('scheduled and explicit auto-open report incompatible data once without opening', async () => {
   const harness = await createAddonHarness({ data: makeRuntimeData({ schemaVersion: 2 }) });
   harness.fire('ADDON_LOADED', 'QuickWoWTalents');
@@ -135,7 +205,7 @@ test('current specialization detection prefers the 12.1 namespace API with legac
 test('auto-open is throttled, dismissible, and combat-safe', async () => {
   const source = await readAddonLua();
 
-  assert.match(source, /QuickWoWTalentsDB\.autoOpenEnabled = true/);
+  assert.match(source, /DB\.autoOpenEnabled = Identity\.autoOpenDefault/);
   assert.match(source, /UI\.dismissedAutoOpenKey == context\.key or UI\.lastAutoOpenKey == context\.key/);
   assert.match(source, /UI\.pendingAutoOpenContext = context/);
   assert.match(source, /eventFrame:RegisterEvent\("PLAYER_REGEN_ENABLED"\)/);

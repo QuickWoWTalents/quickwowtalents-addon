@@ -177,5 +177,5 @@ test('versionedChangelogEntry supports CurseForge-friendly plain output', () => 
 test('.pkgmeta points CurseForge at the scoped plain changelog', async () => {
   const packageMeta = await fs.readFile(new URL('../.pkgmeta', import.meta.url), 'utf8');
 
-  assert.match(packageMeta, /manual-changelog:\n\s+filename: CURSEFORGE_CHANGELOG\.md\n\s+markup-type: plain/m);
+  assert.match(packageMeta, /manual-changelog:\r?\n\s+filename: CURSEFORGE_CHANGELOG\.md\r?\n\s+markup-type: plain/m);
 });

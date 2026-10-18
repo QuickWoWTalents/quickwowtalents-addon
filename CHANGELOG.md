@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Added one-click talent importing with `QWT-<dungeon or boss>` loadout names and shared action bars.
+- Remove previous QWT loadouts only after the new build is verified, and keep Blizzard's saved-loadout menu in sync.
+- Support importing with the Talents window open and replacing incomplete or pending talent builds.
+- Added a compact interface, updated website logo, matching dropdown menus, and talent application cast progress.
+- Added a visible dungeon-entry auto-open preference and optional EllesmereUI styling.
+
 ## 1.0.132 - 2026-10-17
 
 - Updated bundled recommendation data from quickwowtalents.com.

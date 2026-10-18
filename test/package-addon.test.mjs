@@ -35,6 +35,46 @@ function addedEntries(before, after) {
   return [...after].filter((entry) => !before.has(entry));
 }
 
+test('packageAddon includes shared Lua modules declared by the TOC', async (t) => {
+  const repoRoot = await writePackageFixture();
+  t.after(async () => {
+    assert.equal(path.dirname(path.resolve(repoRoot)), path.resolve(os.tmpdir()));
+    assert.match(path.basename(repoRoot), /^qwt-addon-package-test-/);
+    await fs.rm(repoRoot, { recursive: true, force: true });
+  });
+  const modules = ['QuickWoWTalentsTalentCodec.lua', 'QuickWoWTalentsTalentImport.lua'];
+  await fs.appendFile(path.join(repoRoot, 'QuickWoWTalents.toc'), `${modules.join('\n')}\n`);
+  for (const name of modules) await fs.writeFile(path.join(repoRoot, name), `-- shared module: ${name}\n`);
+  let archivedFiles;
+  const result = await packageAddon({
+    repoRoot,
+    async archiveWriter({ stagingRoot, zipPath }) {
+      const addonDir = path.join(stagingRoot, 'QuickWoWTalents');
+      archivedFiles = await fs.readdir(addonDir);
+      for (const name of modules) {
+        assert.equal(await fs.readFile(path.join(addonDir, name), 'utf8'), `-- shared module: ${name}\n`);
+      }
+      await fs.writeFile(zipPath, 'fixture archive');
+      return 'fixture';
+    }
+  });
+  assert.equal(result.ok, true);
+  assert.deepEqual(archivedFiles.sort(), ['QuickWoWTalents.toc', 'QuickWoWTalents.lua', 'QuickWoWTalentsData.lua', ...modules].sort());
+});
+
+test('packageAddon rejects TOC paths outside the addon before creating an archive', async (t) => {
+  const repoRoot = await writePackageFixture();
+  t.after(async () => {
+    assert.equal(path.dirname(path.resolve(repoRoot)), path.resolve(os.tmpdir()));
+    assert.match(path.basename(repoRoot), /^qwt-addon-package-test-/);
+    await fs.rm(repoRoot, { recursive: true, force: true });
+  });
+  await fs.appendFile(path.join(repoRoot, 'QuickWoWTalents.toc'), '../outside.lua\n');
+  let archived = false;
+  await assert.rejects(packageAddon({ repoRoot, archiveWriter: async () => { archived = true; } }), /filenames without directories/);
+  assert.equal(archived, false);
+});
+
 test('packageAddon rejects path-traversing versions without touching an external sentinel', async () => {
   const parent = await fs.mkdtemp(path.join(os.tmpdir(), 'qwt-addon-traversal-'));
   const repoRoot = path.join(parent, 'repo');

@@ -1,10 +1,14 @@
 ## Interface: 120105, 120100, 120007, 120005, 120001, 120000, 110200
 ## Title: Quick WoW Talents
-## Notes: Offline Quick WoW Talents import string helper.
+## Notes: Offline talent recommendations with one-click loadout importing.
 ## Author: Darragh
 ## Version: 1.0.132
 ## X-Website: https://quickwowtalents.com
+## IconTexture: Interface\AddOns\QuickWoWTalents\Media\Logo.tga
 ## SavedVariables: QuickWoWTalentsDB
+## OptionalDeps: EllesmereUI
 
 QuickWoWTalentsData.lua
+QuickWoWTalentsTalentCodec.lua
+QuickWoWTalentsTalentImport.lua
 QuickWoWTalents.lua
