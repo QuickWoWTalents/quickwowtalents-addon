@@ -267,9 +267,7 @@ end
 
 local function GetModeLabel(mode)
   if mode == "raid" then
-    local config = GetModeConfig("raid")
-    local difficulty = config and config.difficulty and config.difficulty.name or "Heroic"
-    return difficulty .. " Raid"
+    return "Raid"
   end
   return "Mythic+"
 end
@@ -523,7 +521,7 @@ local function UpdateRecommendation(selectText)
   local sampleCount = recommendation.sampleCount or 0
   local encounterName = encounter and encounter.name or recommendation.dungeonName or recommendation.bossName or "selected encounter"
   local contextText = UI.state.mode == "raid"
-    and (tostring(recommendation.difficultyName or "Heroic") .. " raid")
+    and "Raid"
     or ("Mythic+ " .. GetMplusRecommendationLabel())
 
   DisarmCloseAfterCopy()

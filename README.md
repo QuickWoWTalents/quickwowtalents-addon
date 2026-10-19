@@ -16,10 +16,10 @@ Run:
 
 The addon detects your current specialization and opens a small selector with:
 
-- mode dropdown: **Mythic+** or **Heroic Raid**
+- mode dropdown: **Mythic+** or **Raid**
 - encounter dropdown:
   - Mythic+: dungeon selector plus **Best Overall**
-  - Raid: current Heroic raid boss selector
+  - Raid: current raid boss selector
 - **Add & Use Build** to save and apply the selected talents
 - **Copy Build** for manual importing
 

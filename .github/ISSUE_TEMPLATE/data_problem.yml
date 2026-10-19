@@ -27,7 +27,7 @@ body:
       label: Mode
       options:
         - Mythic+
-        - Heroic Raid
+        - Raid
         - Other
     validations:
       required: true
