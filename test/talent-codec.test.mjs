@@ -126,6 +126,13 @@ function harness({ nodes = baseNodes, order = nodes.map(node => node.id), treeID
       assert.equal(value('TEST.mutations'), 0);
       return { ok: value('verified'), error: value('verifyError') };
     },
+    applyChoices(text, overrides, specID = 62) {
+      run(`personalized, preferenceError, preferenceMetadata = ns.TalentCodec.ApplyChoices(${toLua(text)}, ${specID}, 900, ${toLua(overrides)})`);
+      assert.equal(value('TEST.mutations'), 0);
+      return { text: value('personalized'), error: value('preferenceError'),
+        changedCount: value('preferenceMetadata and preferenceMetadata.changedCount'),
+        appliedCount: value('preferenceMetadata and preferenceMetadata.appliedCount') };
+    },
     close() { lua.lua_close(state); }
   };
 }
@@ -497,4 +504,149 @@ test('invalid expected metadata and entries fail verification without throwing',
   assert.equal(h.verify(good).ok, false);
 
   h.close();
+});
+
+test('choice preferences preserve the exact header, ranks, grants, hero selection and padding', () => {
+  const h = harness();
+  const hash = Array.from({ length: 16 }, (_, index) => index * 13);
+  h.run(`TEST.hash = ${toLua(hash)}`);
+  const original = encode(allChoices, { hash }).text;
+  const selections = structuredClone(allChoices);
+  selections[2] = { choice: 0 };
+  const expected = encode(selections, { hash }).text;
+  const result = h.applyChoices(original, { 1003: 2003 });
+  assert.deepEqual(result, { text: expected, error: null, changedCount: 1, appliedCount: 1 });
+  assert.equal(result.text.length, original.length);
+  assert.equal(h.decode(result.text).error, null);
+  assert.deepEqual(h.verify(result.text), { ok: true, error: null });
+  assert.equal(h.verify(original).ok, false, 'Personalized entries must reject the original choice during import verification');
+  assert.equal(h.applyChoices(result.text, { 1003: 2004 }).text, original, 'Reverse the choice without changing any other wire bit');
+  h.close();
+});
+
+test('choice preferences handle an index crossing a base64 character and retain partial ranks', () => {
+  const nodes = structuredClone(baseNodes);
+  nodes[2].maxRanks = 3;
+  nodes[2].entries.push({ id: 2011, maxRanks: 3 }, { id: 2012, maxRanks: 3 });
+  nodes[2].entries.forEach(entry => { entry.maxRanks = 3; });
+  const h = harness({ nodes });
+  const selections = structuredClone(allChoices);
+  selections[0] = {};
+  selections[1] = null;
+  selections[2] = { partial: 2, choice: 3 };
+  const original = encode(selections).text;
+  selections[2].choice = 0;
+  const expected = encode(selections).text;
+  assert.equal([...original].filter((character, index) => character !== expected[index]).length, 2,
+    'Both choice-index bits must change across the character boundary');
+  assert.equal(h.applyChoices(original, { 1003: 2003 }).text, expected);
+  const entry = h.decode(expected).entries.find(entry => entry.nodeID === 1003);
+  assert.deepEqual(entry, { nodeID: 1003, selectionEntryID: 2003, ranksPurchased: 2, ranksGranted: 0 });
+  h.close();
+});
+
+test('empty and already selected preferences preserve the string byte for byte', () => {
+  const h = harness();
+  const original = encode().text;
+  assert.deepEqual(h.applyChoices(original, {}), { text: original, error: null, changedCount: 0, appliedCount: 0 });
+  assert.deepEqual(h.applyChoices(original, { 1003: 2004 }), { text: original, error: null, changedCount: 0, appliedCount: 1 });
+  h.close();
+});
+
+test('preferences reject absent, granted, single, tiered and hero nodes instead of injecting talents', () => {
+  const cases = [
+    [{ 9999: 2003 }, allChoices],
+    [{ 1006: 2010 }, allChoices],
+    [{ 1001: 2001 }, allChoices],
+    [{ 1002: 2002 }, allChoices],
+    [{ 1004: 2005 }, allChoices],
+    [{ 1005: 2007 }, allChoices],
+    [{ 1003: 2003 }, allChoices.map((selection, index) => index === 2 ? null : selection)],
+    [{ 1003: 2003 }, allChoices.map((selection, index) => index === 2 ? { granted: true } : selection)]
+  ];
+  for (const [overrides, selections] of cases) {
+    const h = harness();
+    const result = h.applyChoices(encode(selections).text, overrides);
+    assert.equal(result.text, null);
+    assert.match(result.error, /existing purchased choice/);
+    h.close();
+  }
+});
+
+test('invalid preference identifiers, foreign entries and changed rank capacity fail closed', () => {
+  for (const overrides of [null, false, 'choice', { 1003: '2003' }, { 1003: 0 }, { invalid: 2003 }, { 0: 2003 }]) {
+    const h = harness();
+    const result = h.applyChoices(encode().text, overrides);
+    assert.equal(result.text, null);
+    assert.match(result.error, /invalid/);
+    h.close();
+  }
+  const h = harness();
+  assert.match(h.applyChoices(encode().text, { 1003: 2005 }).error, /does not belong/);
+  h.run('TEST.entries[2003].maxRanks = 0');
+  assert.match(h.applyChoices(encode().text, { 1003: 2003 }).error, /retain the selected ranks/);
+  h.close();
+});
+
+test('preference errors preserve safe messages and never expose arbitrary API exception values', () => {
+  for (const setup of [
+    'C_Traits.GetEntryInfo = function() error("PRIVATE_API_VALUE") end',
+    'C_Traits.GetNodeInfo = function() error(setmetatable({}, { __tostring = function() error("PRIVATE_API_VALUE") end })) end',
+    'issecretvalue = function(value) return value == 2003 end'
+  ]) {
+    const h = harness();
+    h.run(setup);
+    const result = h.applyChoices(encode().text, { 1003: 2003 });
+    assert.equal(result.text, null);
+    assert.equal(typeof result.error, 'string');
+    assert.doesNotMatch(result.error, /PRIVATE_API_VALUE/);
+    assert.ok(result.error.length <= 160);
+    h.close();
+  }
+});
+
+test('preference rewriting rejects a tree that changes between the original and final decode', () => {
+  const h = harness();
+  h.run(`local original = C_Traits.GetTreeNodes
+    local calls = 0
+    C_Traits.GetTreeNodes = function(...)
+      calls = calls + 1
+      if calls == 2 then TEST.nodes[1003].entryIDs = { 2004, 2003 } end
+      return original(...)
+    end`);
+  const result = h.applyChoices(encode().text, { 1003: 2003 });
+  assert.equal(result.text, null);
+  assert.match(result.error, /unexpected talent/);
+  h.close();
+});
+
+test('real builds across all 40 specs can round-trip ordinary choices without changing unrelated talents', () => {
+  let changed = 0;
+  for (const [specID, spec] of Object.entries(bundled.recommendations)) {
+    const specCatalog = catalog.specs[specID];
+    const recommendation = Object.values(spec.mplus?.encounters ?? spec.raid?.encounters ?? {})[0];
+    const h = harness({ nodes: specCatalog.nodes, order: specCatalog.fullNodeOrder, treeID: specCatalog.traitTreeId });
+    const original = h.decode(recommendation.importString, Number(specID));
+    assert.equal(original.error, null);
+    const expected = structuredClone(original.entries);
+    const overrides = {}, reverse = {};
+    for (const entry of expected) {
+      const node = specCatalog.nodes.find(node => node.id === entry.nodeID);
+      if (node.type !== 'choice' || entry.ranksPurchased === 0) continue;
+      const target = node.entries.find(candidate => candidate.id !== entry.selectionEntryID && candidate.maxRanks >= entry.ranksPurchased);
+      if (!target) continue;
+      reverse[entry.nodeID] = entry.selectionEntryID;
+      overrides[entry.nodeID] = target.id;
+      entry.selectionEntryID = target.id;
+      changed++;
+    }
+    const result = h.applyChoices(recommendation.importString, overrides, Number(specID));
+    assert.equal(result.error, null, `spec ${specID}`);
+    assert.equal(result.changedCount, Object.keys(overrides).length);
+    assert.equal(result.text, encodeCatalogEntries(expected, Number(specID), specCatalog), `Only requested choice bits change for ${specID}`);
+    assert.deepEqual(h.decode(result.text, Number(specID)).entries, expected);
+    assert.equal(h.applyChoices(result.text, reverse, Number(specID)).text, recommendation.importString);
+    h.close();
+  }
+  assert.ok(changed >= 100, `Exercised ${changed} live-catalog choices`);
 });

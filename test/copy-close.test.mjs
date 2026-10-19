@@ -72,7 +72,7 @@ test('copy fallback remains alongside the primary one-button import flow', async
   harness.slash();
   assert.equal(harness.string('QuickWoWTalentsCopyButton:GetText()'), 'Copy Build');
   assert.equal(harness.string('QuickWoWTalentsImportButton:GetText()'), 'Add & Use Build');
-  assert.match(source, /UI\.hint:SetText\("Add and apply this build, replacing any pending talent edits\."\)/);
+  assert.equal(harness.string('TEST.hint:GetText()'), 'Add and apply this build, replacing any pending talent edits.');
   assert.match(source, /UI\.hint:SetText\("Import string selected — press Ctrl\+C now"\)/);
   assert.match(source, /UI\.hint:SetTextColor\(0\.2, 1, 0\.2\)/);
   assert.match(source, /Shared action bars/);
