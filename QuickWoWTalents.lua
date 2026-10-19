@@ -27,6 +27,7 @@ local function GetSavedState()
 end
 local UI = { state = { mode = "mplus", encounterIds = {} } }
 local CloseSelectorMenu
+local RefreshPreferences
 local WINDOW_WIDTH, WINDOW_HEIGHT, COPY_HEIGHT = 520, 410, 46
 local COLORS = {
   background = { 0.067, 0.075, 0.082, 1 }, header = { 0.051, 0.059, 0.067, 1 },
@@ -92,10 +93,26 @@ local function ActionButton(parent, name, text, primary)
   return button
 end
 
+local function LayoutMainFrame()
+  if not UI.frame then return end
+  local extra = UI.preferenceToggle and UI.preferenceToggle:IsShown() and (40 + (UI.preferenceHeight or 0)) or 0
+  for _, placement in ipairs({
+    { UI.importButton, 18, 248 }, { UI.selectButton, 338, 248 },
+    { UI.applyProgress, 18, 290 }, { UI.hint, 18, 314 }, { UI.copyPanel, 18, 356 }
+  }) do
+    local widget = placement[1]
+    if widget then
+      widget:ClearAllPoints()
+      widget:SetPoint("TOPLEFT", placement[2], -placement[3] - extra)
+    end
+  end
+  UI.frame:SetHeight(WINDOW_HEIGHT + extra + (UI.copyPanel and UI.copyPanel:IsShown() and COPY_HEIGHT or 0))
+end
+
 local function SetCopyPanelShown(shown)
   if not UI.copyPanel then return end
   if shown then UI.copyPanel:Show() else UI.copyPanel:Hide() end
-  UI.frame:SetHeight(WINDOW_HEIGHT + (shown and COPY_HEIGHT or 0))
+  LayoutMainFrame()
 end
 
 local function RefreshClassStyle(specID, specName, recommendation)
@@ -393,6 +410,22 @@ local function GetRecommendation()
   return recommendation, nil
 end
 
+-- One effective string is used by the copy field and by the import coordinator.
+-- Preferences only edit the recommendation; selecting a preference never edits
+-- the player's active talents or starts an import.
+local function GetEffectiveImport(recommendation, specID)
+  if not NS.Preferences then return recommendation.importString, nil end
+  local configID
+  if C_ClassTalents and type(C_ClassTalents.GetActiveConfigID) == "function" then
+    local ok, value = pcall(C_ClassTalents.GetActiveConfigID)
+    if ok and not (issecretvalue and issecretvalue(value)) and type(value) == "number" then configID = value end
+  end
+  local text, status = NS.Preferences.Build(recommendation.importString, specID, configID)
+  UI.preferenceStatus = status
+  if RefreshPreferences then RefreshPreferences(specID, status) end
+  return text, status and status.error, status
+end
+
 local function DisarmCloseAfterCopy()
   UI.closeOnNextCopy = false
   UI.copyModifierDown = false
@@ -439,6 +472,20 @@ local function SelectImportText(closeOnNextCopy)
       UI.hint:SetText(compatibilityError)
     end
     return
+  end
+
+  if not IsImportBusy() and NS.Preferences then
+    local recommendation, errorMessage = GetRecommendation()
+    local text
+    if recommendation then text, errorMessage = GetEffectiveImport(recommendation, GetCurrentSpecInfo()) end
+    if not text then
+      DisarmCloseAfterCopy()
+      UI.importBox:SetText("")
+      UI.hint:SetText(errorMessage or "Select an available build first.")
+      UI.hint:SetTextColor(1, 0.82, 0)
+      return
+    end
+    UI.importBox:SetText(text)
   end
 
   if UI.importBox then
@@ -501,8 +548,10 @@ local function UpdateRecommendation(selectText)
   if UI.autoOpenCheckbox then UI.autoOpenCheckbox:SetChecked(DB.autoOpenEnabled ~= false) end
 
   if UI.specLine then RefreshClassStyle(specID, specName, recommendation) end
+  if RefreshPreferences then RefreshPreferences(specID) end
 
   if errorMessage then
+    UI.preferenceStatus = nil
     DisarmCloseAfterCopy()
     UI.subtitle:SetText(errorMessage)
     UI.meta:SetText("Try another encounter or check for an addon update.")
@@ -528,13 +577,17 @@ local function UpdateRecommendation(selectText)
   UI.buildLabel:SetText(string.upper(contextText))
   UI.subtitle:SetText(encounterName)
   UI.meta:SetText(tostring(sampleCount) .. " top logs  ·  " .. string.upper(tostring(recommendation.metric or "DPS")) .. "  ·  Shared action bars")
-  UI.importBox:SetText(recommendation.importString or "")
-  UI.hint:SetText("Add and apply this build, replacing any pending talent edits.")
-  UI.hint:SetTextColor(unpack(COLORS.muted))
+  local effectiveString, preferenceError, preferenceStatus = GetEffectiveImport(recommendation, specID)
+  UI.hasRecommendation = effectiveString ~= nil
+  UI.importBox:SetText(effectiveString or "")
+  UI.hint:SetText(preferenceError or (preferenceStatus and (preferenceStatus.configuredCount > 0 or #preferenceStatus.skipped > 0) and NS.Preferences.Describe(preferenceStatus))
+    or "Add and apply this build, replacing any pending talent edits.")
+  if preferenceError or (preferenceStatus and #preferenceStatus.skipped > 0) then UI.hint:SetTextColor(1, .82, 0)
+  else UI.hint:SetTextColor(unpack(COLORS.muted)) end
   UI.footer:SetText("Snapshot " .. tostring(snapshot) .. "  ·  Offline recommendations")
   UI.footerDetails = "Snapshot: " .. tostring(snapshot) .. "\nBundled: " .. tostring(generated)
   if UI.importButton then
-    UI.importButton:SetEnabled(NS.TalentImport ~= nil and not NS.TalentImport.IsBusy())
+    UI.importButton:SetEnabled(UI.hasRecommendation and NS.TalentImport ~= nil and not NS.TalentImport.IsBusy())
   end
 
   if selectText then
@@ -683,11 +736,26 @@ local function ImportSelectedBuild()
     Print("Talent importing is unavailable. Select the import string and paste it in Talents.")
     return
   end
+  local effectiveString, preferenceError, preferenceStatus = GetEffectiveImport(recommendation, specID)
+  if not effectiveString then
+    local message = preferenceError or "The talent preferences could not be applied."
+    UI.hasRecommendation = false
+    UI.importButton:Disable()
+    UI.importBox:SetText("")
+    UI.hint:SetText(message)
+    UI.hint:SetTextColor(1, .82, 0)
+    Print(message)
+    return
+  end
+  UI.importBox:SetText(effectiveString)
+  -- Freeze the personalized string before Begin; later UI/spec changes cannot
+  -- alter the verification target of an import already in progress.
+  local preferenceNotice = preferenceStatus and #preferenceStatus.skipped > 0 and NS.Preferences.Describe(preferenceStatus)
   DisarmCloseAfterCopy()
   local requestedMode, requestedEncounterId = UI.state.mode, tonumber(encounter.id)
   SetApplyProgressActive(true)
   local accepted, importError = NS.TalentImport.Begin({
-    importString = recommendation.importString,
+    importString = effectiveString,
     specID = specID,
     name = GetLoadoutName(encounter),
     onStatus = function(message, isDone, success)
@@ -696,11 +764,12 @@ local function ImportSelectedBuild()
       local sameSelection = GetCurrentSpecInfo() == specID and UI.state.mode == requestedMode
         and UI.state.encounterIds[requestedMode] == requestedEncounterId
       if UI.hint and sameSelection then
-        UI.hint:SetText(tostring(message))
+        UI.hint:SetText(tostring(message) .. (isDone and preferenceNotice and (" " .. preferenceNotice) or ""))
         if isDone and success then UI.hint:SetTextColor(0.2, 1, 0.2)
         else UI.hint:SetTextColor(1, 0.82, 0) end
       end
       if UI.importButton then UI.importButton:SetEnabled(UI.hasRecommendation == true and not IsImportBusy()) end
+      if RefreshPreferences then RefreshPreferences(GetCurrentSpecInfo(), UI.preferenceStatus) end
       if isDone then
         Print(message)
         if UI.pendingAutoOpenReason then
@@ -718,6 +787,7 @@ local function ImportSelectedBuild()
     Print(message)
   end
   RefreshApplyProgress()
+  if RefreshPreferences then RefreshPreferences(specID, UI.preferenceStatus) end
   if UI.importButton then UI.importButton:SetEnabled(UI.hasRecommendation == true and not IsImportBusy()) end
 end
 
@@ -937,6 +1007,119 @@ local function CreateSelector(parent, name, width, initialize)
   return dropdown, control
 end
 
+local function CreatePreferenceControls(frame)
+  if not NS.Preferences then return end
+  local toggle = ActionButton(frame, ADDON_NAME .. "PreferencesToggle", "Talent preferences", false)
+  toggle:SetPoint("TOPLEFT", 18, -248)
+  toggle:SetSize(484, 30)
+  toggle.Text:ClearAllPoints()
+  toggle.Text:SetPoint("LEFT", 12, 0)
+  toggle.Text:SetJustifyH("LEFT")
+  local summary = Label(toggle, nil, 12, COLORS.muted)
+  summary:SetPoint("RIGHT", -12, 0)
+  summary:SetJustifyV("MIDDLE")
+  UI.preferenceSummary, UI.preferenceToggle = summary, toggle
+  local panel = CreateFrame("Frame", ADDON_NAME .. "PreferencesPanel", frame, "BackdropTemplate")
+  panel:SetPoint("TOPLEFT", toggle, "BOTTOMLEFT", 0, 0)
+  panel:SetWidth(484)
+  FlatPanel(panel, COLORS.surface, COLORS.rule)
+  panel:Hide()
+  UI.preferencePanel, UI.preferenceRows = panel, {}
+  local note = Label(panel, nil, 11, COLORS.muted)
+  note:SetPoint("BOTTOMLEFT", 12, 10)
+  note:SetWidth(460)
+  note:SetHeight(28)
+  note:SetText("Saved for this character and spec. Applied on import or copy, only when the recommended build includes the talent.")
+
+  RefreshPreferences = function(specID, status)
+    local definitions = NS.Preferences.List(specID)
+    if #definitions == 0 then
+      toggle:Hide(); panel:Hide(); UI.preferenceHeight = 0
+      LayoutMainFrame()
+      return
+    end
+    toggle:Show()
+    local locked = IsImportBusy() or IsInCombat()
+    toggle:SetEnabled(not locked)
+    local configured = 0
+    for index, definition in ipairs(definitions) do
+      local row = UI.preferenceRows[index]
+      if not row then
+        row = CreateFrame("Frame", ADDON_NAME .. "PreferenceRow" .. index, panel)
+        row:SetSize(460, 78)
+        row:SetPoint("TOPLEFT", 12, -12 - (index - 1) * 78)
+        row.Label = Label(row, nil, 14)
+        row.Label:SetPoint("TOPLEFT", 0, -1)
+        row.Label:SetWidth(208)
+        row.Label:SetHeight(19)
+        row.Category = Label(row, nil, 10, COLORS.muted)
+        row.Category:SetPoint("TOPLEFT", 0, -22)
+        row.Category:SetWidth(208)
+        row.Description = Label(row, nil, 11, COLORS.muted)
+        row.Description:SetPoint("TOPLEFT", 0, -40)
+        row.Description:SetWidth(460)
+        row.Description:SetHeight(32)
+        local dropdown, control = CreateSelector(row, ADDON_NAME .. "Preference" .. index, 244, function(menu)
+          menu.getOptions = function()
+            local options = {}
+            local current = row.definition
+            if not current then return options end
+            for _, choice in ipairs(current.choices) do
+              local choiceKey = choice.key
+              options[#options + 1] = {
+                text = choice.label,
+                checked = NS.Preferences.Get(row.specID, current.key) == choiceKey,
+                func = function()
+                  if IsImportBusy() or IsInCombat() or row.specID ~= GetCurrentSpecInfo() then return end
+                  local ok, message = NS.Preferences.Set(row.specID, current.key, choiceKey)
+                  if not ok then Print(message or "Preferences could not be saved."); return end
+                  UpdateRecommendation(false)
+                end
+              }
+            end
+            return options
+          end
+        end)
+        control:SetPoint("TOPRIGHT", 0, 0)
+        control:SetHeight(32)
+        row.dropdown, row.control = dropdown, control
+        UI.preferenceRows[index] = row
+      end
+      row.definition, row.specID = definition, specID
+      local selected = NS.Preferences.Get(specID, definition.key)
+      local selectedLabel = "Use recommended"
+      for _, choice in ipairs(definition.choices) do if choice.key == selected then selectedLabel = choice.label end end
+      if selected ~= "recommended" then configured = configured + 1 end
+      row.Label:SetText(definition.label)
+      row.Category:SetText(string.upper(string.sub(definition.category, 1, 1)) .. string.sub(definition.category, 2)
+        .. (definition.advanced and " · optional" or ""))
+      local description, skipped = definition.description, false
+      for _, item in ipairs(status and status.skipped or {}) do
+        if item.key == definition.key then description = item.reason; skipped = true; break end
+      end
+      row.Description:SetText(description)
+      if skipped then row.Description:SetTextColor(1, .82, 0) else row.Description:SetTextColor(unpack(COLORS.muted)) end
+      SetDropdownText(row.dropdown, selectedLabel)
+      row.control:SetEnabled(not locked)
+      row:Show()
+    end
+    for index = #definitions + 1, #UI.preferenceRows do UI.preferenceRows[index]:Hide() end
+    summary:SetText((configured > 0 and (configured .. " selected") or "Use recommended") .. (UI.preferencesExpanded and "  -" or "  +"))
+    if UI.preferencesExpanded then
+      UI.preferenceHeight = 52 + #definitions * 78
+      panel:SetHeight(UI.preferenceHeight)
+      panel:Show()
+    else UI.preferenceHeight = 0; panel:Hide() end
+    LayoutMainFrame()
+  end
+  toggle:SetScript("OnClick", function()
+    if IsImportBusy() or IsInCombat() then return end
+    CloseSelectorMenu()
+    UI.preferencesExpanded = not UI.preferencesExpanded
+    RefreshPreferences(GetCurrentSpecInfo(), UI.preferenceStatus)
+  end)
+end
+
 ApplyOptionalSkin = function()
   if not skin or not UI.frame then return end
   -- Optional visual integration must not affect recommendation/import behavior.
@@ -953,6 +1136,10 @@ ApplyOptionalSkin = function()
     skin.EditBox(UI.importBox)
     skin.Checkbox(UI.autoOpenCheckbox)
     skin.CloseButton(UI.closeButton)
+    if UI.preferenceToggle then
+      skin.Button(UI.preferenceToggle)
+      skin.Panel(UI.preferencePanel)
+    end
     for _, font in ipairs(UI.fonts or {}) do skin.Font(font) end
   end)
 end
@@ -971,6 +1158,7 @@ local function CreateMainFrame()
   frame:SetPoint("CENTER")
   frame:SetFrameStrata("DIALOG")
   frame:SetMovable(true)
+  frame:SetClampedToScreen(true)
   frame:EnableMouse(true)
   FlatPanel(frame, COLORS.background, COLORS.border)
   if type(UISpecialFrames) == "table" then UISpecialFrames[#UISpecialFrames + 1] = ADDON_NAME .. "Frame" end
@@ -1144,6 +1332,7 @@ local function CreateMainFrame()
   website:SetPoint("BOTTOMRIGHT", -18, 14)
   website:SetText("quickwowtalents.com")
   CreateApplyProgress(frame)
+  CreatePreferenceControls(frame)
   ApplyOptionalSkin()
   return frame
 end

@@ -86,7 +86,7 @@ local function NewReader(text)
       if Read(1) ~= 0 then Fail("Talent string contains nonzero padding.") end
     end
   end
-  return Read, Finish
+  return Read, Finish, function() return offset end
 end
 
 local function GetTree(specID, configID)
@@ -115,11 +115,11 @@ local function CheckHash(hash, treeID)
   end
 end
 
-local function Decode(text, expectedSpecID, configID)
+local function Decode(text, expectedSpecID, configID, captureChoices)
   if not IsInteger(expectedSpecID, 1, 65535) or not IsInteger(configID, 1, 2147483647) then
     Fail("Current specialization or configuration is unavailable.")
   end
-  local read, finish = NewReader(text)
+  local read, finish, position = NewReader(text)
   local version, specID = read(8), read(16)
   if version ~= 2 or ReadAPI(C_Traits, "GetLoadoutSerializationVersion") ~= 2 then
     Fail("Talent serialization version is unsupported.")
@@ -135,7 +135,7 @@ local function Decode(text, expectedSpecID, configID)
     or not IsInteger(types.SubTreeSelection, 0, 255) or not IsInteger(types.Tiered, 0, 255) then
     Fail("Talent node types are unavailable.")
   end
-  local entries = {}
+  local entries, choices = {}, captureChoices and {} or nil
   for _, nodeID in ipairs(nodeIDs) do
     if read(1) == 1 then
       local purchased = read(1) == 1
@@ -155,8 +155,12 @@ local function Decode(text, expectedSpecID, configID)
         local encodedChoice = read(1) == 1
         if encodedChoice ~= choice then Fail("Talent choice flag does not match the current tree.") end
         if encodedChoice then
+          local offset = position()
           selection = entryIDs[read(2) + 1]
           if not selection then Fail("Talent choice index is invalid.") end
+          if choices and node.type == types.Selection then
+            choices[nodeID] = { offset = offset, entryIDs = entryIDs, ranks = ranks, selectionEntryID = selection }
+          end
         end
       end
       if tiered then
@@ -194,13 +198,86 @@ local function Decode(text, expectedSpecID, configID)
   end
   finish()
   if #entries == 0 then Fail("Talent string contains no selected talents.") end
-  return entries, nil, { treeID = treeID, specID = specID }
+  return entries, nil, { treeID = treeID, specID = specID, choices = choices }
 end
 
 function Codec.Decode(text, specID, configID)
   local ok, entries, decodeError, metadata = pcall(Decode, text, specID, configID)
   if not ok then return nil, SafeError(entries) end
   return entries, decodeError, metadata
+end
+
+-- Personalize only an existing purchased choice. Retain the original header,
+-- ranks, grants, hero choices and padding; never reserialize the rest of a build.
+-- The preference catalog separately validates the meaning of each allowed pair.
+function Codec.ApplyChoices(text, specID, configID, overrides)
+  local ok, rewritten, metadata = pcall(function()
+    if IsSecret(overrides) or type(overrides) ~= "table" then Fail("Talent preferences are invalid.") end
+    local requested, requestedCount = {}, 0
+    for nodeID, entryID in pairs(overrides) do
+      if not IsInteger(nodeID, 1, 2147483647) or not IsInteger(entryID, 1, 2147483647) then
+        Fail("Talent preference identifiers are invalid.")
+      end
+      requested[nodeID] = entryID
+      requestedCount = requestedCount + 1
+      if requestedCount > 8192 then Fail("Too many talent preferences were requested.") end
+    end
+    local original, _, originalMetadata = Decode(text, specID, configID, true)
+    local characters, changedCount = {}, 0
+    for nodeID, entryID in pairs(requested) do
+      local choice = originalMetadata.choices[nodeID]
+      if not choice then Fail("Talent preference requires an existing purchased choice.") end
+      if #choice.entryIDs > 4 then Fail("Talent preference choice has too many entries.") end
+      local targetIndex
+      for index, candidate in ipairs(choice.entryIDs) do
+        if candidate == entryID then targetIndex = index - 1 end
+      end
+      if targetIndex == nil then Fail("Talent preference entry does not belong to its choice.") end
+      local target = ReadAPI(C_Traits, "GetEntryInfo", configID, entryID)
+      if type(target) ~= "table" or not IsInteger(target.maxRanks, 1, 63) or choice.ranks > target.maxRanks then
+        Fail("Talent preference entry cannot retain the selected ranks.")
+      end
+      if entryID ~= choice.selectionEntryID then
+        changedCount = changedCount + 1
+        for bit = 0, 1 do
+          local offset = choice.offset + bit
+          local characterIndex, weight = math.floor(offset / 6) + 1, 2 ^ (offset % 6)
+          local value = characters[characterIndex]
+          if value == nil then value = alphabetValues[string.sub(text, characterIndex, characterIndex)] end
+          local previous = math.floor(value / weight) % 2
+          local replacement = math.floor(targetIndex / 2 ^ bit) % 2
+          characters[characterIndex] = value + (replacement - previous) * weight
+        end
+      end
+    end
+    local result = text
+    if changedCount > 0 then
+      local output = {}
+      for index = 1, #text do
+        local value = characters[index]
+        output[index] = value == nil and string.sub(text, index, index) or string.sub(alphabet, value + 1, value + 1)
+      end
+      result = table.concat(output)
+    end
+    -- Validate with the same decoder used by import and verification. Any tree
+    -- changes between reads must fail rather than modify an unrelated talent.
+    local actual, _, actualMetadata = Decode(result, specID, configID)
+    if actualMetadata.treeID ~= originalMetadata.treeID or #actual ~= #original then
+      Fail("Personalized talent build could not be verified.")
+    end
+    for index, expected in ipairs(original) do
+      local entry = actual[index]
+      if entry.nodeID ~= expected.nodeID or entry.ranksPurchased ~= expected.ranksPurchased
+        or entry.ranksGranted ~= expected.ranksGranted
+        or entry.selectionEntryID ~= (requested[expected.nodeID] or expected.selectionEntryID) then
+        Fail("Personalized talent build changed an unexpected talent.")
+      end
+    end
+    return result, { treeID = originalMetadata.treeID, specID = originalMetadata.specID,
+      appliedCount = requestedCount, changedCount = changedCount }
+  end)
+  if not ok then return nil, SafeError(rewritten) end
+  return rewritten, nil, metadata
 end
 
 local function IsAutomaticGrant(entry, configID)

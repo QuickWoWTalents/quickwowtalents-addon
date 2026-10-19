@@ -392,6 +392,7 @@ export async function createAddonHarness({
   addonName = 'QuickWoWTalents',
   namespaceSource = '{}',
   loadImportModules = false,
+  loadPreferences = false,
   ellesmere = 'absent',
   beforeAddonSource = ''
 } = {}) {
@@ -399,6 +400,7 @@ export async function createAddonHarness({
     fs.readFile(new URL('../../QuickWoWTalentsTalentCodec.lua', import.meta.url), 'utf8'),
     fs.readFile(new URL('../../QuickWoWTalentsTalentImport.lua', import.meta.url), 'utf8')
   ]) : [];
+  if (loadPreferences) moduleSources.push(await fs.readFile(new URL('../../QuickWoWTalentsPreferences.lua', import.meta.url), 'utf8'));
   const state = lauxlib.luaL_newstate();
   lualib.luaL_openlibs(state);
 

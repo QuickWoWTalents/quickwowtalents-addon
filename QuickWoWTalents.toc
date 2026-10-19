@@ -10,5 +10,6 @@
 
 QuickWoWTalentsData.lua
 QuickWoWTalentsTalentCodec.lua
+QuickWoWTalentsPreferences.lua
 QuickWoWTalentsTalentImport.lua
 QuickWoWTalents.lua

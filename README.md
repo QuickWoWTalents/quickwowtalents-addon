@@ -42,6 +42,19 @@ Extra commands:
 
 Automatic opening is enabled by default. Toggle **Open automatically on dungeon entry** or use `/qwt auto off` if you prefer to open `/qwt` manually. Opening the addon never applies talents until you click the import button.
 
+## Talent preferences
+
+Expand **Talent preferences** to personalize supported choice talents for your current specialization. Each setting defaults to **Use recommended**. Your selections apply to both **Add & Use Build** and **Copy Build** and are saved separately for each character and specialization, including across addon and recommendation updates.
+
+Supported choices include:
+
+- Earthquake, Flamestrike, Blizzard, and Rain of Fire: cast at your target or choose a ground location.
+- Thistle Tea: automatic plus manual activation or manual only.
+- Mage, Monk, Druid, and Shaman movement abilities.
+- Preservation's Verdant Embrace, Beast Mastery's companion choice, and Frost Mage's Water Elemental choice.
+
+Movement, activation, and companion choices can affect gameplay or performance; the panel describes these tradeoffs. A preference only changes a choice talent already selected in the recommendation. It never adds missing talents or reallocates points. If a talent is absent or cannot be validated against the current game version, the panel reports that the preference was skipped and keeps your setting for future builds.
+
 ## Install
 
 1. Download the latest `QuickWoWTalents-<version>.zip` from the [GitHub releases page](https://github.com/QuickWoWTalents/quickwowtalents-addon/releases).
@@ -58,6 +71,7 @@ Automatic opening is enabled by default. Toggle **Open automatically on dungeon 
    World of Warcraft/_retail_/Interface/AddOns/QuickWoWTalents/QuickWoWTalents.lua
    World of Warcraft/_retail_/Interface/AddOns/QuickWoWTalents/QuickWoWTalentsData.lua
    World of Warcraft/_retail_/Interface/AddOns/QuickWoWTalents/QuickWoWTalentsTalentCodec.lua
+   World of Warcraft/_retail_/Interface/AddOns/QuickWoWTalents/QuickWoWTalentsPreferences.lua
    World of Warcraft/_retail_/Interface/AddOns/QuickWoWTalents/QuickWoWTalentsTalentImport.lua
    World of Warcraft/_retail_/Interface/AddOns/QuickWoWTalents/Media/Logo.tga
    ```
