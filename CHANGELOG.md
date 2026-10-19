@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 1.0.134 - 2026-10-19
+
+- Updated bundled recommendation data from quickwowtalents.com.
+
+### Changes since v1.0.133
+- Fix cleanup stalls after identical talent imports (#19)
+
 ## 1.0.133 - 2026-10-18
 
 - Includes the existing validated October 17 recommendation data from v1.0.132. The next daily data release will refresh the bundled builds.
