@@ -321,6 +321,7 @@ test('repository tracks only public Markdown documents', async () => {
   const headings = [...readme.matchAll(/^## (.+)$/gm)].map((match) => match[1]);
   assert.deepEqual(headings, [
     'What it does',
+    'Talent preferences',
     'Install',
     'Updating',
     'Data source and privacy',
