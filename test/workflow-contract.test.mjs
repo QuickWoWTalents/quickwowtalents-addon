@@ -18,8 +18,10 @@ const ACTIVE_CONDITION = "${{ steps.release_gate.outputs.mode != 'no-op' }}";
 const PUBLICATION_CONDITION = "${{ steps.release_gate.outputs.mode == 'publish' || steps.release_gate.outputs.mode == 'reconcile' }}";
 
 const DAILY_STEP_IDS = [
+  'bootstrap_actions_node',
   'checkout_addon',
   'setup_node',
+  'verify_hosted_runtimes',
   'install_dependencies',
   'verify_addon_checkout',
   'acquire_inputs',
@@ -37,8 +39,10 @@ const DAILY_STEP_IDS = [
 ];
 
 const PR_STEP_IDS = [
+  'bootstrap_actions_node',
   'checkout_addon',
   'setup_node',
+  'verify_hosted_runtimes',
   'install_dependencies',
   'verify_addon_checkout',
   'acquire_inputs',
@@ -247,9 +251,9 @@ for (const [name, workflow] of [['pull request', prWorkflow], ['daily release', 
     const acquire = requireStep(workflow, 'acquire_inputs');
     const readiness = requireStep(workflow, 'readiness');
 
-    assert.equal(addonCheckout.uses, 'actions/checkout@v4');
+    assert.equal(addonCheckout.uses, 'actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803');
     assert.equal(addonCheckout.with['persist-credentials'], false);
-    assert.equal(workflow.steps.filter((step) => step.uses === 'actions/checkout@v4').length, 1);
+    assert.equal(workflow.steps.filter((step) => step.uses === 'actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803').length, 1);
     assert.equal(addonCheckout.with.repository, undefined);
     assert.equal(addonCheckout.with.token, undefined);
     assert.equal(workflow.value.env.QWT_ADDON_DATA_URL, 'https://quickwowtalents.com/api/addon-data');
@@ -287,6 +291,8 @@ test('all tracked text uses portable paths and approved public identifiers', asy
     'github.com',
     'quickwowtalents.com',
     'registry.npmjs.org',
+    // Official checksum-pinned hosted Node runtime distribution.
+    'nodejs.org',
     // Pinned public provenance in the reviewed complete-loadout rules fixture.
     'www.raidbots.com',
     'news.blizzard.com',
@@ -377,7 +383,7 @@ test('public build generation is self-contained and uses the public endpoint', a
 
 test('daily conditions package active modes but mutate only new releases', () => {
   const unconditionalIds = [
-    'checkout_addon', 'setup_node', 'install_dependencies',
+    'bootstrap_actions_node', 'checkout_addon', 'setup_node', 'verify_hosted_runtimes', 'install_dependencies',
     'verify_addon_checkout', 'acquire_inputs', 'verify_code', 'release_gate',
   ];
   for (const id of unconditionalIds) assert.equal(requireStep(dailyWorkflow, id).if, undefined);
@@ -390,13 +396,13 @@ test('daily conditions package active modes but mutate only new releases', () =>
   for (const id of ['verify_release_tree', 'publish_release']) {
     assert.equal(requireStep(dailyWorkflow, id).if, PUBLICATION_CONDITION);
   }
-  assert.equal(requireStep(dailyWorkflow, 'setup_node').with['node-version'], '22');
+  assert.equal(requireStep(dailyWorkflow, 'setup_node').with['node-version'], '24.22.1');
   assert.equal(requireStep(dailyWorkflow, 'install_dependencies').run, 'npm ci');
 });
 
 test('pull-request production gates are unconditional, ordered, read-only, and non-publishing', () => {
   assert.ok(prWorkflow.steps.every((step) => step.if === undefined));
-  assert.equal(requireStep(prWorkflow, 'setup_node').with['node-version'], '22');
+  assert.equal(requireStep(prWorkflow, 'setup_node').with['node-version'], '24.22.1');
   assert.equal(requireStep(prWorkflow, 'install_dependencies').run, 'npm ci');
   assert.doesNotMatch(
     prWorkflow.source,
