@@ -114,7 +114,29 @@ async function createReleaseRepository() {
   await git(workPath, ['remote', 'add', 'origin', remotePath]);
   await git(workPath, ['push', '-u', 'origin', 'main']);
   const baseHead = (await git(workPath, ['rev-parse', 'HEAD'])).stdout.trim();
-  return { root, remotePath, workPath, baseHead };
+  const binPath = path.join(root, 'bin');
+  const apiPath = path.join(root, 'github-api.json');
+  const callsPath = path.join(root, 'github-api-calls.jsonl');
+  await fs.mkdir(binPath);
+  await fs.mkdir(path.join(workPath, 'scripts'));
+  await fs.copyFile(path.join(REPO_ROOT, 'scripts/check-daily-publication.mjs'), path.join(workPath, 'scripts/check-daily-publication.mjs'));
+  await fs.writeFile(apiPath, JSON.stringify({
+    'repos/owner/addon/actions/workflows/daily-release.yml/runs?per_page=100&page=1': { total_count: 0, workflow_runs: [] }
+  }));
+  await fs.writeFile(path.join(binPath, 'gh'), `#!/usr/bin/env node
+const fs = require('node:fs');
+const args = process.argv.slice(2);
+fs.appendFileSync(process.env.TEST_GH_CALLS, JSON.stringify(args) + String.fromCharCode(10));
+const fixture = JSON.parse(fs.readFileSync(process.env.TEST_GH_API, 'utf8'));
+const value = fixture[args.at(-1)];
+if (args[0] !== 'api' || args[args.indexOf('--method') + 1] !== 'GET' || !value || value.error) {
+  console.error('mock GitHub lookup failed');
+  process.exit(1);
+}
+console.log(JSON.stringify(value));
+`, { mode: 0o755 });
+  return { root, remotePath, workPath, baseHead, binPath, apiPath, callsPath };
+
 }
 
 async function tagCurrentRelease(fixture) {
@@ -153,6 +175,13 @@ async function runReleaseGate(fixture, overrides = {}) {
   const env = {
     ...process.env,
     BASE_HEAD: fixture.baseHead,
+    GITHUB_REPOSITORY: 'owner/addon',
+    GITHUB_RUN_ID: '500',
+    GITHUB_RUN_ATTEMPT: '1',
+    TEST_GH_API: fixture.apiPath,
+    TEST_GH_CALLS: fixture.callsPath,
+    PATH: `${fixture.binPath}${path.delimiter}${process.env.PATH}`,
+
     DRY_RUN: dryRun,
     EVENT_NAME: eventName,
     GITHUB_OUTPUT: outputPath,
@@ -193,7 +222,7 @@ test('workflow files parse as unique-key YAML documents with exact triggers and 
   assert.deepEqual(dailyWorkflow.value.on.repository_dispatch, {
     types: ['daily-release-fallback'],
   });
-  assert.deepEqual(dailyWorkflow.value.permissions, { contents: 'write' });
+  assert.deepEqual(dailyWorkflow.value.permissions, { actions: 'read', contents: 'write' });
   assert.deepEqual(dailyWorkflow.value.concurrency, {
     group: 'daily-addon-release',
     'cancel-in-progress': false,
@@ -565,7 +594,8 @@ test('publisher script is the only remote publication entry point with exact ver
   const tokenSteps = dailyWorkflow.steps.filter((step) => (
     Object.values(step.env ?? {}).includes('${{ github.token }}')
   ));
-  assert.deepEqual(tokenSteps.map((step) => step.id), ['publish_release']);
+  assert.deepEqual(tokenSteps.map((step) => step.id), ['release_gate', 'publish_release']);
+  assert.equal(requireStep(dailyWorkflow, 'release_gate').env.GH_TOKEN, '${{ github.token }}');
   assert.equal(dailyWorkflow.value.env.GH_TOKEN, undefined);
   assert.equal(publish.env.GH_TOKEN, '${{ github.token }}');
   assert.equal(publish.env.PUBLISH_MODE, '${{ steps.release_gate.outputs.mode }}');
@@ -582,4 +612,82 @@ test('publisher script is the only remote publication entry point with exact ver
   assert.doesNotMatch(dailyWorkflow.source, /\bgh auth setup-git\b|\bgit push\b|\bgh release (?:create|view|download|upload|edit)\b/);
   assert.doesNotMatch(dailyWorkflow.source, /node scripts\/publish-release\.mjs/);
   assert.equal(dailyWorkflow.steps.at(-1).id, 'publish_release');
+});
+
+async function setPublicationHistory(fixture, { runConclusion = 'success', stepConclusion = 'success' } = {}) {
+  const completed = new Date().toISOString();
+  const run = {
+    id: 100, run_attempt: 1, repository: { full_name: 'owner/addon' },
+    path: '.github/workflows/daily-release.yml', head_sha: fixture.baseHead,
+    head_branch: 'main', event: 'repository_dispatch', status: 'completed',
+    conclusion: runConclusion, updated_at: completed
+  };
+  await fs.writeFile(fixture.apiPath, JSON.stringify({
+    'repos/owner/addon/actions/workflows/daily-release.yml/runs?per_page=100&page=1': { total_count: 1, workflow_runs: [run] },
+    'repos/owner/addon/actions/runs/100/attempts/1/jobs?per_page=100&page=1': {
+      total_count: 1, jobs: [{
+        id: 200, run_id: 100, run_attempt: 1, status: 'completed', conclusion: runConclusion,
+        steps: [{ name: 'Publish or reconcile verified release', status: 'completed', conclusion: stepConclusion, completed_at: completed }]
+      }]
+    }
+  }));
+}
+
+test('automatic gate no-ops after verified daily publication despite changed data', async () => {
+  const fixture = await createReleaseRepository();
+  try {
+    await setPublicationHistory(fixture);
+    await fs.writeFile(path.join(fixture.workPath, 'QuickWoWTalentsData.lua'), 'refreshed recommendations\n');
+    const result = await runReleaseGate(fixture);
+    assert.equal(result.error, null, result.stderr);
+    assert.deepEqual(result.outputs, { mode: 'no-op' });
+    assert.match(result.stderr, /Verified prior publication/);
+    const calls = (await fs.readFile(fixture.callsPath, 'utf8')).trim().split('\n').map(JSON.parse);
+    assert.equal(calls.length, 2);
+    assert.ok(calls.every((args) => args[0] === 'api' && args[args.indexOf('--method') + 1] === 'GET'));
+    assert.equal((await git(fixture.workPath, ['rev-parse', 'HEAD'])).stdout.trim(), fixture.baseHead);
+    assert.equal(JSON.parse(await fs.readFile(path.join(fixture.workPath, 'package.json'))).version, '1.2.3');
+  } finally { await fs.rm(fixture.root, { recursive: true, force: true }); }
+});
+
+test('manual publish and dry-run preserve explicit behavior without querying daily history', async () => {
+  for (const [dryRun, mode] of [['false', 'publish'], ['true', 'dry-run']]) {
+    const fixture = await createReleaseRepository();
+    try {
+      await fs.writeFile(fixture.apiPath, '{}');
+      const result = await runReleaseGate(fixture, { EVENT_NAME: 'workflow_dispatch', DRY_RUN: dryRun });
+      assert.equal(result.error, null, result.stderr);
+      assert.deepEqual(result.outputs, { mode });
+      await assert.rejects(fs.access(fixture.callsPath), { code: 'ENOENT' });
+    } finally { await fs.rm(fixture.root, { recursive: true, force: true }); }
+  }
+});
+
+test('failed publication remains recoverable while failed post-publication bookkeeping cannot bump', async () => {
+  for (const [stepConclusion, mode] of [['failure', 'reconcile'], ['success', 'no-op']]) {
+    const fixture = await createReleaseRepository();
+    try {
+      await tagCurrentRelease(fixture);
+      await setPublicationHistory(fixture, { runConclusion: 'failure', stepConclusion });
+      const result = await runReleaseGate(fixture);
+      assert.equal(result.error, null, result.stderr);
+      assert.deepEqual(result.outputs, { mode });
+    } finally { await fs.rm(fixture.root, { recursive: true, force: true }); }
+  }
+});
+
+test('automatic gate fails closed on unavailable or malformed GitHub history', async () => {
+  for (const response of [{ error: 'unavailable' }, { total_count: 1, workflow_runs: [] }]) {
+    const fixture = await createReleaseRepository();
+    try {
+      await fs.writeFile(path.join(fixture.workPath, 'QuickWoWTalentsData.lua'), 'refreshed recommendations\n');
+      await fs.writeFile(fixture.apiPath, JSON.stringify({
+        'repos/owner/addon/actions/workflows/daily-release.yml/runs?per_page=100&page=1': response
+      }));
+      const result = await runReleaseGate(fixture);
+      assert.ok(result.error);
+      assert.match(result.stderr, /Daily publication check failed/);
+      assert.deepEqual(result.outputs, {});
+    } finally { await fs.rm(fixture.root, { recursive: true, force: true }); }
+  }
 });
