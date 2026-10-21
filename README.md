@@ -92,6 +92,8 @@ Movement, activation, and companion choices can affect gameplay or performance; 
 
 Install the newest zip from [Releases](https://github.com/QuickWoWTalents/quickwowtalents-addon/releases) over the existing `QuickWoWTalents` folder.
 
+Automatic releases publish at most once per Pacific calendar day. Later data refreshes wait for the next day's release. The workflow checks verified publication history before bumping the version and stops if that history cannot be verified. Maintainers can still publish an explicit manual release or use the default manual dry run. Failed publication remains recoverable through the existing verified publisher.
+
 ## Data source and privacy
 
 - Source data comes from cached Quick WoW Talents recommendations.
