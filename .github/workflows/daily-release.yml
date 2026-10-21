@@ -24,6 +24,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
   QWT_TALENT_CATALOG_PATH: ${{ github.workspace }}/tmp/release-inputs/talent-catalog.json.gz
   QWT_ADDON_OPTIONS_PATH: ${{ github.workspace }}/tmp/release-inputs/options.json
   QWT_RELEASE_INPUT_MANIFEST_PATH: ${{ github.workspace }}/tmp/release-inputs/snapshot-manifest.json
@@ -37,18 +38,113 @@ jobs:
     timeout-minutes: 20
 
     steps:
+      # setup-node does not update the separate Node binary used by JavaScript actions.
+      # Bootstrap that binary before checkout/setup-node and retain it for post actions.
+      - name: Protect the GitHub Actions Node runtime
+        id: bootstrap_actions_node
+        shell: bash
+        run: |
+          set -euo pipefail
+          [ "$RUNNER_ENVIRONMENT:$RUNNER_OS:$RUNNER_ARCH" = 'github-hosted:Linux:X64' ]
+          [ -z "${ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION:-}" ]
+          [ "${GIT_SSL_NO_VERIFY+x}" != x ] || { echo 'GIT_SSL_NO_VERIFY must be absent; any value disables verification.' >&2; exit 1; }
+          RUNTIME_DIR="$(mktemp -d "$RUNNER_TEMP/qwt-node.XXXXXX")"
+          NODE_ARCHIVE="$RUNTIME_DIR/node.tar.xz"
+          curl --disable --fail --silent --show-error --location --proto '=https' --proto-redir '=https' \
+            --connect-timeout 15 --max-time 120 --retry 2 --retry-max-time 300 \
+            https://nodejs.org/dist/v24.22.1/node-v24.22.1-linux-x64.tar.xz \
+            --output "$NODE_ARCHIVE"
+          printf '%s  %s\n' '6c172a9ab6718f7b801fb5a7bd486af2ee5e32758086a04b84fcce2aa77095e6' "$NODE_ARCHIVE" | sha256sum --check --status
+          tar -xJf "$NODE_ARCHIVE" -C "$RUNTIME_DIR"
+          PATCHED_NODE="$RUNTIME_DIR/node-v24.22.1-linux-x64/bin/node"
+          [ "$("$PATCHED_NODE" --version)" = 'v24.22.1' ]
+
+          # Isolate Git/curl from the hosted image's older CA package before checkout.
+          CA_BUNDLE="$RUNTIME_DIR/ca-bundle.pem"
+          CA_EMPTY_PATH="$RUNTIME_DIR/empty-ca"
+          mkdir -m 700 "$CA_EMPTY_PATH"
+          "$PATCHED_NODE" --input-type=module - "$CA_BUNDLE" "$CA_EMPTY_PATH" "$GITHUB_ENV" <<'NODE'
+          import assert from 'node:assert/strict';
+          import { X509Certificate, createHash } from 'node:crypto';
+          import { appendFileSync, writeFileSync } from 'node:fs';
+          import { rootCertificates } from 'node:tls';
+
+          const [bundlePath, emptyPath, envPath] = process.argv.slice(2);
+          const blockedSubjects = new Set(['emSign Root TLS CA - G3', 'emSign Root CS CA - G3', 'emSign ECC Root CA - G3', 'AAA Certificate Services']);
+          const blockedFingerprints = new Set([
+            '7DD78D5F4F13459A83DFF9ABBBA62EDBAF6F2D102BF257FD712F4D9F2746ED8D',
+            'F2EDAAFF3D9B701FB4D14C9F285F8C0BAD90FC3BCC1FA07D47F4718EDABA34A5',
+            '86A1ECBA089C4A8D3BBE2734C612BA341D813E043CF9E8A862CD5C57A36BBE6B',
+            'D7A7A0FB5D7E2731D771E9484EBCDEF71D5F0C3E0A2948782BC83EE0EA699EF4',
+          ]);
+          const blockedRootKeys = new Set([
+            'c619e4780ed8e0abeda24ad732567de4383a7ea941338f6d1a7d1b49ac792fe9',
+            '0a6c2b2ca5b364207954171987ac9d2178561569d8205457e77ca90c32ede282',
+            '8d417db2dd8bf5e3084d1e3f196d583849d81bdd4c00c70b9d39369e96b8c782',
+            'bd153ed7b0434f6886b17bce8bbe84ed340c7132d702a8f4fa318f756ecbd6f3',
+          ]);
+          assert.equal(rootCertificates.length, 118, 'Unexpected pinned Node CA count');
+          for (const pem of rootCertificates) {
+            const certificate = new X509Certificate(pem);
+            const commonName = certificate.subject.split('\n').find((part) => part.startsWith('CN='))?.slice(3);
+            assert.equal(blockedSubjects.has(commonName), false, `Distrusted CA subject: ${commonName}`);
+            assert.equal(blockedFingerprints.has(certificate.fingerprint256.replaceAll(':', '')), false, 'Distrusted CA fingerprint');
+            const keyHash = createHash('sha256').update(certificate.publicKey.export({ type: 'spki', format: 'der' })).digest('hex');
+            assert.equal(blockedRootKeys.has(keyHash), false, 'Distrusted CA public key');
+          }
+          const bundle = rootCertificates.join('\n') + '\n';
+          const sha256 = createHash('sha256').update(bundle).digest('hex');
+          assert.equal(sha256, '15783a17671365196e5e4ba6ddea3132df72538fef70be91bbd91f45c85c170f', 'Unexpected pinned Node CA bundle');
+          writeFileSync(bundlePath, bundle, { mode: 0o600, flag: 'wx' });
+          appendFileSync(envPath, [
+            `GIT_SSL_CAINFO=${bundlePath}`, `GIT_SSL_CAPATH=${emptyPath}`,
+            `CURL_CA_BUNDLE=${bundlePath}`, `SSL_CERT_FILE=${bundlePath}`, `SSL_CERT_DIR=${emptyPath}`,
+          ].join('\n') + '\n');
+          console.log(`Task CA bundle: Node ${process.version}, NSS 3.131.1, roots=${rootCertificates.length}, sha256=${sha256}`);
+          console.log('Distrusted emSign TLS G3, CS G3, ECC G3 and AAA subjects/fingerprints/public keys: absent');
+          NODE
+
+          # Resolve this job's Runner.Worker executable without assuming a runner path.
+          WORKER_PID="$PPID"
+          RUNNER_ROOT=''
+          while [ "$WORKER_PID" -gt 1 ]; do
+            WORKER_EXE="$(readlink -f "/proc/$WORKER_PID/exe")"
+            if [ "$(basename "$WORKER_EXE")" = 'Runner.Worker' ]; then
+              RUNNER_ROOT="$(dirname "$(dirname "$WORKER_EXE")")"
+              break
+            fi
+            WORKER_PID="$(ps -o ppid= -p "$WORKER_PID" | tr -d ' ')"
+          done
+          [ -n "$RUNNER_ROOT" ]
+          ACTIONS_NODE="$RUNNER_ROOT/externals/node24/bin/node"
+          [ -f "$ACTIONS_NODE" ] && [ ! -L "$ACTIONS_NODE" ]
+          printf 'Actions Node before: %s (%s)\n' "$("$ACTIONS_NODE" --version)" "$ACTIONS_NODE"
+          install -m 755 "$PATCHED_NODE" "$ACTIONS_NODE.qwt"
+          mv -f "$ACTIONS_NODE.qwt" "$ACTIONS_NODE"
+          [ "$("$ACTIONS_NODE" --version)" = 'v24.22.1' ]
+          printf 'Actions Node after: %s (%s)\n' "$("$ACTIONS_NODE" --version)" "$ACTIONS_NODE"
+          printf 'runner_node=%s\n' "$ACTIONS_NODE" >> "$GITHUB_OUTPUT"
+
       - name: Check out addon repository
         id: checkout_addon
-        uses: actions/checkout@v4
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6, node24
         with:
           fetch-depth: 0
           persist-credentials: false
 
       - name: Set up Node
         id: setup_node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6, node24
         with:
-          node-version: '22'
+          node-version: '24.22.1'
+          package-manager-cache: false
+
+      - name: Install and verify protected hosted HTTPS runtimes
+        id: verify_hosted_runtimes
+        shell: bash
+        env:
+          ACTIONS_NODE: ${{ steps.bootstrap_actions_node.outputs.runner_node }}
+        run: bash .github/scripts/install-hosted-runtimes.sh
 
       - name: Install dependencies
         id: install_dependencies
