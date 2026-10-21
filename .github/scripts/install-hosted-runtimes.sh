@@ -9,6 +9,13 @@ printf 'Application Node: %s (%s)\n' "$(node --version)" "$(command -v node)"
 printf 'Actions Node: %s (%s)\n' "$("$ACTIONS_NODE" --version)" "$ACTIONS_NODE"
 printf 'Hosted commit: %s\n' "$(git rev-parse HEAD)"
 printf 'Hosted runner image: %s / %s\n' "${ImageOS:-unknown}" "${ImageVersion:-unknown}"
+[ -f "$GIT_SSL_CAINFO" ] && [ -d "$GIT_SSL_CAPATH" ]
+[ "${GIT_SSL_NO_VERIFY+x}" != x ] || { echo 'GIT_SSL_NO_VERIFY must be absent; any value disables verification.' >&2; exit 1; }
+[ "$CURL_CA_BUNDLE" = "$GIT_SSL_CAINFO" ]
+[ "$SSL_CERT_FILE" = "$GIT_SSL_CAINFO" ] && [ "$SSL_CERT_DIR" = "$GIT_SSL_CAPATH" ]
+[ -z "$(find "$GIT_SSL_CAPATH" -mindepth 1 -print -quit)" ]
+printf '%s  %s\n' '15783a17671365196e5e4ba6ddea3132df72538fef70be91bbd91f45c85c170f' "$GIT_SSL_CAINFO" | sha256sum --check --status
+printf 'Git/curl task CA file: %s; CA directory: %s (empty)\n' "$GIT_SSL_CAINFO" "$GIT_SSL_CAPATH"
 curl --version
 git --version --build-options
 dpkg-query --show --showformat '${Package} ${Version}\n' ca-certificates
@@ -20,7 +27,8 @@ GOTOOLCHAIN=local go version -m "$(command -v gh)"
 # The archive digest is pinned from the official GitHub release asset metadata.
 GH_DIR="$(mktemp -d "$RUNNER_TEMP/qwt-gh.XXXXXX")"
 GH_ARCHIVE="$GH_DIR/gh.tar.gz"
-curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' \
+curl --disable --fail --silent --show-error --location --proto '=https' --proto-redir '=https' \
+  --cacert "$GIT_SSL_CAINFO" --capath "$GIT_SSL_CAPATH" \
   --connect-timeout 15 --max-time 120 --retry 2 --retry-max-time 300 \
   https://github.com/cli/cli/releases/download/v2.102.1/gh_2.102.1_linux_amd64.tar.gz \
   --output "$GH_ARCHIVE"
