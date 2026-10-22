@@ -2,7 +2,7 @@
 ## Title: Quick WoW Talents
 ## Notes: Offline talent recommendations with one-click loadout importing.
 ## Author: Darragh
-## Version: 1.0.154
+## Version: 1.0.155
 ## X-Website: https://quickwowtalents.com
 ## IconTexture: Interface\AddOns\QuickWoWTalents\Media\Logo.tga
 ## SavedVariables: QuickWoWTalentsDB
