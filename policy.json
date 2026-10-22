@@ -1,0 +1,8 @@
+{
+  "schema": 1,
+  "repository": "QuickWoWTalents/quickwowtalents-addon",
+  "projectId": 1530765,
+  "legacyMaximumVersion": "1.0.155",
+  "rule": "Retain every receipt. Never delete, reset or force-push. Reserved outcomes block retries.",
+  "cutoverSourceCommit": "775216864e671e5545eefee752073f761e34f99e"
+}
