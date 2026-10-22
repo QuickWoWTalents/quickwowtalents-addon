@@ -36,6 +36,7 @@ const DAILY_STEP_IDS = [
   'commit_release',
   'verify_release_tree',
   'publish_release',
+  'publish_curseforge',
 ];
 
 const PR_STEP_IDS = [
@@ -289,6 +290,11 @@ test('all tracked text uses portable paths and approved public identifiers', asy
   const entries = await trackedTextFiles();
   const approvedHosts = new Set([
     'github.com',
+    'api.github.com',
+    'docs.github.com',
+    'www.curseforge.com',
+    'wow.curseforge.com',
+    'support.curseforge.com',
     'quickwowtalents.com',
     'registry.npmjs.org',
     // Official checksum-pinned hosted Node runtime distribution.
@@ -350,7 +356,7 @@ test('repository tracks only public Markdown documents', async () => {
     encoding: 'utf8',
   });
   const files = stdout.trim().split('\n').filter(Boolean).sort();
-  assert.deepEqual(files, ['CHANGELOG.md', 'CURSEFORGE_CHANGELOG.md', 'README.md']);
+  assert.deepEqual(files, ['CHANGELOG.md', 'CURSEFORGE_CHANGELOG.md', 'README.md', 'docs/curseforge-handoff.md']);
 
   const readme = await fs.readFile(path.join(REPO_ROOT, 'README.md'), 'utf8');
   const headings = [...readme.matchAll(/^## (.+)$/gm)].map((match) => match[1]);
@@ -600,7 +606,7 @@ test('publisher script is the only remote publication entry point with exact ver
   const tokenSteps = dailyWorkflow.steps.filter((step) => (
     Object.values(step.env ?? {}).includes('${{ github.token }}')
   ));
-  assert.deepEqual(tokenSteps.map((step) => step.id), ['release_gate', 'publish_release']);
+  assert.deepEqual(tokenSteps.map((step) => step.id), ['release_gate', 'publish_release', 'publish_curseforge']);
   assert.equal(requireStep(dailyWorkflow, 'release_gate').env.GH_TOKEN, '${{ github.token }}');
   assert.equal(dailyWorkflow.value.env.GH_TOKEN, undefined);
   assert.equal(publish.env.GH_TOKEN, '${{ github.token }}');
@@ -617,7 +623,20 @@ test('publisher script is the only remote publication entry point with exact ver
   assert.match(publish.run, /--source-commit "\$SOURCE_COMMIT"/);
   assert.doesNotMatch(dailyWorkflow.source, /\bgh auth setup-git\b|\bgit push\b|\bgh release (?:create|view|download|upload|edit)\b/);
   assert.doesNotMatch(dailyWorkflow.source, /node scripts\/publish-release\.mjs/);
-  assert.equal(dailyWorkflow.steps.at(-1).id, 'publish_release');
+  assert.equal(dailyWorkflow.steps.at(-1).id, 'publish_curseforge');
+});
+
+test('CurseForge handoff follows successful GitHub publication and never runs in a dry run', () => {
+  const handoff = requireStep(dailyWorkflow, 'publish_curseforge');
+  assert.equal(handoff.if, "${{ steps.release_gate.outputs.mode == 'publish' || steps.release_gate.outputs.mode == 'reconcile' || steps.release_gate.outputs.mode == 'no-op' }}");
+  assert.equal(handoff.env.GH_TOKEN, '${{ github.token }}');
+  assert.equal(handoff.env.CURSEFORGE_API_TOKEN, '${{ secrets.QWT_CURSEFORGE_UPLOAD_TOKEN }}');
+  assert.equal(handoff.env.QWT_CURSEFORGE_HANDOFF_ENABLED, '${{ vars.QWT_CURSEFORGE_HANDOFF_ENABLED }}');
+  assert.equal(dailyWorkflow.steps.filter((step) => step.env?.CURSEFORGE_API_TOKEN).length, 1);
+  assert.ok(stepIds(dailyWorkflow).indexOf('publish_release') < stepIds(dailyWorkflow).indexOf('publish_curseforge'));
+  assert.match(handoff.run, /npm run release:curseforge -- --tag "v\$VERSION"/);
+  assert.doesNotMatch(handoff.if, /always|failure|cancelled/);
+  assert.equal(handoff['continue-on-error'], undefined);
 });
 
 async function setPublicationHistory(fixture, { runConclusion = 'success', stepConclusion = 'success' } = {}) {

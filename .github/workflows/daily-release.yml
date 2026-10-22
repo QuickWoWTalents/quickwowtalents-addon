@@ -366,3 +366,18 @@ jobs:
             --expected-sha256 "$EXPECTED_SHA256" \
             --notes-file CURSEFORGE_CHANGELOG.md \
             --source-commit "$SOURCE_COMMIT"
+
+      # Keep this separate: a completed GitHub publication still consumes the daily
+      # allowance if the downstream handoff needs recovery. A later no-op can finish
+      # an unclaimed handoff, but a reserved/uncertain upload must never be repeated.
+      - name: Publish verified CurseForge artifact once
+        id: publish_curseforge
+        if: ${{ steps.release_gate.outputs.mode == 'publish' || steps.release_gate.outputs.mode == 'reconcile' || steps.release_gate.outputs.mode == 'no-op' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CURSEFORGE_API_TOKEN: ${{ secrets.QWT_CURSEFORGE_UPLOAD_TOKEN }}
+          QWT_CURSEFORGE_HANDOFF_ENABLED: ${{ vars.QWT_CURSEFORGE_HANDOFF_ENABLED }}
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p "JSON.parse(require('fs').readFileSync('package.json', 'utf8')).version")"
+          npm run release:curseforge -- --tag "v$VERSION"
