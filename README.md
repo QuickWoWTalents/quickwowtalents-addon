@@ -94,6 +94,8 @@ Install the newest zip from [Releases](https://github.com/QuickWoWTalents/quickw
 
 Automatic releases publish at most once per Pacific calendar day. Later data refreshes wait for the next day's release. The workflow checks verified publication history before bumping the version and stops if that history cannot be verified. Maintainers can still publish an explicit manual release or use the default manual dry run. Failed publication remains recoverable through the existing verified publisher.
 
+CurseForge receives the same verified ZIP as GitHub through one controlled upload per version. Repeated runs reuse the recorded publication. An uncertain upload stops for investigation instead of creating another copy. Maintainer setup and recovery are documented in [the release handoff guide](docs/curseforge-handoff.md).
+
 ## Data source and privacy
 
 - Source data comes from cached Quick WoW Talents recommendations.
